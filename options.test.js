@@ -5,9 +5,9 @@
 describe("Options Page", () => {
   beforeEach(() => {
     document.body.innerHTML = `
-      <input id="apiKey" type="text">
-      <button id="save">Save</button>
-      <button id="cancel">Cancel</button>
+      <input data-testid="api-key-input" type="text">
+      <button data-testid="save-button">Save</button>
+      <button data-testid="cancel-button">Cancel</button>
     `;
   });
 
@@ -25,15 +25,17 @@ describe("Options Page", () => {
     require("./options.js");
     document.dispatchEvent(new Event("DOMContentLoaded"));
 
-    expect(document.getElementById("apiKey").value).toBe(mockApiKey);
+    expect(document.querySelector('[data-testid="api-key-input"]').value).toBe(
+      mockApiKey
+    );
   });
 
   test("saves API key when save button is clicked", () => {
     require("./options.js");
     document.dispatchEvent(new Event("DOMContentLoaded"));
 
-    const input = document.getElementById("apiKey");
-    const saveButton = document.getElementById("save");
+    const input = document.querySelector('[data-testid="api-key-input"]');
+    const saveButton = document.querySelector('[data-testid="save-button"]');
     const mockApiKey = "new-api-key";
 
     input.value = mockApiKey;

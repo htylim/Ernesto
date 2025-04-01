@@ -5,7 +5,7 @@
 describe("Popup", () => {
   beforeEach(() => {
     document.body.innerHTML = `
-      <button id="openOptions">Settings</button>
+      <button data-testid="settings-button">Settings</button>
     `;
     require("./popup.js");
   });
@@ -15,7 +15,7 @@ describe("Popup", () => {
   });
 
   test("opens options page when settings button is clicked", () => {
-    document.getElementById("openOptions").click();
+    document.querySelector('[data-testid="settings-button"]').click();
     expect(chrome.runtime.openOptionsPage).toHaveBeenCalled();
   });
 });
