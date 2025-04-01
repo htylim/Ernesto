@@ -1,0 +1,21 @@
+{
+    "rules": {
+        "allowed_file_extensions": [
+            ".js",
+            ".jsx",
+            ".ts",
+            ".tsx",
+            ".html",
+            ".css",
+            ".json",
+            ".md"
+        ],
+        "excluded_paths": [
+            "node_modules",
+            "dist",
+            "build",
+            ".git",
+            ".cursorcache"
+        ]
+    }
+}
