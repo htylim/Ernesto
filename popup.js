@@ -1,5 +1,3 @@
-document
-  .querySelector('[data-testid="settings-button"]')
-  .addEventListener("click", () => {
-    chrome.runtime.openOptionsPage();
-  });
+document.querySelector("#openOptions").addEventListener("click", () => {
+  chrome.runtime.openOptionsPage();
+});

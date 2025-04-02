@@ -1,7 +1,7 @@
 document.addEventListener("DOMContentLoaded", () => {
-  const apiKeyInput = document.querySelector('[data-testid="api-key-input"]');
-  const saveButton = document.querySelector('[data-testid="save-button"]');
-  const cancelButton = document.querySelector('[data-testid="cancel-button"]');
+  const apiKeyInput = document.querySelector("#apiKey");
+  const saveButton = document.querySelector("#save");
+  const cancelButton = document.querySelector("#cancel");
 
   // Load saved API key
   chrome.storage.local.get(["openaiApiKey"], (result) => {
