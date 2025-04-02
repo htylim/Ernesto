@@ -34,6 +34,19 @@
   - **Summarization API**: OpenAI's responses API. To extracts the key points from a given article.
   - **TTS API**: OpenAI's Audio Speech API. To converts the summary text into an audio file.
 
+## 📁 Directory Structure
+
+```
+Ernesto/
+├── manifest.json         # Extension configuration
+├── background.js         # Background service worker
+├── popup.html/js        # Extension popup UI and logic
+├── options.html/js      # Settings page UI and logic
+├── icons/              # Extension icons
+├── *.test.js           # Test files for components
+└── jest.setup.js       # Jest testing configuration
+```
+
 ## 📦 Installation (Development Mode)
 
 1. Clone this repository.
