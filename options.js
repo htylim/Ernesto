@@ -3,120 +3,225 @@ import { clearAudioCache } from "./speechifyCache.js";
 import { audioCache } from "./speechifyCache.js";
 import { summariesCache } from "./summariesCache.js";
 
-document.addEventListener("DOMContentLoaded", () => {
-  console.log("Options page loaded");
+// Constants
+const DISPLAY_STATES = {
+  VISIBLE: "block",
+  HIDDEN: "none",
+};
 
-  const apiKeyInput = document.querySelector("#apiKey");
-  const saveButton = document.querySelector("#save");
-  const cancelButton = document.querySelector("#cancel");
-  const purgeCacheButton = document.querySelector("#purgeCache");
-  const purgeAudioCacheButton = document.querySelector("#purgeAudioCache");
-  const purgeStatus = document.querySelector("#purgeStatus");
-  const purgeAudioStatus = document.querySelector("#purgeAudioStatus");
-  const summariesSize = document.querySelector("#summariesSize");
-  const audioSize = document.querySelector("#audioSize");
+// UI State Manager
+class UIStateManager {
+  constructor() {
+    this.elements = {
+      apiKeyInput: document.querySelector("#apiKey"),
+      saveButton: document.querySelector("#save"),
+      cancelButton: document.querySelector("#cancel"),
+      purgeCacheButton: document.querySelector("#purgeCache"),
+      purgeAudioCacheButton: document.querySelector("#purgeAudioCache"),
+      purgeStatus: document.querySelector("#purgeStatus"),
+      purgeAudioStatus: document.querySelector("#purgeAudioStatus"),
+      summariesSize: document.querySelector("#summariesSize"),
+      audioSize: document.querySelector("#audioSize"),
+    };
+    this.validateElements();
+  }
 
-  console.log("Purge cache button:", purgeCacheButton);
+  validateElements() {
+    const missingElements = Object.entries(this.elements)
+      .filter(([_, element]) => !element)
+      .map(([name]) => name);
 
-  // Load saved API key
-  async function loadApiKey() {
+    if (missingElements.length > 0) {
+      throw new Error(
+        `Missing required elements: ${missingElements.join(", ")}`
+      );
+    }
+  }
+
+  setApiKey(key) {
+    this.elements.apiKeyInput.value = key;
+  }
+
+  getApiKey() {
+    return this.elements.apiKeyInput.value;
+  }
+
+  updateCacheSizes(summariesBytes, audioBytes) {
+    this.elements.summariesSize.textContent = this.formatBytes(summariesBytes);
+    this.elements.audioSize.textContent = this.formatBytes(audioBytes);
+  }
+
+  setPurgeStatus(status, isAudio = false) {
+    const element = isAudio
+      ? this.elements.purgeAudioStatus
+      : this.elements.purgeStatus;
+    element.textContent = status;
+  }
+
+  setButtonDisabled(buttonName, disabled) {
+    const button = this.elements[buttonName];
+    if (button) {
+      button.disabled = disabled;
+    }
+  }
+
+  formatBytes(bytes) {
+    if (bytes === 0) return "0 B";
+    const k = 1024;
+    const sizes = ["B", "KB", "MB", "GB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
+  }
+}
+
+// Cache Manager
+class CacheManager {
+  constructor(uiManager) {
+    this.uiManager = uiManager;
+  }
+
+  async updateCacheSizes() {
     try {
-      console.log("Starting to load API key...");
+      const [summariesBytes, audioBytes] = await Promise.all([
+        summariesCache.getCacheSize(),
+        audioCache.getCacheSize(),
+      ]);
+      this.uiManager.updateCacheSizes(summariesBytes, audioBytes);
+    } catch (error) {
+      console.error("Error updating cache sizes:", error);
+    }
+  }
+
+  async purgeCache(purgeSummaries = false, purgeAudio = false) {
+    if (!purgeSummaries && !purgeAudio) return;
+
+    const operations = [];
+    const statuses = [];
+
+    if (purgeSummaries) {
+      operations.push(clearCache());
+      statuses.push({
+        buttonName: "purgeCacheButton",
+        statusPrefix: "Summaries",
+        isAudio: false,
+      });
+    }
+
+    if (purgeAudio) {
+      operations.push(clearAudioCache());
+      statuses.push({
+        buttonName: "purgeAudioCacheButton",
+        statusPrefix: "Audio",
+        isAudio: true,
+      });
+    }
+
+    try {
+      // Disable buttons and set initial status
+      statuses.forEach(({ buttonName, statusPrefix, isAudio }) => {
+        this.uiManager.setButtonDisabled(buttonName, true);
+        this.uiManager.setPurgeStatus(
+          `Purging ${statusPrefix.toLowerCase()} cache...`,
+          isAudio
+        );
+      });
+
+      // Execute all purge operations
+      await Promise.all(operations);
+      await this.updateCacheSizes();
+
+      // Update status for each operation
+      statuses.forEach(({ buttonName, statusPrefix, isAudio }) => {
+        this.uiManager.setPurgeStatus(
+          `${statusPrefix} cache purged successfully!`,
+          isAudio
+        );
+        setTimeout(() => {
+          this.uiManager.setPurgeStatus("", isAudio);
+          this.uiManager.setButtonDisabled(buttonName, false);
+        }, 2000);
+      });
+    } catch (error) {
+      console.error("Error purging caches:", error);
+      statuses.forEach(({ buttonName, statusPrefix, isAudio }) => {
+        this.uiManager.setPurgeStatus(
+          `Error purging ${statusPrefix.toLowerCase()} cache. Please try again.`,
+          isAudio
+        );
+        this.uiManager.setButtonDisabled(buttonName, false);
+      });
+    }
+  }
+}
+
+// Options Page Controller
+class OptionsPageController {
+  constructor() {
+    this.uiManager = new UIStateManager();
+    this.cacheManager = new CacheManager(this.uiManager);
+    this.setupEventListeners();
+  }
+
+  setupEventListeners() {
+    const {
+      saveButton,
+      cancelButton,
+      purgeCacheButton,
+      purgeAudioCacheButton,
+    } = this.uiManager.elements;
+
+    saveButton.addEventListener("click", () => this.handleSave());
+    cancelButton.addEventListener("click", () => this.handleCancel());
+    purgeCacheButton.addEventListener("click", () =>
+      this.cacheManager.purgeCache(true, false)
+    );
+    purgeAudioCacheButton.addEventListener("click", () =>
+      this.cacheManager.purgeCache(false, true)
+    );
+  }
+
+  async init() {
+    try {
+      await Promise.all([
+        this.loadApiKey(),
+        this.cacheManager.updateCacheSizes(),
+      ]);
+    } catch (error) {
+      console.error("Error initializing options page:", error);
+    }
+  }
+
+  async loadApiKey() {
+    try {
       const result = await chrome.storage.local.get(["openaiApiKey"]);
-      console.log("API key load result:", result);
       if (result.openaiApiKey) {
-        console.log("Found API key, setting input value");
-        apiKeyInput.value = result.openaiApiKey;
-        console.log("Input value set to:", apiKeyInput.value);
-      } else {
-        console.log("No API key found in storage");
+        this.uiManager.setApiKey(result.openaiApiKey);
       }
     } catch (error) {
       console.error("Error loading API key:", error);
     }
   }
 
-  // Initial loads
-  loadApiKey();
-  updateCacheSizes();
-
-  // Update cache sizes
-  async function updateCacheSizes() {
-    const summariesBytes = await summariesCache.getCacheSize();
-    const audioBytes = await audioCache.getCacheSize();
-
-    summariesSize.textContent = formatBytes(summariesBytes);
-    audioSize.textContent = formatBytes(audioBytes);
+  handleSave() {
+    chrome.storage.local.set(
+      { openaiApiKey: this.uiManager.getApiKey() },
+      () => {
+        window.close();
+      }
+    );
   }
 
-  function formatBytes(bytes) {
-    if (bytes === 0) return "0 B";
-    const k = 1024;
-    const sizes = ["B", "KB", "MB", "GB"];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
-  }
-
-  // Save button handler
-  saveButton.addEventListener("click", () => {
-    chrome.storage.local.set({ openaiApiKey: apiKeyInput.value }, () => {
-      console.log("API Key saved:", apiKeyInput.value);
-      window.close();
-    });
-  });
-
-  // Cancel button handler
-  cancelButton.addEventListener("click", () => {
+  handleCancel() {
     window.close();
-  });
+  }
+}
 
-  console.log("Cache button loaded");
-
-  // Purge summary cache button handler
-  purgeCacheButton.addEventListener("click", async () => {
-    console.log("Purge cache button clicked");
-
-    try {
-      purgeCacheButton.disabled = true;
-      purgeStatus.textContent = "Purging summaries cache...";
-
-      await clearCache();
-      console.log("Summaries cache cleared successfully");
-      await updateCacheSizes();
-
-      purgeStatus.textContent = "Summaries cache purged successfully!";
-      setTimeout(() => {
-        purgeStatus.textContent = "";
-        purgeCacheButton.disabled = false;
-      }, 2000);
-    } catch (error) {
-      console.error("Error purging summaries cache:", error);
-      purgeStatus.textContent =
-        "Error purging summaries cache. Please try again.";
-      purgeCacheButton.disabled = false;
-    }
-  });
-
-  // Purge audio cache button handler
-  purgeAudioCacheButton.addEventListener("click", async () => {
-    try {
-      purgeAudioCacheButton.disabled = true;
-      purgeAudioStatus.textContent = "Purging audio cache...";
-
-      await clearAudioCache();
-      console.log("Audio cache cleared successfully");
-      await updateCacheSizes();
-
-      purgeAudioStatus.textContent = "Audio cache purged successfully!";
-      setTimeout(() => {
-        purgeAudioStatus.textContent = "";
-        purgeAudioCacheButton.disabled = false;
-      }, 2000);
-    } catch (error) {
-      console.error("Error purging audio cache:", error);
-      purgeAudioStatus.textContent =
-        "Error purging audio cache. Please try again.";
-      purgeAudioCacheButton.disabled = false;
-    }
-  });
+// Initialize the options page when DOM is loaded
+document.addEventListener("DOMContentLoaded", async () => {
+  try {
+    const optionsPage = new OptionsPageController();
+    await optionsPage.init();
+  } catch (error) {
+    console.error("Error initializing options page:", error);
+  }
 });
