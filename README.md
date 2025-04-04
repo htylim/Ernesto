@@ -7,7 +7,6 @@
 - **Article Summarization**
 
   - One-click article summarization
-  - Right-click any article link to summarize without opening
   - Clean popup display of summaries
   - Summarization is done using OpenAI's Responses API (asking the API plainly "summarize this article")
 
@@ -42,9 +41,16 @@ Ernesto/
 ├── background.js         # Background service worker
 ├── popup.html/js        # Extension popup UI and logic
 ├── options.html/js      # Settings page UI and logic
+├── getSummary.js        # Article summarization logic
+├── getSpeechifyAudio.js # Text-to-speech conversion
+├── genericCache.js      # Base caching functionality
+├── summariesCache.js    # Summaries caching implementation
+├── speechifyCache.js    # Audio caching implementation
 ├── icons/              # Extension icons
 ├── *.test.js           # Test files for components
-└── jest.setup.js       # Jest testing configuration
+├── jest.setup.js       # Jest testing configuration
+├── package.json        # Project dependencies
+└── node_modules/       # Installed dependencies
 ```
 
 ## 📦 Installation (Development Mode)
@@ -55,14 +61,30 @@ Ernesto/
 4. Click **Load unpacked** and select the project folder.
 5. You should now see the Ernesto icon in your toolbar.
 
+## 🛠️ Debugging tips
+
+- Activate the extension and right-click on it to select "Inspect"
+
+- On the dev tools we can access the console log but also if we go to "Application" and to "Extension Storage" we can inspect our `chrome.storage.local` usage.
+
+- `chrome.storage.local` has a storage limit of 5MB per item. Any audio bigger than that won't fit (MP3 TTS are usually ~1MB so we should be ok but be advised)
+
 ## 📝 Usage Tips
 
-- Use the **right-click context menu** for fast access without opening articles.
-- Combine both summarization and audio features to skim news hands-free.
+- You can click Speechify to in one click get both summary and TTS (Speechify will automatically trigger the summarize for you)
+
+- Click on the Gear icon to set up the API key but as well to manage the summaries and audio caches.
+
+- Note that caches will automatically purge anything older than 24hrs so the extension shouldnt grow in size considerably.
 
 ## 📅 Roadmap (Ideas for Future Versions)
 
-- Save summaries for later reading/listening.
+- To be able to keep the extension popup running when I switch to other window or page (now it closes)
+
+- To be able to have the extension popup persist on the page that it was open, so I could open several pages and in page they would have their own "popup" extension window. (this would allow us to have also state-per-page instead of a global instance like now)
+
+- Add an INPUT box in the extension popup to be able to ask questions about the article.
+
 - Customize TTS voice (maybe use the actual voice from Ernesto Tenembaum) and speed.
-- Multilingual support.
+
 - Keyboard shortcuts for faster activation.
