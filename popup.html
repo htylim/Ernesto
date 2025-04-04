@@ -54,10 +54,51 @@
       opacity: 0.5;
       cursor: not-allowed;
     }
+    #speechify:not(:disabled) {
+      background: #0066cc;
+      color: white;
+    }
+    #speechify:not(:disabled):hover {
+      background: #0052a3;
+    }
     #loading {
       display: none;
       text-align: center;
       margin: 20px 0;
+    }
+    #audioPlayer {
+      display: none;
+      margin: 15px 0;
+      padding: 10px;
+      background: #f5f5f5;
+      border-radius: 4px;
+    }
+    .audio-controls {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      justify-content: center;
+    }
+    .audio-button {
+      width: 32px;
+      height: 32px;
+      padding: 6px;
+      border: none;
+      border-radius: 4px;
+      background: #0066cc;
+      color: white;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .audio-button:hover {
+      background: #0052a3;
+    }
+    .audio-button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      background: #999;
     }
     #summary {
       display: none;
@@ -96,7 +137,7 @@
 <body>
   <div class="button-container">
     <button id="summarize" class="main-button">Summarize Article</button>
-    <button id="speechify" class="icon-button" disabled title="Coming soon: Listen to summary">
+    <button id="speechify" class="icon-button" disabled title="Listen to summary">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M12 6v12M8 9v6M16 9v6M20 12h0M4 12h0"/>
       </svg>
@@ -111,6 +152,26 @@
   <div id="loading">
     <div class="spinner"></div>
     <p>Generating summary...</p>
+  </div>
+  <div id="audioPlayer">
+    <div class="audio-controls">
+      <button id="playAudio" class="audio-button" title="Play">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M5 3l14 9-14 9V3z"/>
+        </svg>
+      </button>
+      <button id="pauseAudio" class="audio-button" title="Pause" disabled>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/>
+        </svg>
+      </button>
+      <button id="restartAudio" class="audio-button" title="Restart" disabled>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+          <path d="M3 3v5h5"/>
+        </svg>
+      </button>
+    </div>
   </div>
   <div id="summary"></div>
   <script src="popup.js" type="module"></script>
