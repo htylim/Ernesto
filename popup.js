@@ -3,209 +3,272 @@ import { getCachedSummary, cacheSummary } from "./summariesCache.js";
 import { getSpeechifyAudio } from "./getSpeechifyAudio.js";
 import { getCachedAudio, cacheAudio } from "./speechifyCache.js";
 
-document.addEventListener("DOMContentLoaded", async function () {
-  const summarizeBtn = document.getElementById("summarize");
-  const openOptionsBtn = document.getElementById("openOptions");
-  const speechifyBtn = document.getElementById("speechify");
-  const loadingDiv = document.getElementById("loading");
-  const summaryDiv = document.getElementById("summary");
-  const audioPlayer = document.getElementById("audioPlayer");
-  const playAudioBtn = document.getElementById("playAudio");
-  const pauseAudioBtn = document.getElementById("pauseAudio");
-  const restartAudioBtn = document.getElementById("restartAudio");
-  const loadingText = document.getElementById("loadingText");
+// Constants
+const DISPLAY_STATES = {
+  VISIBLE: "block",
+  HIDDEN: "none",
+};
 
-  let audioElement = null;
+const LOADING_MESSAGES = {
+  SUMMARY: "Generating Summary...",
+  AUDIO: "Generating Audio...",
+};
 
-  function enableDisableRequestButtons() {
-    const isRequestOngoing = loadingDiv.style.display === "block";
-    const hasSummary = summaryDiv.style.display === "block";
-    const hasAudioPlayer = audioPlayer.style.display === "block";
-
-    // Summarize button is disabled when there's a summary or during requests
-    summarizeBtn.disabled = hasSummary || isRequestOngoing;
-
-    // Speechify button is disabled when audio player is shown or during requests
-    speechifyBtn.disabled = hasAudioPlayer || isRequestOngoing;
+// UI State Manager
+class UIStateManager {
+  constructor() {
+    this.elements = {
+      summarizeBtn: document.getElementById("summarize"),
+      openOptionsBtn: document.getElementById("openOptions"),
+      speechifyBtn: document.getElementById("speechify"),
+      loadingDiv: document.getElementById("loading"),
+      summaryDiv: document.getElementById("summary"),
+      audioPlayer: document.getElementById("audioPlayer"),
+      playAudioBtn: document.getElementById("playAudio"),
+      pauseAudioBtn: document.getElementById("pauseAudio"),
+      restartAudioBtn: document.getElementById("restartAudio"),
+      loadingText: document.getElementById("loadingText"),
+    };
   }
 
-  function showPlaybackControls(audioBlob, autoPlay = false) {
-    const audioUrl = URL.createObjectURL(audioBlob);
-    audioElement = new Audio(audioUrl);
+  showLoading(message) {
+    this.elements.loadingDiv.style.display = DISPLAY_STATES.VISIBLE;
+    this.elements.loadingText.textContent = message;
+    this.updateButtonStates();
+  }
 
-    audioElement.addEventListener("play", () => {
+  hideLoading() {
+    this.elements.loadingDiv.style.display = DISPLAY_STATES.HIDDEN;
+    this.updateButtonStates();
+  }
+
+  showSummary(summary) {
+    this.elements.summaryDiv.innerHTML = summary;
+    this.elements.summaryDiv.style.display = DISPLAY_STATES.VISIBLE;
+    this.updateButtonStates();
+  }
+
+  showError(message) {
+    this.elements.summaryDiv.textContent = `Error: ${message}`;
+    this.elements.summaryDiv.style.display = DISPLAY_STATES.VISIBLE;
+    this.updateButtonStates();
+  }
+
+  updateButtonStates() {
+    const isRequestOngoing =
+      this.elements.loadingDiv.style.display === DISPLAY_STATES.VISIBLE;
+    const hasSummary =
+      this.elements.summaryDiv.style.display === DISPLAY_STATES.VISIBLE;
+    const hasAudioPlayer =
+      this.elements.audioPlayer.style.display === DISPLAY_STATES.VISIBLE;
+
+    this.elements.summarizeBtn.disabled = hasSummary || isRequestOngoing;
+    this.elements.speechifyBtn.disabled = hasAudioPlayer || isRequestOngoing;
+  }
+}
+
+// Audio Controller
+class AudioController {
+  constructor(uiManager) {
+    this.uiManager = uiManager;
+    this.audioElement = null;
+    this.setupEventListeners();
+  }
+
+  setupEventListeners() {
+    const { playAudioBtn, pauseAudioBtn, restartAudioBtn } =
+      this.uiManager.elements;
+
+    playAudioBtn.addEventListener("click", () => this.play());
+    pauseAudioBtn.addEventListener("click", () => this.pause());
+    restartAudioBtn.addEventListener("click", () => this.restart());
+  }
+
+  play() {
+    if (this.audioElement) {
+      this.audioElement.play();
+    }
+  }
+
+  pause() {
+    if (this.audioElement) {
+      this.audioElement.pause();
+    }
+  }
+
+  restart() {
+    if (this.audioElement) {
+      this.audioElement.currentTime = 0;
+      this.audioElement.play();
+    }
+  }
+
+  setupAudio(audioBlob, autoPlay = false) {
+    const audioUrl = URL.createObjectURL(audioBlob);
+    this.audioElement = new Audio(audioUrl);
+
+    const { playAudioBtn, pauseAudioBtn, restartAudioBtn, audioPlayer } =
+      this.uiManager.elements;
+
+    this.audioElement.addEventListener("play", () => {
       playAudioBtn.disabled = true;
       pauseAudioBtn.disabled = false;
       restartAudioBtn.disabled = false;
     });
 
-    audioElement.addEventListener("pause", () => {
+    this.audioElement.addEventListener("pause", () => {
       playAudioBtn.disabled = false;
       pauseAudioBtn.disabled = true;
     });
 
-    audioElement.addEventListener("ended", () => {
+    this.audioElement.addEventListener("ended", () => {
       playAudioBtn.disabled = false;
       pauseAudioBtn.disabled = true;
     });
 
-    audioPlayer.style.display = "block";
+    audioPlayer.style.display = DISPLAY_STATES.VISIBLE;
 
     if (autoPlay) {
-      audioElement.play();
+      this.audioElement.play();
     }
   }
 
-  async function getCurrentUrl() {
+  cleanup() {
+    if (this.audioElement) {
+      this.audioElement.pause();
+      this.audioElement.src = "";
+      this.audioElement = null;
+    }
+  }
+}
+
+// Main application
+class SummarizerApp {
+  constructor() {
+    this.uiManager = new UIStateManager();
+    this.audioController = new AudioController(this.uiManager);
+    this.setupEventListeners();
+  }
+
+  setupEventListeners() {
+    const { summarizeBtn, speechifyBtn, openOptionsBtn } =
+      this.uiManager.elements;
+
+    summarizeBtn.addEventListener("click", () => this.summarize());
+    speechifyBtn.addEventListener("click", () => this.speechify());
+    openOptionsBtn.addEventListener("click", () =>
+      chrome.runtime.openOptionsPage()
+    );
+  }
+
+  async getCurrentUrl() {
     const [tab] = await chrome.tabs.query({
       active: true,
       currentWindow: true,
     });
+
     if (!tab?.url) {
       throw new Error("Could not get current page URL");
     }
 
-    return tab?.url;
+    return tab.url;
   }
 
-  async function summarize() {
+  async getApiKey() {
+    const { openaiApiKey } = await chrome.storage.local.get("openaiApiKey");
+    if (!openaiApiKey) {
+      throw new Error("API key not found. Please set it in settings.");
+    }
+    return openaiApiKey;
+  }
+
+  async summarize() {
     try {
-      const url = await getCurrentUrl();
+      const url = await this.getCurrentUrl();
       console.log("Generating summary for:", url);
 
-      loadingDiv.style.display = "block";
+      this.uiManager.showLoading(LOADING_MESSAGES.SUMMARY);
+      this.uiManager.elements.summaryDiv.style.display = DISPLAY_STATES.HIDDEN;
 
-      enableDisableRequestButtons();
-
-      summaryDiv.style.display = "none";
-      loadingText.textContent = "Generating Summary...";
-
-      const { openaiApiKey } = await chrome.storage.local.get("openaiApiKey");
-      if (!openaiApiKey) {
-        throw new Error("API key not found. Please set it in settings.");
-      }
-
-      const summary = await getSummary(url, openaiApiKey);
-
-      // add to the cache the summary that we just received
+      const apiKey = await this.getApiKey();
+      const summary = await getSummary(url, apiKey);
       await cacheSummary(url, summary);
-
-      // show the summary in the UI
-      summaryDiv.innerHTML = summary;
-      summaryDiv.style.display = "block";
-
+      this.uiManager.showSummary(summary);
       return true;
     } catch (error) {
       console.error("Summarization error:", error);
-      summaryDiv.textContent = `Error: ${error.message}`;
-      summaryDiv.style.display = "block";
+      this.uiManager.showError(error.message);
       return false;
     } finally {
-      loadingDiv.style.display = "none";
-      enableDisableRequestButtons();
+      this.uiManager.hideLoading();
     }
   }
 
-  async function speechify() {
+  async speechify() {
     try {
-      // If no summary then auto trigger the summary generation
-      if (summaryDiv.style.display !== "block") {
-        const success = await summarize();
+      if (
+        this.uiManager.elements.summaryDiv.style.display !==
+        DISPLAY_STATES.VISIBLE
+      ) {
+        const success = await this.summarize();
         if (!success) return;
       }
 
-      // Get current tab URL first
-      const currentUrl = await getCurrentUrl();
+      const currentUrl = await this.getCurrentUrl();
+      this.uiManager.showLoading(LOADING_MESSAGES.AUDIO);
+      this.uiManager.elements.audioPlayer.style.display = DISPLAY_STATES.HIDDEN;
 
-      loadingDiv.style.display = "block";
-
-      enableDisableRequestButtons();
-
-      audioPlayer.style.display = "none";
-      loadingText.textContent = "Generating Audio...";
-
-      const { openaiApiKey } = await chrome.storage.local.get("openaiApiKey");
-      if (!openaiApiKey) {
-        throw new Error("API key not found. Please set it in settings.");
-      }
-
-      const summaryText = summaryDiv.textContent; // the text that we need to speechify
-
-      const audioBlob = await getSpeechifyAudio(summaryText, openaiApiKey);
-
-      // add to the cache the audio that we just received
+      const apiKey = await this.getApiKey();
+      const summaryText = this.uiManager.elements.summaryDiv.textContent;
+      const audioBlob = await getSpeechifyAudio(summaryText, apiKey);
       await cacheAudio(currentUrl, audioBlob);
 
-      // show the speechify controls in the UI
-      showPlaybackControls(audioBlob, true /*autoPlay*/);
-
+      this.audioController.setupAudio(audioBlob, true);
       return true;
     } catch (error) {
       console.error("Speechify error:", error);
-      summaryDiv.textContent = `Error: ${error.message}`;
-      audioPlayer.style.display = "none";
+      this.uiManager.showError(error.message);
+      this.uiManager.elements.audioPlayer.style.display = DISPLAY_STATES.HIDDEN;
       return false;
     } finally {
-      loadingDiv.style.display = "none";
-      enableDisableRequestButtons();
+      this.uiManager.hideLoading();
     }
   }
 
-  async function checkSpeechifyCache() {
+  async checkCaches() {
     try {
-      const url = await getCurrentUrl();
+      const url = await this.getCurrentUrl();
+
+      // Check summary cache
+      const cachedSummary = await getCachedSummary(url);
+      if (cachedSummary) {
+        this.uiManager.showSummary(cachedSummary);
+      }
+
+      // Check audio cache
       const cachedAudioData = await getCachedAudio(url);
       if (cachedAudioData) {
         const audioBlob = new Blob([cachedAudioData], { type: "audio/mpeg" });
-        showPlaybackControls(audioBlob);
+        this.audioController.setupAudio(audioBlob);
       }
+
+      // Update button states after checking caches
+      this.uiManager.updateButtonStates();
     } catch (error) {
-      console.error("Speechify cache check error:", error);
+      console.error("Cache check error:", error);
     }
   }
 
-  async function checkSummaryCache() {
-    try {
-      const url = await getCurrentUrl();
-      const cachedSummary = await getCachedSummary(url);
-      if (cachedSummary) {
-        summaryDiv.innerHTML = cachedSummary;
-        summaryDiv.style.display = "block";
-      }
-    } catch (error) {
-      console.error("Summary cache check error:", error);
-    }
+  cleanup() {
+    this.audioController.cleanup();
   }
+}
 
-  summarizeBtn.addEventListener("click", summarize);
-  speechifyBtn.addEventListener("click", speechify);
+// Initialize app when DOM is loaded
+document.addEventListener("DOMContentLoaded", async function () {
+  const app = new SummarizerApp();
+  await app.checkCaches();
 
-  playAudioBtn.addEventListener("click", () => {
-    if (audioElement) {
-      audioElement.play();
-    }
-  });
-
-  pauseAudioBtn.addEventListener("click", () => {
-    if (audioElement) {
-      audioElement.pause();
-    }
-  });
-
-  restartAudioBtn.addEventListener("click", () => {
-    if (audioElement) {
-      audioElement.currentTime = 0;
-      audioElement.play();
-    }
-  });
-
-  openOptionsBtn.addEventListener("click", () => {
-    chrome.runtime.openOptionsPage();
-  });
-
-  // Check caches when popup opens, and show relevant controls when data is available in cache
-  await checkSummaryCache();
-  await checkSpeechifyCache();
-
-  enableDisableRequestButtons();
+  // Clean up resources when popup is closed
+  window.addEventListener("unload", () => app.cleanup());
 });
