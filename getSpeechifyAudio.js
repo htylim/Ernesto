@@ -4,7 +4,7 @@
  * @param {string} apiKey - The OpenAI API key
  * @returns {Promise<Blob>} - The audio blob
  */
-export async function speechifySummary(text, apiKey) {
+export async function getSpeechifyAudio(text, apiKey) {
   if (!apiKey) {
     throw new Error("API key not found. Please set it in settings.");
   }

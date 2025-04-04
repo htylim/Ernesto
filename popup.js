@@ -1,6 +1,6 @@
 import { getSummary } from "./getSummary.js";
 import { getCachedSummary, cacheSummary } from "./summariesCache.js";
-import { speechifySummary } from "./speechifySummary.js";
+import { getSpeechifyAudio } from "./getSpeechifyAudio.js";
 import { getCachedAudio, cacheAudio } from "./speechifyCache.js";
 
 document.addEventListener("DOMContentLoaded", async function () {
@@ -16,9 +16,8 @@ document.addEventListener("DOMContentLoaded", async function () {
   const loadingText = document.getElementById("loadingText");
 
   let audioElement = null;
-  let audioUrl = null;
 
-  function enableDisableTopButtons() {
+  function enableDisableRequestButtons() {
     const isRequestOngoing = loadingDiv.style.display === "block";
     const hasSummary = summaryDiv.style.display === "block";
     const hasAudioPlayer = audioPlayer.style.display === "block";
@@ -30,20 +29,31 @@ document.addEventListener("DOMContentLoaded", async function () {
     speechifyBtn.disabled = hasAudioPlayer || isRequestOngoing;
   }
 
-  function cleanupAudio() {
-    if (audioUrl) {
-      URL.revokeObjectURL(audioUrl);
-      audioUrl = null;
+  function showPlaybackControls(audioBlob, autoPlay = false) {
+    const audioUrl = URL.createObjectURL(audioBlob);
+    audioElement = new Audio(audioUrl);
+
+    audioElement.addEventListener("play", () => {
+      playAudioBtn.disabled = true;
+      pauseAudioBtn.disabled = false;
+      restartAudioBtn.disabled = false;
+    });
+
+    audioElement.addEventListener("pause", () => {
+      playAudioBtn.disabled = false;
+      pauseAudioBtn.disabled = true;
+    });
+
+    audioElement.addEventListener("ended", () => {
+      playAudioBtn.disabled = false;
+      pauseAudioBtn.disabled = true;
+    });
+
+    audioPlayer.style.display = "block";
+
+    if (autoPlay) {
+      audioElement.play();
     }
-    if (audioElement) {
-      audioElement.pause();
-      audioElement = null;
-    }
-    playAudioBtn.disabled = false;
-    pauseAudioBtn.disabled = true;
-    restartAudioBtn.disabled = true;
-    audioPlayer.style.display = "none";
-    enableDisableTopButtons();
   }
 
   async function getCurrentUrl() {
@@ -64,7 +74,9 @@ document.addEventListener("DOMContentLoaded", async function () {
       console.log("Generating summary for:", url);
 
       loadingDiv.style.display = "block";
-      enableDisableTopButtons();
+
+      enableDisableRequestButtons();
+
       summaryDiv.style.display = "none";
       loadingText.textContent = "Generating Summary...";
 
@@ -74,10 +86,14 @@ document.addEventListener("DOMContentLoaded", async function () {
       }
 
       const summary = await getSummary(url, openaiApiKey);
+
+      // add to the cache the summary that we just received
       await cacheSummary(url, summary);
 
+      // show the summary in the UI
       summaryDiv.innerHTML = summary;
       summaryDiv.style.display = "block";
+
       return true;
     } catch (error) {
       console.error("Summarization error:", error);
@@ -86,77 +102,52 @@ document.addEventListener("DOMContentLoaded", async function () {
       return false;
     } finally {
       loadingDiv.style.display = "none";
-      enableDisableTopButtons();
+      enableDisableRequestButtons();
     }
   }
 
   async function speechify() {
     try {
+      // If no summary then auto trigger the summary generation
+      if (summaryDiv.style.display !== "block") {
+        const success = await summarize();
+        if (!success) return;
+      }
+
       // Get current tab URL first
       const currentUrl = await getCurrentUrl();
 
       loadingDiv.style.display = "block";
 
-      enableDisableTopButtons();
+      enableDisableRequestButtons();
 
       audioPlayer.style.display = "none";
       loadingText.textContent = "Generating Audio...";
 
-      cleanupAudio();
-
-      // Check cache first
-      const cachedAudioData = await getCachedAudio(currentUrl);
-      let audioBlob;
-
-      if (cachedAudioData) {
-        audioBlob = new Blob([cachedAudioData], { type: "audio/mpeg" });
-        loadingText.textContent = "Loading Audio...";
-      } else {
-        const { openaiApiKey } = await chrome.storage.local.get("openaiApiKey");
-        if (!openaiApiKey) {
-          throw new Error("API key not found. Please set it in settings.");
-        }
-
-        const summaryText = summaryDiv.textContent;
-        audioBlob = await speechifySummary(summaryText, openaiApiKey);
-
-        // Log the size and cache the audio
-        const sizeInMB = (audioBlob.size / (1024 * 1024)).toFixed(2);
-        console.log(`Audio size: ${sizeInMB}MB`);
-        await cacheAudio(currentUrl, audioBlob);
+      const { openaiApiKey } = await chrome.storage.local.get("openaiApiKey");
+      if (!openaiApiKey) {
+        throw new Error("API key not found. Please set it in settings.");
       }
 
-      audioUrl = URL.createObjectURL(audioBlob);
-      audioElement = new Audio(audioUrl);
+      const summaryText = summaryDiv.textContent; // the text that we need to speechify
 
-      audioElement.addEventListener("play", () => {
-        playAudioBtn.disabled = true;
-        pauseAudioBtn.disabled = false;
-        restartAudioBtn.disabled = false;
-      });
+      const audioBlob = await getSpeechifyAudio(summaryText, openaiApiKey);
 
-      audioElement.addEventListener("pause", () => {
-        playAudioBtn.disabled = false;
-        pauseAudioBtn.disabled = true;
-      });
+      // add to the cache the audio that we just received
+      await cacheAudio(currentUrl, audioBlob);
 
-      audioElement.addEventListener("ended", () => {
-        playAudioBtn.disabled = false;
-        pauseAudioBtn.disabled = true;
-      });
+      // show the speechify controls in the UI
+      showPlaybackControls(audioBlob, true /*autoPlay*/);
 
-      audioPlayer.style.display = "block";
-      audioElement.play();
-
-      enableDisableTopButtons();
+      return true;
     } catch (error) {
       console.error("Speechify error:", error);
       summaryDiv.textContent = `Error: ${error.message}`;
       audioPlayer.style.display = "none";
-      enableDisableTopButtons();
+      return false;
     } finally {
       loadingDiv.style.display = "none";
-      enableDisableTopButtons();
+      enableDisableRequestButtons();
     }
   }
 
@@ -166,27 +157,7 @@ document.addEventListener("DOMContentLoaded", async function () {
       const cachedAudioData = await getCachedAudio(url);
       if (cachedAudioData) {
         const audioBlob = new Blob([cachedAudioData], { type: "audio/mpeg" });
-        audioUrl = URL.createObjectURL(audioBlob);
-        audioElement = new Audio(audioUrl);
-
-        // Show playback controls
-        audioElement.addEventListener("play", () => {
-          playAudioBtn.disabled = true;
-          pauseAudioBtn.disabled = false;
-          restartAudioBtn.disabled = false;
-        });
-
-        audioElement.addEventListener("pause", () => {
-          playAudioBtn.disabled = false;
-          pauseAudioBtn.disabled = true;
-        });
-
-        audioElement.addEventListener("ended", () => {
-          playAudioBtn.disabled = false;
-          pauseAudioBtn.disabled = true;
-        });
-
-        audioPlayer.style.display = "block";
+        showPlaybackControls(audioBlob);
       }
     } catch (error) {
       console.error("Speechify cache check error:", error);
@@ -207,21 +178,7 @@ document.addEventListener("DOMContentLoaded", async function () {
   }
 
   summarizeBtn.addEventListener("click", summarize);
-
-  speechifyBtn.addEventListener("click", async () => {
-    try {
-      // If no summary then auto trigger the summary generation
-      if (summaryDiv.style.display !== "block") {
-        const success = await summarize();
-        if (!success) return;
-      }
-
-      await speechify();
-    } finally {
-      loadingDiv.style.display = "none";
-      enableDisableTopButtons();
-    }
-  });
+  speechifyBtn.addEventListener("click", speechify);
 
   playAudioBtn.addEventListener("click", () => {
     if (audioElement) {
@@ -250,5 +207,5 @@ document.addEventListener("DOMContentLoaded", async function () {
   await checkSummaryCache();
   await checkSpeechifyCache();
 
-  enableDisableTopButtons();
+  enableDisableRequestButtons();
 });
