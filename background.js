@@ -1,7 +1,8 @@
 import { clearExpiredCache } from "./summariesCache.js";
+import { clearExpiredAudioCache } from "./speechifyCache.js";
 
-// Clear expired cache on extension load
-clearExpiredCache();
+// Clear expired caches on extension load
+Promise.all([clearExpiredCache(), clearExpiredAudioCache()]);
 
 // Log API key when extension loads
 chrome.storage.local.get(["openaiApiKey"], (result) => {

@@ -46,6 +46,19 @@
     .danger-button:hover {
       background-color: #d32f2f;
     }
+    .cache-section {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .cache-item {
+      padding: 15px;
+      background: #f5f5f5;
+      border-radius: 4px;
+    }
+    .cache-item p {
+      margin-top: 0;
+    }
   </style>
 </head>
 <body>
@@ -63,9 +76,18 @@
     
     <div class="section-divider">
       <h3>Cache Management</h3>
-      <p>Clear all cached summaries to force fresh summaries on next request.</p>
-      <button id="purgeCache" class="danger-button">Purge Cache</button>
-      <span id="purgeStatus"></span>
+      <div class="cache-section">
+        <div class="cache-item">
+          <p>Clear all cached summaries to force fresh summaries on next request.</p>
+          <button id="purgeCache" class="danger-button">Purge Summaries Cache</button>
+          <span id="purgeStatus"></span>
+        </div>
+        <div class="cache-item">
+          <p>Clear all cached audio files to force fresh audio generation on next request.</p>
+          <button id="purgeAudioCache" class="danger-button">Purge Audio Cache</button>
+          <span id="purgeAudioStatus"></span>
+        </div>
+      </div>
     </div>
   </div>
   <script type="module" src="options.js"></script>

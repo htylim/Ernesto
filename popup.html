@@ -137,7 +137,7 @@
 <body>
   <div class="button-container">
     <button id="summarize" class="main-button">Summarize Article</button>
-    <button id="speechify" class="icon-button" disabled title="Listen to summary">
+    <button id="speechify" class="icon-button" title="Listen to summary">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M12 6v12M8 9v6M16 9v6M20 12h0M4 12h0"/>
       </svg>
@@ -151,7 +151,7 @@
   </div>
   <div id="loading">
     <div class="spinner"></div>
-    <p>Generating summary...</p>
+    <p id="loadingText">Generating summary...</p>
   </div>
   <div id="audioPlayer">
     <div class="audio-controls">
@@ -174,6 +174,6 @@
     </div>
   </div>
   <div id="summary"></div>
-  <script src="popup.js" type="module"></script>
+  <script type="module" src="popup.js"></script>
 </body>
 </html> 
