@@ -4,7 +4,9 @@
     "version": "1.0",
     "description": "Smart article summarization and audio playback",
     "permissions": [
-        "storage"
+        "storage",
+        "activeTab",
+        "tabs"
     ],
     "action": {
         "default_popup": "popup.html",
