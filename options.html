@@ -32,6 +32,20 @@
       padding: 8px 16px;
       margin-right: 10px;
     }
+    .section-divider {
+      margin: 30px 0 15px;
+      border-top: 1px solid #eee;
+      padding-top: 15px;
+    }
+    .danger-button {
+      background-color: #f44336;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    .danger-button:hover {
+      background-color: #d32f2f;
+    }
   </style>
 </head>
 <body>
@@ -46,7 +60,14 @@
     </div>
     <button id="save">Save</button>
     <button id="cancel">Cancel</button>
+    
+    <div class="section-divider">
+      <h3>Cache Management</h3>
+      <p>Clear all cached summaries to force fresh summaries on next request.</p>
+      <button id="purgeCache" class="danger-button">Purge Cache</button>
+      <span id="purgeStatus"></span>
+    </div>
   </div>
-  <script src="options.js"></script>
+  <script type="module" src="options.js"></script>
 </body>
 </html> 

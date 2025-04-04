@@ -1,9 +1,12 @@
+import { jest } from "@jest/globals";
+
 // Mock Chrome API
-global.chrome = {
+globalThis.chrome = {
   storage: {
     local: {
-      get: jest.fn(),
-      set: jest.fn(),
+      get: jest.fn((key) => Promise.resolve({})),
+      set: jest.fn(() => Promise.resolve()),
+      remove: jest.fn(() => Promise.resolve()),
     },
     onChanged: {
       addListener: jest.fn(),
@@ -11,5 +14,8 @@ global.chrome = {
   },
   runtime: {
     openOptionsPage: jest.fn(),
+  },
+  tabs: {
+    query: jest.fn(() => Promise.resolve([{ url: "https://example.com" }])),
   },
 };

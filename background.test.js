@@ -1,3 +1,13 @@
+/**
+ * @jest-environment jsdom
+ */
+
+import { jest } from "@jest/globals";
+
+jest.mock("./summariesCache.js", () => ({
+  clearExpiredCache: jest.fn(),
+}));
+
 describe("Background Script", () => {
   beforeEach(() => {
     jest.resetModules();
@@ -8,29 +18,34 @@ describe("Background Script", () => {
     jest.clearAllMocks();
   });
 
-  test("logs API key on load", () => {
+  test("logs API key on load", async () => {
     const mockApiKey = "test-api-key";
-    chrome.storage.local.get.mockImplementation((keys, callback) => {
-      callback({ openaiApiKey: mockApiKey });
+    chrome.storage.local.get.mockImplementation((key, callback) => {
+      if (key === "summariesCache") {
+        callback({});
+      } else if (key[0] === "openaiApiKey") {
+        callback({ openaiApiKey: mockApiKey });
+      }
+      return Promise.resolve();
     });
 
-    require("./background.js");
+    await import("./background.js");
 
-    expect(chrome.storage.local.get).toHaveBeenCalledWith(
-      ["openaiApiKey"],
-      expect.any(Function)
-    );
+    // Wait for promises to resolve
+    await new Promise(process.nextTick);
+
+    expect(chrome.storage.local.get.mock.calls[1][0]).toEqual(["openaiApiKey"]);
     expect(console.log).toHaveBeenCalledWith("Current API Key:", mockApiKey);
   });
 
-  test("logs API key changes", () => {
-    require("./background.js");
+  test("logs API key changes", async () => {
+    await import("./background.js");
 
     const mockChanges = {
       openaiApiKey: { newValue: "new-api-key" },
     };
 
-    // Simulate storage change
+    // Get the last registered listener and call it
     const lastCall = chrome.storage.onChanged.addListener.mock.calls[0][0];
     lastCall(mockChanges);
 

@@ -1,3 +1,8 @@
+import { clearExpiredCache } from "./summariesCache.js";
+
+// Clear expired cache on extension load
+clearExpiredCache();
+
 // Log API key when extension loads
 chrome.storage.local.get(["openaiApiKey"], (result) => {
   console.log("Current API Key:", result.openaiApiKey);
