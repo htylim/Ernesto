@@ -2,7 +2,7 @@
 import GenericCache from "./genericCache.js";
 
 // Create a cache instance for summaries
-const summariesCache = new GenericCache({
+export const summariesCache = new GenericCache({
   cacheKey: "summariesCache",
   ttlMs: 24 * 60 * 60 * 1000, // 24 hours in milliseconds
   keyPrefix: "summaries",

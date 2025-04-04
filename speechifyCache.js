@@ -29,7 +29,7 @@ async function base64ToBlob(base64String) {
 }
 
 // Create a cache instance for audio files
-const audioCache = new GenericCache({
+export const audioCache = new GenericCache({
   cacheKey: "speechifyCache",
   ttlMs: 24 * 60 * 60 * 1000, // 24 hours in milliseconds
   keyPrefix: "speechify",

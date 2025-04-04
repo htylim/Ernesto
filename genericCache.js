@@ -122,9 +122,12 @@ class GenericCache {
       const result = await chrome.storage.local.get(this.cacheKey);
       const index = result[this.cacheKey] || {};
 
+      // Calculate actual byte size
+      const byteSize = new TextEncoder().encode(serializedData).length;
+
       index[key] = {
         timestamp: Date.now(),
-        size: serializedData.length,
+        size: byteSize,
       };
 
       // Store both the index and the item data
@@ -204,6 +207,25 @@ class GenericCache {
       await chrome.storage.local.remove([this.cacheKey, ...storageKeys]);
     } catch (error) {
       console.error(`Error clearing cache:`, error);
+    }
+  }
+
+  /**
+   * Get the total size of the cache in bytes
+   * @returns {Promise<number>} - Total size in bytes
+   */
+  async getCacheSize() {
+    try {
+      const result = await chrome.storage.local.get(this.cacheKey);
+      const index = result[this.cacheKey] || {};
+
+      return Object.values(index).reduce(
+        (total, metadata) => total + (metadata.size || 0),
+        0
+      );
+    } catch (error) {
+      console.error(`Error getting cache size:`, error);
+      return 0;
     }
   }
 }
