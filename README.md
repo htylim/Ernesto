@@ -71,6 +71,8 @@ Ernesto/
 
 ## 📝 Usage Tips
 
+- Click the Gear icon to open Options, enter your OpenAI API key (get it from [OpenAI Platform](https://platform.openai.com/api-keys) and add billing info), and save to start using the extension.
+
 - You can click Speechify to in one click get both summary and TTS (Speechify will automatically trigger the summarize for you)
 
 - Click on the Gear icon to set up the API key but as well to manage the summaries and audio caches.
