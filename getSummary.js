@@ -34,7 +34,7 @@ export async function getSummary(url, apiKey) {
         search_context_size: "high",
       },
     ],
-    input: url,
+    input: `Summarize this article: ${url}`,
     store: false,
   };
 

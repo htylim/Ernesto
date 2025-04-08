@@ -54,8 +54,6 @@ class TabStateManager {
         this.tabStates.set(tabId, {
           url: null,
           title: null,
-          summary: null,
-          audioBlob: null,
           isLoading: false,
           loadingMessage: "",
         });
@@ -320,13 +318,10 @@ class SummarizerApp {
       // Reset UI if URL changed
       if (tabState.url !== currentTab.url) {
         this.uiManager.resetUI();
-        this.audioController.cleanup();
 
         await this.tabStateManager.updateState({
           url: currentTab.url,
           title: currentTab.title,
-          summary: null,
-          audioBlob: null,
         });
       }
 
@@ -349,14 +344,6 @@ class SummarizerApp {
       const cachedSummary = await getCachedSummary(tabState.url);
       if (cachedSummary) {
         this.uiManager.showSummary(cachedSummary);
-        await this.tabStateManager.updateState({ summary: cachedSummary });
-      }
-
-      // Check for cached audio
-      const cachedAudioData = await getCachedAudio(tabState.url);
-      if (cachedAudioData && cachedSummary) {
-        this.audioController.setupAudio(cachedAudioData, false);
-        await this.tabStateManager.updateState({ audioBlob: cachedAudioData });
       }
     } catch (error) {
       console.error("Error restoring tab state:", error);
@@ -436,7 +423,7 @@ class SummarizerApp {
     try {
       // Check if we need to generate a summary first
       if (
-        !tabState.summary ||
+        !this.uiManager.elements.summaryDiv.textContent ||
         this.uiManager.elements.summaryDiv.style.display !==
           DISPLAY_STATES.VISIBLE
       ) {
@@ -470,7 +457,6 @@ class SummarizerApp {
       this.audioController.setupAudio(audioBlob, true);
 
       await this.tabStateManager.updateState({
-        audioBlob: audioBlob,
         isLoading: false,
       });
 
