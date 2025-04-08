@@ -7,7 +7,7 @@
 - **Article Summarization**
 
   - One-click article summarization
-  - Clean popup display of summaries
+  - Clean side panel display of summaries
   - Summarization is done using OpenAI's Responses API (asking the API plainly "summarize this article")
 
 - **Text-to-Speech**
@@ -18,12 +18,13 @@
 
 - **Simple Interface**
 
-  - Browser toolbar button
-  - Context menu integration
-  - Easy-to-use popup controls
+  - Browser toolbar button opens a persistent side panel
+  - Tab-specific summarization and playback
+  - Remembers state when switching between tabs
 
 - **Configuration**
   - OpenAI's KEY for both APIs is the only required configuration. User will have to generate and provide their own keys for the extension to work.
+  - API keys are securely stored with encryption
 
 ## 🛠️ Tech Stack
 
@@ -39,18 +40,19 @@
 Ernesto/
 ├── manifest.json         # Extension configuration
 ├── background.js         # Background service worker
-├── popup.html/js        # Extension popup UI and logic
-├── options.html/js      # Settings page UI and logic
-├── getSummary.js        # Article summarization logic
-├── getSpeechifyAudio.js # Text-to-speech conversion
-├── genericCache.js      # Base caching functionality
-├── summariesCache.js    # Summaries caching implementation
-├── speechifyCache.js    # Audio caching implementation
-├── icons/              # Extension icons
-├── *.test.js           # Test files for components
-├── jest.setup.js       # Jest testing configuration
-├── package.json        # Project dependencies
-└── node_modules/       # Installed dependencies
+├── sidepanel.html/js     # Side panel UI and logic
+├── options.html/js       # Settings page UI and logic
+├── getSummary.js         # Article summarization logic
+├── getSpeechifyAudio.js  # Text-to-speech conversion
+├── genericCache.js       # Base caching functionality
+├── summariesCache.js     # Summaries caching implementation
+├── speechifyCache.js     # Audio caching implementation
+├── cryptoUtils.js        # Encryption utilities
+├── icons/               # Extension icons
+├── *.test.js            # Test files for components
+├── jest.setup.js        # Jest testing configuration
+├── package.json         # Project dependencies
+└── node_modules/        # Installed dependencies
 ```
 
 ## 📦 Installation (Development Mode)
@@ -71,7 +73,13 @@ Ernesto/
 
 ## 📝 Usage Tips
 
+- Click the extension icon to open the side panel for the current tab.
+
 - Click the Gear icon to open Options, enter your OpenAI API key (get it from [OpenAI Platform](https://platform.openai.com/api-keys) and add billing info), and save to start using the extension.
+
+- Each tab maintains its own state, so you can summarize multiple articles in parallel.
+
+- When you switch tabs, the side panel will update to show the summary for the current tab.
 
 - You can click Speechify to in one click get both summary and TTS (Speechify will automatically trigger the summarize for you)
 

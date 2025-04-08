@@ -2,6 +2,7 @@ import { clearCache } from "./summariesCache.js";
 import { clearAudioCache } from "./speechifyCache.js";
 import { audioCache } from "./speechifyCache.js";
 import { summariesCache } from "./summariesCache.js";
+import { getApiKey, setApiKey } from "./apiKeyManager.js";
 
 // Constants
 const DISPLAY_STATES = {
@@ -193,22 +194,22 @@ class OptionsPageController {
 
   async loadApiKey() {
     try {
-      const result = await chrome.storage.local.get(["openaiApiKey"]);
-      if (result.openaiApiKey) {
-        this.uiManager.setApiKey(result.openaiApiKey);
-      }
+      const apiKey = await getApiKey();
+      this.uiManager.setApiKey(apiKey);
     } catch (error) {
       console.error("Error loading API key:", error);
     }
   }
 
-  handleSave() {
-    chrome.storage.local.set(
-      { openaiApiKey: this.uiManager.getApiKey() },
-      () => {
-        window.close();
-      }
-    );
+  async handleSave() {
+    try {
+      const apiKey = this.uiManager.getApiKey();
+      await setApiKey(apiKey);
+      window.close();
+    } catch (error) {
+      console.error("Error saving API key:", error);
+      alert("Error saving API key. Please try again.");
+    }
   }
 
   handleCancel() {

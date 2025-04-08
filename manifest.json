@@ -6,13 +6,13 @@
     "permissions": [
         "storage",
         "activeTab",
-        "tabs"
+        "tabs",
+        "sidePanel"
     ],
     "content_security_policy": {
-        "extension_pages": "script-src 'self'; object-src 'self'"
+        "extension_pages": "script-src 'self'; object-src 'self'; style-src 'self' 'unsafe-inline'; connect-src https://api.openai.com; default-src 'none'"
     },
     "action": {
-        "default_popup": "popup.html",
         "default_icon": {
             "16": "icons/icon16.png",
             "48": "icons/icon48.png",
@@ -21,12 +21,21 @@
     },
     "options_page": "options.html",
     "background": {
-        "service_worker": "background.js"
+        "service_worker": "background.js",
+        "type": "module"
+    },
+    "side_panel": {
+        "default_path": "sidepanel.html"
     },
     "web_accessible_resources": [
         {
             "resources": [
-                "getSummary.js"
+                "getSummary.js",
+                "summariesCache.js",
+                "getSpeechifyAudio.js",
+                "speechifyCache.js",
+                "genericCache.js",
+                "cryptoUtils.js"
             ],
             "matches": [
                 "<all_urls>"

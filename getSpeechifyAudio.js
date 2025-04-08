@@ -13,7 +13,8 @@ export async function getSpeechifyAudio(text, apiKey) {
     Neutral tone: Keep it clear and objective, like a trusted news anchor.
     Moderate pace: Not too fast, not too slow—ideal for easy comprehension.
     Emphasis on key points: Slight inflections to highlight important details.
-    Conversational yet professional: Avoid overly dramatic or casual expressions
+    Conversational yet professional: Avoid overly dramatic or casual expressions.
+    Ignore URLs or Links: Do not read aloud links, this is an example of a link: ([huffingtonpost.es](https://www.huffingtonpost.es/global/trump-responde-china-aranceles-104-represalias-pekinbr.html?utm_source=openai)) when found something like that just ignore it.
   `;
 
   const requestBody = {
