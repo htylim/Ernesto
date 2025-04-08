@@ -90,3 +90,11 @@ Ernesto/
 - Customize TTS voice (maybe use the actual voice from Ernesto Tenembaum) and speed.
 
 - Keyboard shortcuts for faster activation.
+
+## Pending Tasks (to implement)
+
+- add unit testing for key components and logic
+- add encryption for API key storage
+- implement rate limiting for external APIs
+- implement quota management to prevent storage limits issues in chrome.storage.local
+- log errors to a service rather than console for production

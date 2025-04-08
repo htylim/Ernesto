@@ -1,0 +1,55 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+## Chrome Extension Development Best Practices
+
+1. **Use Manifest V3**
+   - Follow latest Chrome extension standards
+   - Implement service workers instead of background pages
+
+2. **Security**
+   - Implement strict Content Security Policy
+   - Request minimal permissions (principle of least privilege)
+   - Validate user inputs and sanitize data
+
+3. **Performance**
+   - Implement efficient caching with TTL (time-to-live)
+   - Clear expired cache entries automatically
+   - Be mindful of storage limits (5MB per item in chrome.storage.local)
+
+4. **Code Organization**
+   - Use modular architecture
+   - Separate concerns (UI, business logic, API interactions)
+   - Follow consistent file naming conventions
+
+5. **Testing**
+   - Write unit tests for core functionality
+   - Mock Chrome APIs in tests
+   - Test on multiple Chrome versions
+
+6. **Error Handling**
+   - Implement proper error handling and logging
+   - Provide user-friendly error messages
+   - Gracefully handle API failures
+
+7. **UI/UX**
+   - Create responsive popup interfaces
+   - Use consistent design patterns
+   - Provide clear user feedback for actions
+
+8. **API Usage**
+   - Securely handle API keys
+   - Implement proper authentication
+   - Use rate limiting and retries for external APIs
+
+9. **Storage**
+   - Use chrome.storage APIs instead of localStorage
+   - Implement proper data serialization/deserialization
+   - Handle storage quotas appropriately
+
+10. **Documentation**
+    - Document installation process
+    - Provide clear usage instructions
+    - Include debugging tips
