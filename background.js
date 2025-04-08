@@ -1,20 +1,40 @@
+/**
+ * @typedef {Object} CacheConfig
+ * @property {number} ttl - Time to live in milliseconds
+ * @property {number} maxSize - Maximum size in bytes
+ */
+
 import { clearExpiredCache } from "./summariesCache.js";
 import { clearExpiredAudioCache } from "./speechifyCache.js";
 
-// Clear expired caches on extension load
-Promise.all([clearExpiredCache(), clearExpiredAudioCache()]).catch((error) => {
-  console.error("Error clearing expired caches:", error);
-});
+/**
+ * Clears all expired caches
+ * @returns {Promise<void>}
+ */
+async function clearAllExpiredCaches() {
+  try {
+    await Promise.all([clearExpiredCache(), clearExpiredAudioCache()]);
+  } catch (error) {
+    console.error("Error clearing expired caches:", error);
+  }
+}
 
-// Configure and enable the side panel
-chrome.runtime.onInstalled.addListener(() => {
-  // Enable the side panel for all URLs
+// Clear expired caches on extension load
+clearAllExpiredCaches();
+
+/**
+ * Configures the side panel for the extension
+ */
+function configureSidePanel() {
   chrome.sidePanel.setOptions({
     enabled: true,
     path: "sidepanel.html",
     tabId: null,
   });
-});
+}
+
+// Configure and enable the side panel
+chrome.runtime.onInstalled.addListener(configureSidePanel);
 
 // Handle extension icon click to open side panel
 chrome.action.onClicked.addListener((tab) => {
@@ -34,10 +54,4 @@ chrome.storage.onChanged.addListener((changes) => {
 // Schedule cache cleanup every 12 hours
 const CACHE_CLEANUP_INTERVAL = 12 * 60 * 60 * 1000; // 12 hours in milliseconds
 
-setInterval(() => {
-  Promise.all([clearExpiredCache(), clearExpiredAudioCache()]).catch(
-    (error) => {
-      console.error("Error during scheduled cache cleanup:", error);
-    }
-  );
-}, CACHE_CLEANUP_INTERVAL);
+setInterval(clearAllExpiredCaches, CACHE_CLEANUP_INTERVAL);

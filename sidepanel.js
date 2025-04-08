@@ -15,13 +15,27 @@ const LOADING_MESSAGES = {
   AUDIO: "Generating Audio...",
 };
 
-// Tab state storage
+/**
+ * @typedef {Object} TabState
+ * @property {string|null} url - Current tab URL
+ * @property {string|null} title - Current tab title
+ * @property {boolean} isLoading - Loading state
+ * @property {string} loadingMessage - Current loading message
+ */
+
+/**
+ * Manages the state for each tab in the extension
+ * @class
+ */
 class TabStateManager {
   constructor() {
     this.tabStates = new Map();
-    this.currentTabId = null;
   }
 
+  /**
+   * Gets the current active tab ID
+   * @returns {Promise<number|null>} Tab ID or null if not available
+   */
   async getCurrentTabId() {
     if (!chrome.tabs) {
       console.error("Chrome tabs API is not available");
@@ -29,60 +43,62 @@ class TabStateManager {
     }
 
     try {
-      const tabs = await chrome.tabs.query({
+      const [tab] = await chrome.tabs.query({
         active: true,
         currentWindow: true,
       });
-      if (tabs && tabs.length > 0) {
-        return tabs[0].id;
-      }
-      return null;
+      return tab?.id ?? null;
     } catch (error) {
       console.error("Error getting current tab:", error);
       return null;
     }
   }
 
-  async getState() {
-    try {
-      const tabId = await this.getCurrentTabId();
-      if (!tabId) return null;
-
-      this.currentTabId = tabId;
-
-      if (!this.tabStates.has(tabId)) {
-        this.tabStates.set(tabId, {
-          url: null,
-          title: null,
-          isLoading: false,
-          loadingMessage: "",
-        });
-      }
-
-      return this.tabStates.get(tabId);
-    } catch (error) {
-      console.error("Error getting tab state:", error);
-      return null;
+  /**
+   * Gets or initializes state for a tab
+   * @param {number} tabId - Tab ID to get state for
+   * @returns {TabState} Tab state object
+   */
+  getTabState(tabId) {
+    if (!this.tabStates.has(tabId)) {
+      this.tabStates.set(tabId, {
+        url: null,
+        title: null,
+        isLoading: false,
+        loadingMessage: "",
+      });
     }
+    return this.tabStates.get(tabId);
   }
 
-  async updateState(updates) {
-    try {
-      const tabId = this.currentTabId;
-      if (!tabId) return;
-
-      const currentState = this.tabStates.get(tabId) || {};
-      this.tabStates.set(tabId, { ...currentState, ...updates });
-    } catch (error) {
-      console.error("Error updating tab state:", error);
-    }
+  /**
+   * Updates state for a specific tab
+   * @param {number} tabId - Tab ID to update
+   * @param {Partial<TabState>} updates - State updates to apply
+   */
+  async updateTabState(tabId, updates) {
+    const currentState = this.getTabState(tabId);
+    this.tabStates.set(tabId, { ...currentState, ...updates });
   }
 }
 
-// UI State Manager
+/**
+ * Manages the UI state and interactions for the extension's side panel
+ * @class
+ */
 class UIStateManager {
   constructor() {
-    this.elements = {
+    this.elements = this.initializeElements();
+    this.validateElements();
+  }
+
+  /**
+   * Initializes references to DOM elements
+   * @private
+   * @returns {Object} Object containing DOM element references
+   */
+  initializeElements() {
+    return {
       summarizeBtn: document.getElementById("summarize"),
       openOptionsBtn: document.getElementById("openOptions"),
       closeBtn: document.getElementById("closePanel"),
@@ -100,29 +116,65 @@ class UIStateManager {
     };
   }
 
+  /**
+   * Validates that all required elements are present
+   * @private
+   * @throws {Error} If any required element is missing
+   */
+  validateElements() {
+    const missingElements = Object.entries(this.elements)
+      .filter(([_, element]) => !element)
+      .map(([name]) => name);
+
+    if (missingElements.length > 0) {
+      throw new Error(
+        `Missing required elements: ${missingElements.join(", ")}`
+      );
+    }
+  }
+
+  /**
+   * Shows loading state with specified message
+   * @param {string} message - Loading message to display
+   */
   showLoading(message) {
     this.elements.loadingDiv.style.display = DISPLAY_STATES.VISIBLE;
     this.elements.loadingText.textContent = message;
     this.updateButtonStates();
   }
 
+  /**
+   * Hides loading state
+   */
   hideLoading() {
     this.elements.loadingDiv.style.display = DISPLAY_STATES.HIDDEN;
     this.updateButtonStates();
   }
 
+  /**
+   * Shows summary content
+   * @param {string} summary - HTML content of the summary
+   */
   showSummary(summary) {
     this.elements.summaryDiv.innerHTML = summary;
     this.elements.summaryDiv.style.display = DISPLAY_STATES.VISIBLE;
     this.updateButtonStates();
   }
 
+  /**
+   * Shows error message
+   * @param {string} message - Error message to display
+   */
   showError(message) {
     this.elements.summaryDiv.textContent = `Error: ${message}`;
     this.elements.summaryDiv.style.display = DISPLAY_STATES.VISIBLE;
     this.updateButtonStates();
   }
 
+  /**
+   * Updates button states based on current UI state
+   * @private
+   */
   updateButtonStates() {
     const isRequestOngoing =
       this.elements.loadingDiv.style.display === DISPLAY_STATES.VISIBLE;
@@ -133,22 +185,27 @@ class UIStateManager {
     this.elements.speechifyBtn.disabled = isRequestOngoing;
   }
 
+  /**
+   * Shows tab content
+   * @param {Object} tab - Tab object containing title
+   */
   showTabContent(tab) {
     this.elements.tabContent.style.display = DISPLAY_STATES.VISIBLE;
     this.elements.tabUnavailable.style.display = DISPLAY_STATES.HIDDEN;
-
-    if (tab?.title) {
-      this.elements.pageTitle.textContent = tab.title;
-    } else {
-      this.elements.pageTitle.textContent = "Current Page";
-    }
+    this.elements.pageTitle.textContent = tab?.title || "Current Page";
   }
 
+  /**
+   * Shows tab unavailable message
+   */
   showTabUnavailable() {
     this.elements.tabContent.style.display = DISPLAY_STATES.HIDDEN;
     this.elements.tabUnavailable.style.display = DISPLAY_STATES.VISIBLE;
   }
 
+  /**
+   * Resets UI to initial state
+   */
   resetUI() {
     this.elements.summaryDiv.innerHTML = "";
     this.elements.summaryDiv.style.display = DISPLAY_STATES.HIDDEN;
@@ -157,7 +214,10 @@ class UIStateManager {
   }
 }
 
-// Audio Controller
+/**
+ * Controls audio playback functionality
+ * @class
+ */
 class AudioController {
   constructor(uiManager) {
     this.uiManager = uiManager;
@@ -166,42 +226,93 @@ class AudioController {
     this.showAudioPlayer();
   }
 
+  /**
+   * Sets up all audio-related event listeners
+   * @private
+   */
   setupEventListeners() {
     const { playAudioBtn, pauseAudioBtn, restartAudioBtn } =
       this.uiManager.elements;
 
-    playAudioBtn.addEventListener("click", () => this.play());
-    pauseAudioBtn.addEventListener("click", () => this.pause());
-    restartAudioBtn.addEventListener("click", () => this.restart());
+    // Button click handlers
+    const handlers = {
+      play: () => this.play(),
+      pause: () => this.pause(),
+      restart: () => this.restart(),
+    };
+
+    Object.entries(handlers).forEach(([action, handler]) => {
+      this.uiManager.elements[`${action}AudioBtn`].addEventListener(
+        "click",
+        handler
+      );
+    });
   }
 
+  /**
+   * Sets up audio element event listeners
+   * @private
+   */
+  setupAudioElementListeners() {
+    if (!this.audioElement) return;
+
+    const events = {
+      play: () => this.updateButtonStates({ playing: true }),
+      pause: () => this.updateButtonStates({ playing: false }),
+      ended: () => this.updateButtonStates({ playing: false }),
+    };
+
+    Object.entries(events).forEach(([event, handler]) => {
+      this.audioElement.addEventListener(event, handler);
+    });
+  }
+
+  /**
+   * Shows the audio player UI
+   * @private
+   */
   showAudioPlayer() {
-    const { audioPlayer, playAudioBtn, pauseAudioBtn, restartAudioBtn } =
-      this.uiManager.elements;
+    const { audioPlayer } = this.uiManager.elements;
     audioPlayer.style.display = DISPLAY_STATES.VISIBLE;
-    this.updateButtonStates(false);
+    this.updateButtonStates({ playing: false });
   }
 
-  updateButtonStates(hasAudio) {
+  /**
+   * Updates button states based on audio player state
+   * @param {Object} state - Current audio player state
+   * @param {boolean} state.playing - Whether audio is playing
+   * @private
+   */
+  updateButtonStates({ playing }) {
     const { playAudioBtn, pauseAudioBtn, restartAudioBtn } =
       this.uiManager.elements;
-    playAudioBtn.disabled = !hasAudio;
-    pauseAudioBtn.disabled = true;
-    restartAudioBtn.disabled = !hasAudio;
+
+    playAudioBtn.disabled = playing;
+    pauseAudioBtn.disabled = !playing;
+    restartAudioBtn.disabled = !this.audioElement;
   }
 
+  /**
+   * Plays the audio
+   */
   play() {
     if (this.audioElement) {
       this.audioElement.play();
     }
   }
 
+  /**
+   * Pauses the audio
+   */
   pause() {
     if (this.audioElement) {
       this.audioElement.pause();
     }
   }
 
+  /**
+   * Restarts the audio
+   */
   restart() {
     if (this.audioElement) {
       this.audioElement.currentTime = 0;
@@ -209,6 +320,11 @@ class AudioController {
     }
   }
 
+  /**
+   * Sets up audio with the provided blob
+   * @param {Blob} audioBlob - Audio data blob
+   * @param {boolean} [autoPlay=false] - Whether to autoplay the audio
+   */
   setupAudio(audioBlob, autoPlay = false) {
     if (this.audioElement) {
       this.cleanup();
@@ -216,43 +332,24 @@ class AudioController {
 
     const audioUrl = URL.createObjectURL(audioBlob);
     this.audioElement = new Audio(audioUrl);
-
-    const { playAudioBtn, pauseAudioBtn, restartAudioBtn } =
-      this.uiManager.elements;
-
-    this.audioElement.addEventListener("play", () => {
-      playAudioBtn.disabled = true;
-      pauseAudioBtn.disabled = false;
-      restartAudioBtn.disabled = false;
-    });
-
-    this.audioElement.addEventListener("pause", () => {
-      playAudioBtn.disabled = false;
-      pauseAudioBtn.disabled = true;
-      restartAudioBtn.disabled = false;
-    });
-
-    this.audioElement.addEventListener("ended", () => {
-      playAudioBtn.disabled = false;
-      pauseAudioBtn.disabled = true;
-      restartAudioBtn.disabled = false;
-    });
-
-    this.updateButtonStates(true);
+    this.setupAudioElementListeners();
+    this.updateButtonStates({ playing: false });
 
     if (autoPlay) {
       this.audioElement.play();
     }
   }
 
+  /**
+   * Cleans up audio resources
+   */
   cleanup() {
     if (this.audioElement) {
       this.audioElement.pause();
-      URL.revokeObjectURL(this.audioElement.src);
       this.audioElement.src = "";
       this.audioElement = null;
+      this.updateButtonStates({ playing: false });
     }
-    this.updateButtonStates(false);
   }
 }
 
@@ -295,7 +392,14 @@ class SummarizerApp {
   }
 
   async handleTabChange() {
-    const tabState = await this.tabStateManager.getState();
+    const currentTab = await this.getCurrentTab();
+    if (!currentTab) {
+      this.uiManager.showTabUnavailable();
+      this.audioController.cleanup();
+      return;
+    }
+
+    const tabState = await this.tabStateManager.getTabState(currentTab.id);
     if (!tabState) {
       this.uiManager.showTabUnavailable();
       this.audioController.cleanup();
@@ -303,44 +407,34 @@ class SummarizerApp {
     }
 
     try {
-      const currentTab = await this.getCurrentTab();
-
-      if (
-        !currentTab ||
-        !currentTab.url ||
-        currentTab.url.startsWith("chrome://")
-      ) {
+      if (!currentTab.url || currentTab.url.startsWith("chrome://")) {
         this.uiManager.showTabUnavailable();
         this.audioController.cleanup();
         return;
       }
 
-      // Reset UI if URL changed
       if (tabState.url !== currentTab.url) {
         this.uiManager.resetUI();
 
-        await this.tabStateManager.updateState({
+        await this.tabStateManager.updateTabState(currentTab.id, {
           url: currentTab.url,
           title: currentTab.title,
         });
       }
 
       this.uiManager.showTabContent(currentTab);
-
-      // Restore state from cache if available
-      this.restoreTabState();
+      this.restoreTabState(currentTab.id);
     } catch (error) {
       console.error("Error handling tab change:", error);
       this.uiManager.showTabUnavailable();
     }
   }
 
-  async restoreTabState() {
-    const tabState = await this.tabStateManager.getState();
+  async restoreTabState(tabId) {
+    const tabState = await this.tabStateManager.getTabState(tabId);
     if (!tabState || !tabState.url) return;
 
     try {
-      // Check for cached summary
       const cachedSummary = await getCachedSummary(tabState.url);
       if (cachedSummary) {
         this.uiManager.showSummary(cachedSummary);
@@ -369,7 +463,13 @@ class SummarizerApp {
   }
 
   async summarize() {
-    const tabState = await this.tabStateManager.getState();
+    const currentTab = await this.getCurrentTab();
+    if (!currentTab) {
+      this.uiManager.showTabUnavailable();
+      return;
+    }
+
+    const tabState = await this.tabStateManager.getTabState(currentTab.id);
     if (!tabState || !tabState.url) {
       this.uiManager.showTabUnavailable();
       return;
@@ -382,7 +482,7 @@ class SummarizerApp {
       this.uiManager.showLoading(LOADING_MESSAGES.SUMMARY);
       this.uiManager.elements.summaryDiv.style.display = DISPLAY_STATES.HIDDEN;
 
-      await this.tabStateManager.updateState({
+      await this.tabStateManager.updateTabState(currentTab.id, {
         isLoading: true,
         loadingMessage: LOADING_MESSAGES.SUMMARY,
       });
@@ -393,7 +493,7 @@ class SummarizerApp {
       await cacheSummary(url, summary);
       this.uiManager.showSummary(summary);
 
-      await this.tabStateManager.updateState({
+      await this.tabStateManager.updateTabState(currentTab.id, {
         summary: summary,
         isLoading: false,
       });
@@ -403,7 +503,7 @@ class SummarizerApp {
       console.error("Summarization error:", error);
       this.uiManager.showError(error.message);
 
-      await this.tabStateManager.updateState({
+      await this.tabStateManager.updateTabState(currentTab.id, {
         isLoading: false,
       });
 
@@ -414,14 +514,19 @@ class SummarizerApp {
   }
 
   async speechify() {
-    const tabState = await this.tabStateManager.getState();
+    const currentTab = await this.getCurrentTab();
+    if (!currentTab) {
+      this.uiManager.showTabUnavailable();
+      return;
+    }
+
+    const tabState = await this.tabStateManager.getTabState(currentTab.id);
     if (!tabState) {
       this.uiManager.showTabUnavailable();
       return;
     }
 
     try {
-      // Check if we need to generate a summary first
       if (
         !this.uiManager.elements.summaryDiv.textContent ||
         this.uiManager.elements.summaryDiv.style.display !==
@@ -433,7 +538,6 @@ class SummarizerApp {
 
       const url = tabState.url;
 
-      // Check if audio is already in cache
       const cachedAudioData = await getCachedAudio(url);
       if (cachedAudioData) {
         this.audioController.cleanup();
@@ -441,10 +545,9 @@ class SummarizerApp {
         return true;
       }
 
-      // If not in cache, generate new audio
       this.uiManager.showLoading(LOADING_MESSAGES.AUDIO);
 
-      await this.tabStateManager.updateState({
+      await this.tabStateManager.updateTabState(currentTab.id, {
         isLoading: true,
         loadingMessage: LOADING_MESSAGES.AUDIO,
       });
@@ -456,7 +559,7 @@ class SummarizerApp {
       await cacheAudio(url, audioBlob);
       this.audioController.setupAudio(audioBlob, true);
 
-      await this.tabStateManager.updateState({
+      await this.tabStateManager.updateTabState(currentTab.id, {
         isLoading: false,
       });
 
@@ -465,7 +568,7 @@ class SummarizerApp {
       console.error("Speechify error:", error);
       this.uiManager.showError(error.message);
 
-      await this.tabStateManager.updateState({
+      await this.tabStateManager.updateTabState(currentTab.id, {
         isLoading: false,
       });
 
