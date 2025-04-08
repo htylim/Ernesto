@@ -12,8 +12,22 @@ export async function getSummary(url, apiKey) {
   const requestBody = {
     model: "gpt-4o",
     temperature: 0,
-    instructions:
-      "Return response should be structured like this: \n\n\n<h1>Article Title</h1>\n\n<ul>\n<li>Summary point 1</li>\n<li>Summary point 2</li>\n<li>Summary point 3</li>\n</ul>\n\nMake the response in the same language of the article. If the article is in Spanish, use Spanish, if it's in English, use English.\nDo the summary exhaustive but written in a concise, brief way. Each key point should be a single sentence. If the sentence is too long then probably it should be 2 key points instead.\nDo not leave important points out, but do not include things that don't provide any information.",
+    instructions: `
+      Return response should be structured like this: 
+      
+      <h1>Article Title</h1>
+      <ul>
+      <li>Summary point 1</li>
+      <li>Summary point 2</li>
+      <li>Summary point 3</li>
+      </ul>
+      
+      - Make the response in the same language of the article. If the article is in Spanish, use Spanish, if it's in English, use English.
+      - Do the summary exhaustive but written in a concise, brief way. Each key point should be a single sentence. If the sentence is too long then probably it should be 2 key points instead.
+      - Focus on main ideas, key events, important people, and impactful statistics.
+      - Ensure sentences are short and clear for better speech quality.
+      - Avoid complex punctuation; prefer commas and periods
+      `,
     tools: [
       {
         type: "web_search",

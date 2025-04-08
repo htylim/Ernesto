@@ -11,6 +11,8 @@
       height: calc(100vh - 24px);
       overflow-y: auto;
       box-sizing: border-box;
+      position: relative;
+      padding-bottom: 72px; /* Make room for the audio player */
     }
     .header {
       display: flex;
@@ -44,6 +46,10 @@
       font-weight: 500;
       font-size: 12px;
       white-space: nowrap;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
     }
     .main-button:disabled {
       opacity: 0.5;
@@ -90,10 +96,15 @@
     }
     #audioPlayer {
       display: none;
-      margin: 15px 0;
       padding: 10px;
       background: #f5f5f5;
-      border-radius: 4px;
+      border-radius: 4px 4px 0 0;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
+      z-index: 1000;
     }
     .audio-controls {
       display: flex;
@@ -201,7 +212,12 @@
     
     <div class="button-container">
       <button id="summarize" class="main-button">Summarize</button>
-      <button id="speechify" class="main-button">Speechify</button>
+      <button id="speechify" class="main-button">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px">
+          <path d="M5 3l14 9-14 9V3z"/>
+        </svg>
+        Speechify
+      </button>
     </div>
     
     <div id="loading">
@@ -209,32 +225,32 @@
       <p id="loadingText">Generating summary...</p>
     </div>
     
-    <div id="audioPlayer">
-      <div class="audio-controls">
-        <button id="playAudio" class="audio-button" title="Play">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M5 3l14 9-14 9V3z"/>
-          </svg>
-        </button>
-        <button id="pauseAudio" class="audio-button" title="Pause" disabled>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/>
-          </svg>
-        </button>
-        <button id="restartAudio" class="audio-button" title="Restart" disabled>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
-            <path d="M3 3v5h5"/>
-          </svg>
-        </button>
-      </div>
-    </div>
-    
     <div id="summary"></div>
   </div>
   
   <div id="tab-unavailable">
     <p>Please navigate to a webpage to use Ernesto.</p>
+  </div>
+  
+  <div id="audioPlayer">
+    <div class="audio-controls">
+      <button id="playAudio" class="audio-button" title="Play">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M5 3l14 9-14 9V3z"/>
+        </svg>
+      </button>
+      <button id="pauseAudio" class="audio-button" title="Pause" disabled>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/>
+        </svg>
+      </button>
+      <button id="restartAudio" class="audio-button" title="Restart" disabled>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+          <path d="M3 3v5h5"/>
+        </svg>
+      </button>
+    </div>
   </div>
   
   <script type="module" src="sidepanel.js"></script>

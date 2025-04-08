@@ -130,11 +130,9 @@ class UIStateManager {
       this.elements.loadingDiv.style.display === DISPLAY_STATES.VISIBLE;
     const hasSummary =
       this.elements.summaryDiv.style.display === DISPLAY_STATES.VISIBLE;
-    const hasAudioPlayer =
-      this.elements.audioPlayer.style.display === DISPLAY_STATES.VISIBLE;
 
     this.elements.summarizeBtn.disabled = hasSummary || isRequestOngoing;
-    this.elements.speechifyBtn.disabled = hasAudioPlayer || isRequestOngoing;
+    this.elements.speechifyBtn.disabled = isRequestOngoing;
   }
 
   showTabContent(tab) {
@@ -156,7 +154,6 @@ class UIStateManager {
   resetUI() {
     this.elements.summaryDiv.innerHTML = "";
     this.elements.summaryDiv.style.display = DISPLAY_STATES.HIDDEN;
-    this.elements.audioPlayer.style.display = DISPLAY_STATES.HIDDEN;
     this.elements.loadingDiv.style.display = DISPLAY_STATES.HIDDEN;
     this.updateButtonStates();
   }
@@ -168,6 +165,7 @@ class AudioController {
     this.uiManager = uiManager;
     this.audioElement = null;
     this.setupEventListeners();
+    this.showAudioPlayer();
   }
 
   setupEventListeners() {
@@ -177,6 +175,21 @@ class AudioController {
     playAudioBtn.addEventListener("click", () => this.play());
     pauseAudioBtn.addEventListener("click", () => this.pause());
     restartAudioBtn.addEventListener("click", () => this.restart());
+  }
+
+  showAudioPlayer() {
+    const { audioPlayer, playAudioBtn, pauseAudioBtn, restartAudioBtn } =
+      this.uiManager.elements;
+    audioPlayer.style.display = DISPLAY_STATES.VISIBLE;
+    this.updateButtonStates(false);
+  }
+
+  updateButtonStates(hasAudio) {
+    const { playAudioBtn, pauseAudioBtn, restartAudioBtn } =
+      this.uiManager.elements;
+    playAudioBtn.disabled = !hasAudio;
+    pauseAudioBtn.disabled = true;
+    restartAudioBtn.disabled = !hasAudio;
   }
 
   play() {
@@ -206,7 +219,7 @@ class AudioController {
     const audioUrl = URL.createObjectURL(audioBlob);
     this.audioElement = new Audio(audioUrl);
 
-    const { playAudioBtn, pauseAudioBtn, restartAudioBtn, audioPlayer } =
+    const { playAudioBtn, pauseAudioBtn, restartAudioBtn } =
       this.uiManager.elements;
 
     this.audioElement.addEventListener("play", () => {
@@ -218,14 +231,16 @@ class AudioController {
     this.audioElement.addEventListener("pause", () => {
       playAudioBtn.disabled = false;
       pauseAudioBtn.disabled = true;
+      restartAudioBtn.disabled = false;
     });
 
     this.audioElement.addEventListener("ended", () => {
       playAudioBtn.disabled = false;
       pauseAudioBtn.disabled = true;
+      restartAudioBtn.disabled = false;
     });
 
-    audioPlayer.style.display = DISPLAY_STATES.VISIBLE;
+    this.updateButtonStates(true);
 
     if (autoPlay) {
       this.audioElement.play();
@@ -239,6 +254,7 @@ class AudioController {
       this.audioElement.src = "";
       this.audioElement = null;
     }
+    this.updateButtonStates(false);
   }
 }
 
@@ -285,7 +301,6 @@ class SummarizerApp {
     if (!tabState) {
       this.uiManager.showTabUnavailable();
       this.audioController.cleanup();
-      this.uiManager.elements.audioPlayer.style.display = DISPLAY_STATES.HIDDEN;
       return;
     }
 
@@ -299,8 +314,6 @@ class SummarizerApp {
       ) {
         this.uiManager.showTabUnavailable();
         this.audioController.cleanup();
-        this.uiManager.elements.audioPlayer.style.display =
-          DISPLAY_STATES.HIDDEN;
         return;
       }
 
@@ -308,8 +321,6 @@ class SummarizerApp {
       if (tabState.url !== currentTab.url) {
         this.uiManager.resetUI();
         this.audioController.cleanup();
-        this.uiManager.elements.audioPlayer.style.display =
-          DISPLAY_STATES.HIDDEN;
 
         await this.tabStateManager.updateState({
           url: currentTab.url,
@@ -434,8 +445,17 @@ class SummarizerApp {
       }
 
       const url = tabState.url;
+
+      // Check if audio is already in cache
+      const cachedAudioData = await getCachedAudio(url);
+      if (cachedAudioData) {
+        this.audioController.cleanup();
+        this.audioController.setupAudio(cachedAudioData, true);
+        return true;
+      }
+
+      // If not in cache, generate new audio
       this.uiManager.showLoading(LOADING_MESSAGES.AUDIO);
-      this.uiManager.elements.audioPlayer.style.display = DISPLAY_STATES.HIDDEN;
 
       await this.tabStateManager.updateState({
         isLoading: true,
@@ -458,7 +478,6 @@ class SummarizerApp {
     } catch (error) {
       console.error("Speechify error:", error);
       this.uiManager.showError(error.message);
-      this.uiManager.elements.audioPlayer.style.display = DISPLAY_STATES.HIDDEN;
 
       await this.tabStateManager.updateState({
         isLoading: false,

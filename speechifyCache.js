@@ -2,30 +2,23 @@
 import GenericCache from "./genericCache.js";
 
 /**
- * Convert Blob to base64 string
+ * Convert Blob to array of numbers
  * @param {Blob} blob - The blob to convert
- * @returns {Promise<string>} - Base64 string
+ * @returns {Promise<number[]>} - Array of numbers
  */
-async function blobToBase64(blob) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const base64String = reader.result;
-      resolve(base64String);
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(blob);
-  });
+async function blobToArray(blob) {
+  const buffer = await blob.arrayBuffer();
+  return Array.from(new Uint8Array(buffer));
 }
 
 /**
- * Convert base64 string to Blob
- * @param {string} base64String - The base64 string to convert
+ * Convert array of numbers to Blob
+ * @param {number[]} array - The array to convert
  * @returns {Promise<Blob>} - Audio blob
  */
-async function base64ToBlob(base64String) {
-  const response = await fetch(base64String);
-  return await response.blob();
+async function arrayToBlob(array) {
+  const uint8Array = new Uint8Array(array);
+  return new Blob([uint8Array], { type: "audio/mpeg" });
 }
 
 // Create a cache instance for audio files
@@ -34,10 +27,10 @@ export const audioCache = new GenericCache({
   ttlMs: 24 * 60 * 60 * 1000, // 24 hours in milliseconds
   keyPrefix: "speechify",
   serialize: async (blob) => {
-    return await blobToBase64(blob);
+    return await blobToArray(blob);
   },
-  deserialize: async (base64String) => {
-    return await base64ToBlob(base64String);
+  deserialize: async (array) => {
+    return await arrayToBlob(array);
   },
 });
 
