@@ -27,6 +27,7 @@ export async function getSummary(url, apiKey) {
       - Focus on main ideas, key events, important people, and impactful statistics.
       - Ensure sentences are short and clear for better speech quality.
       - Avoid complex punctuation; prefer commas and periods
+      - If for any reason you can not access the article to summarize say something like 'sorry I cant access the article'
       `,
     tools: [
       {
