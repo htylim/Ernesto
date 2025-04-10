@@ -97,10 +97,10 @@
     }
     #audioPlayer {
       display: none;
-      padding: 10px;
-      background: #f5f5f5;
-      border-radius: 4px 4px 0 0;
-      box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
+      padding: 16px;
+      background: #f8f8f8;
+      border-radius: 8px 8px 0 0;
+      box-shadow: 0 -2px 5px rgba(0,0,0,0.06);
       z-index: 1000;
       margin-top: auto;
     }
@@ -109,6 +109,10 @@
       gap: 8px;
       align-items: center;
       justify-content: center;
+      position: relative;
+      padding-top: 14px;
+      border-top: 1px solid #e6e6e6;
+      margin-top: 2px;
     }
     .audio-button {
       width: 32px;
@@ -190,6 +194,50 @@
       overflow-y: auto;
       padding-bottom: 16px;
     }
+    .prompt-container {
+      display: flex;
+      margin-bottom: 16px;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #fff;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+      transition: box-shadow 0.2s ease;
+    }
+    
+    .prompt-container:focus-within {
+      box-shadow: 0 2px 5px rgba(0,0,0,0.12);
+      border-color: #bbb;
+    }
+
+    #promptInput {
+      flex: 1;
+      padding: 10px 14px;
+      border: none;
+      font-size: 14px;
+      outline: none;
+    }
+
+    .prompt-submit {
+      width: 36px;
+      padding: 8px;
+      background: #0066cc;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      transition: background-color 0.2s ease;
+    }
+
+    .prompt-submit:hover {
+      background-color: #0052a3;
+    }
+    
+    .prompt-submit svg {
+      margin-left: 2px;
+    }
   </style>
 </head>
 <body>
@@ -236,6 +284,15 @@
   </div>
   
   <div id="audioPlayer">
+    <div class="prompt-container">
+      <input type="text" id="promptInput" placeholder="Enter a prompt here">
+      <button id="submitPrompt" class="prompt-submit">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M5 12h14M12 5l7 7-7 7"/>
+        </svg>
+      </button>
+    </div>
+    
     <div class="audio-controls">
       <button id="playAudio" class="audio-button" title="Play">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
