@@ -6,6 +6,7 @@
 
 import { clearExpiredCache } from "./summariesCache.js";
 import { clearExpiredAudioCache } from "./speechifyCache.js";
+import { clearExpiredPromptsCache } from "./promptsCache.js";
 
 /**
  * Clears all expired caches
@@ -13,7 +14,11 @@ import { clearExpiredAudioCache } from "./speechifyCache.js";
  */
 async function clearAllExpiredCaches() {
   try {
-    await Promise.all([clearExpiredCache(), clearExpiredAudioCache()]);
+    await Promise.all([
+      clearExpiredCache(),
+      clearExpiredAudioCache(),
+      clearExpiredPromptsCache(),
+    ]);
   } catch (error) {
     console.error("Error clearing expired caches:", error);
   }

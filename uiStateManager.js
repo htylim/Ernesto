@@ -27,6 +27,7 @@ export class UIStateManager {
       speechifyBtn: document.getElementById("speechify"),
       loadingDiv: document.getElementById("loading"),
       summaryDiv: document.getElementById("summary"),
+      promptResponsesDiv: document.getElementById("promptResponses"),
       audioPlayer: document.getElementById("audioPlayer"),
       playAudioBtn: document.getElementById("playAudio"),
       pauseAudioBtn: document.getElementById("pauseAudio"),
@@ -35,6 +36,8 @@ export class UIStateManager {
       pageTitle: document.getElementById("page-title"),
       tabContent: document.getElementById("tab-content"),
       tabUnavailable: document.getElementById("tab-unavailable"),
+      promptInput: document.getElementById("promptInput"),
+      submitPromptBtn: document.getElementById("submitPrompt"),
     };
   }
 
@@ -44,9 +47,28 @@ export class UIStateManager {
    * @throws {Error} If any required element is missing
    */
   validateElements() {
-    const missingElements = Object.entries(this.elements)
-      .filter(([_, element]) => !element)
-      .map(([name]) => name);
+    const requiredElements = [
+      "summarizeBtn",
+      "openOptionsBtn",
+      "closeBtn",
+      "speechifyBtn",
+      "loadingDiv",
+      "summaryDiv",
+      "audioPlayer",
+      "playAudioBtn",
+      "pauseAudioBtn",
+      "restartAudioBtn",
+      "loadingText",
+      "pageTitle",
+      "tabContent",
+      "tabUnavailable",
+      "promptInput",
+      "submitPromptBtn",
+    ];
+
+    const missingElements = requiredElements
+      .filter((name) => !this.elements[name])
+      .map((name) => name);
 
     if (missingElements.length > 0) {
       throw new Error(
@@ -141,6 +163,7 @@ export class UIStateManager {
 
     this.elements.summarizeBtn.disabled = hasSummary || isRequestOngoing;
     this.elements.speechifyBtn.disabled = isRequestOngoing;
+    this.elements.submitPromptBtn.disabled = isRequestOngoing;
   }
 
   /**
@@ -168,6 +191,7 @@ export class UIStateManager {
     this.setSummaryText("", true);
     this.hideElement(this.elements.summaryDiv);
     this.hideElement(this.elements.loadingDiv);
+    this.clearPromptResponses();
     this.updateButtonStates();
   }
 
@@ -235,6 +259,64 @@ export class UIStateManager {
       openOptionsBtn: this.elements.openOptionsBtn,
       closeBtn: this.elements.closeBtn,
     };
+  }
+
+  /**
+   * Gets the current prompt text
+   * @returns {string} The text content of the prompt input
+   */
+  getPromptText() {
+    return this.elements.promptInput?.value || "";
+  }
+
+  /**
+   * Clear the prompt input field
+   */
+  clearPromptInput() {
+    this.elements.promptInput.value = "";
+  }
+
+  /**
+   * Add prompt and response to the UI
+   * @param {Object} promptData - Object containing prompt and response
+   * @param {string} promptData.prompt - The user's prompt
+   * @param {string} promptData.response - The AI response
+   */
+  addPromptResponse(promptData) {
+    const promptResponseHtml = `
+      <div class="prompt-item">
+        <div class="user-prompt">
+          <strong>You:</strong> ${promptData.prompt}
+        </div>
+        <div class="ai-response">
+          <strong>AI:</strong> ${promptData.response}
+        </div>
+      </div>
+    `;
+
+    this.elements.promptResponsesDiv.innerHTML += promptResponseHtml;
+    this.showElement(this.elements.promptResponsesDiv);
+  }
+
+  /**
+   * Get the prompt input and submit buttons
+   * @returns {Object} Object containing prompt input elements
+   */
+  getPromptElements() {
+    return {
+      promptInput: this.elements.promptInput,
+      submitPromptBtn: this.elements.submitPromptBtn,
+    };
+  }
+
+  /**
+   * Clears all prompt responses from the UI
+   */
+  clearPromptResponses() {
+    if (this.elements.promptResponsesDiv) {
+      this.elements.promptResponsesDiv.innerHTML = "";
+      this.hideElement(this.elements.promptResponsesDiv);
+    }
   }
 }
 

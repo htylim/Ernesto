@@ -238,6 +238,37 @@
     .prompt-submit svg {
       margin-left: 2px;
     }
+    
+    .prompt-responses {
+      margin: 12px 0;
+      line-height: 1.5;
+      overflow-wrap: break-word;
+      border-top: 1px solid #e0e0e0;
+      padding-top: 12px;
+    }
+    
+    .prompt-item {
+      margin-bottom: 15px;
+      padding-bottom: 15px;
+      border-bottom: 1px dashed #e0e0e0;
+    }
+    
+    .prompt-item:last-child {
+      border-bottom: none;
+    }
+    
+    .user-prompt {
+      margin-bottom: 8px;
+      color: #333;
+      font-size: 14px;
+    }
+    
+    .ai-response {
+      color: #333;
+      font-size: 14px;
+      padding-left: 8px;
+      border-left: 3px solid #0066cc;
+    }
   </style>
 </head>
 <body>
@@ -277,6 +308,7 @@
     </div>
     
     <div id="summary"></div>
+    <div id="promptResponses" class="prompt-responses"></div>
   </div>
   
   <div id="tab-unavailable">

@@ -3,6 +3,8 @@ import { clearAudioCache } from "./speechifyCache.js";
 import { audioCache } from "./speechifyCache.js";
 import { summariesCache } from "./summariesCache.js";
 import { getApiKey, setApiKey } from "./apiKeyManager.js";
+import { clearPromptsCache } from "./promptsCache.js";
+import { promptsCache } from "./promptsCache.js";
 
 // Constants
 const DISPLAY_STATES = {
@@ -19,10 +21,13 @@ class UIStateManager {
       cancelButton: document.querySelector("#cancel"),
       purgeCacheButton: document.querySelector("#purgeCache"),
       purgeAudioCacheButton: document.querySelector("#purgeAudioCache"),
+      purgePromptsCacheButton: document.querySelector("#purgePromptsCache"),
       purgeStatus: document.querySelector("#purgeStatus"),
       purgeAudioStatus: document.querySelector("#purgeAudioStatus"),
+      purgePromptsStatus: document.querySelector("#purgePromptsStatus"),
       summariesSize: document.querySelector("#summariesSize"),
       audioSize: document.querySelector("#audioSize"),
+      promptsSize: document.querySelector("#promptsSize"),
     };
     this.validateElements();
   }
@@ -47,14 +52,19 @@ class UIStateManager {
     return this.elements.apiKeyInput.value;
   }
 
-  updateCacheSizes(summariesBytes, audioBytes) {
+  updateCacheSizes(summariesBytes, audioBytes, promptsBytes) {
     this.elements.summariesSize.textContent = this.formatBytes(summariesBytes);
     this.elements.audioSize.textContent = this.formatBytes(audioBytes);
+    if (this.elements.promptsSize) {
+      this.elements.promptsSize.textContent = this.formatBytes(promptsBytes);
+    }
   }
 
-  setPurgeStatus(status, isAudio = false) {
+  setPurgeStatus(status, isAudio = false, isPrompts = false) {
     const element = isAudio
       ? this.elements.purgeAudioStatus
+      : isPrompts
+      ? this.elements.purgePromptsStatus
       : this.elements.purgeStatus;
     element.textContent = status;
   }
@@ -83,18 +93,23 @@ class CacheManager {
 
   async updateCacheSizes() {
     try {
-      const [summariesBytes, audioBytes] = await Promise.all([
+      const [summariesBytes, audioBytes, promptsBytes] = await Promise.all([
         summariesCache.getCacheSize(),
         audioCache.getCacheSize(),
+        promptsCache.getCacheSize(),
       ]);
-      this.uiManager.updateCacheSizes(summariesBytes, audioBytes);
+      this.uiManager.updateCacheSizes(summariesBytes, audioBytes, promptsBytes);
     } catch (error) {
       console.error("Error updating cache sizes:", error);
     }
   }
 
-  async purgeCache(purgeSummaries = false, purgeAudio = false) {
-    if (!purgeSummaries && !purgeAudio) return;
+  async purgeCache(
+    purgeSummaries = false,
+    purgeAudio = false,
+    purgePrompts = false
+  ) {
+    if (!purgeSummaries && !purgeAudio && !purgePrompts) return;
 
     const operations = [];
     const statuses = [];
@@ -105,6 +120,7 @@ class CacheManager {
         buttonName: "purgeCacheButton",
         statusPrefix: "Summaries",
         isAudio: false,
+        isPrompts: false,
       });
     }
 
@@ -114,16 +130,28 @@ class CacheManager {
         buttonName: "purgeAudioCacheButton",
         statusPrefix: "Audio",
         isAudio: true,
+        isPrompts: false,
+      });
+    }
+
+    if (purgePrompts) {
+      operations.push(clearPromptsCache());
+      statuses.push({
+        buttonName: "purgePromptsCacheButton",
+        statusPrefix: "Prompts",
+        isAudio: false,
+        isPrompts: true,
       });
     }
 
     try {
       // Disable buttons and set initial status
-      statuses.forEach(({ buttonName, statusPrefix, isAudio }) => {
+      statuses.forEach(({ buttonName, statusPrefix, isAudio, isPrompts }) => {
         this.uiManager.setButtonDisabled(buttonName, true);
         this.uiManager.setPurgeStatus(
           `Purging ${statusPrefix.toLowerCase()} cache...`,
-          isAudio
+          isAudio,
+          isPrompts
         );
       });
 
@@ -132,22 +160,24 @@ class CacheManager {
       await this.updateCacheSizes();
 
       // Update status for each operation
-      statuses.forEach(({ buttonName, statusPrefix, isAudio }) => {
+      statuses.forEach(({ buttonName, statusPrefix, isAudio, isPrompts }) => {
         this.uiManager.setPurgeStatus(
           `${statusPrefix} cache purged successfully!`,
-          isAudio
+          isAudio,
+          isPrompts
         );
         setTimeout(() => {
-          this.uiManager.setPurgeStatus("", isAudio);
+          this.uiManager.setPurgeStatus("", isAudio, isPrompts);
           this.uiManager.setButtonDisabled(buttonName, false);
         }, 2000);
       });
     } catch (error) {
       console.error("Error purging caches:", error);
-      statuses.forEach(({ buttonName, statusPrefix, isAudio }) => {
+      statuses.forEach(({ buttonName, statusPrefix, isAudio, isPrompts }) => {
         this.uiManager.setPurgeStatus(
           `Error purging ${statusPrefix.toLowerCase()} cache. Please try again.`,
-          isAudio
+          isAudio,
+          isPrompts
         );
         this.uiManager.setButtonDisabled(buttonName, false);
       });
@@ -169,16 +199,22 @@ class OptionsPageController {
       cancelButton,
       purgeCacheButton,
       purgeAudioCacheButton,
+      purgePromptsCacheButton,
     } = this.uiManager.elements;
 
     saveButton.addEventListener("click", () => this.handleSave());
     cancelButton.addEventListener("click", () => this.handleCancel());
     purgeCacheButton.addEventListener("click", () =>
-      this.cacheManager.purgeCache(true, false)
+      this.cacheManager.purgeCache(true, false, false)
     );
     purgeAudioCacheButton.addEventListener("click", () =>
-      this.cacheManager.purgeCache(false, true)
+      this.cacheManager.purgeCache(false, true, false)
     );
+    if (purgePromptsCacheButton) {
+      purgePromptsCacheButton.addEventListener("click", () =>
+        this.cacheManager.purgeCache(false, false, true)
+      );
+    }
   }
 
   async init() {

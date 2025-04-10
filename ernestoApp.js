@@ -6,10 +6,13 @@ import { getApiKey } from "./apiKeyManager.js";
 import { TabStateManager } from "./tabStateManager.js";
 import { UIStateManager } from "./uiStateManager.js";
 import { AudioController } from "./audioController.js";
+import { getPromptResponse } from "./getPromptResponse.js";
+import { getCachedPrompts, cachePrompts } from "./promptsCache.js";
 
 const LOADING_MESSAGES = {
   SUMMARY: "Generating Summary...",
   AUDIO: "Generating Audio...",
+  PROMPT: "Processing your question...",
 };
 
 export class ErnestoApp {
@@ -24,6 +27,7 @@ export class ErnestoApp {
   setupEventListeners() {
     const { summarizeBtn, speechifyBtn, openOptionsBtn, closeBtn } =
       this.uiManager.getControlButtons();
+    const { promptInput, submitPromptBtn } = this.uiManager.getPromptElements();
 
     summarizeBtn.addEventListener("click", () => this.summarize());
     speechifyBtn.addEventListener("click", () => this.speechify());
@@ -33,6 +37,21 @@ export class ErnestoApp {
     closeBtn.addEventListener("click", () => {
       window.close();
     });
+
+    // Add prompt submit event listener
+    if (submitPromptBtn) {
+      submitPromptBtn.addEventListener("click", () => this.prompt());
+    }
+
+    // Add enter key event listener to prompt input
+    if (promptInput) {
+      promptInput.addEventListener("keypress", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          this.prompt();
+        }
+      });
+    }
 
     // Listen for tab changes
     if (chrome.tabs) {
@@ -93,9 +112,23 @@ export class ErnestoApp {
     if (!tabState || !tabState.url) return;
 
     try {
+      // Clear existing content first
+      this.uiManager.setSummaryText("", true);
+      this.uiManager.hideSummary();
+      this.uiManager.clearPromptResponses();
+
+      // Load cached summary if available
       const cachedSummary = await getCachedSummary(tabState.url);
       if (cachedSummary) {
         this.uiManager.showSummary(cachedSummary);
+      }
+
+      // Load cached prompts if available
+      const cachedPrompts = await getCachedPrompts(tabState.url);
+      if (cachedPrompts && cachedPrompts.length > 0) {
+        for (const promptItem of cachedPrompts) {
+          this.uiManager.addPromptResponse(promptItem);
+        }
       }
     } catch (error) {
       console.error("Error restoring tab state:", error);
@@ -220,6 +253,85 @@ export class ErnestoApp {
       return true;
     } catch (error) {
       console.error("Speechify error:", error);
+      this.uiManager.showError(error.message);
+
+      await this.tabStateManager.updateTabState(currentTab.id, {
+        isLoading: false,
+      });
+
+      return false;
+    } finally {
+      this.uiManager.hideLoading();
+    }
+  }
+
+  async prompt() {
+    const currentTab = await this.getCurrentTab();
+    if (!currentTab) {
+      this.uiManager.showTabUnavailable();
+      return;
+    }
+
+    const tabState = await this.tabStateManager.getTabState(currentTab.id);
+    if (!tabState || !tabState.url) {
+      this.uiManager.showTabUnavailable();
+      return;
+    }
+
+    // Get the prompt text
+    const promptText = this.uiManager.getPromptText();
+    if (!promptText.trim()) {
+      return; // Skip empty prompts
+    }
+
+    try {
+      const url = tabState.url;
+      console.log("Processing prompt for:", url);
+
+      this.uiManager.showLoading(LOADING_MESSAGES.PROMPT);
+
+      await this.tabStateManager.updateTabState(currentTab.id, {
+        isLoading: true,
+        loadingMessage: LOADING_MESSAGES.PROMPT,
+      });
+
+      // Get any existing prompts history
+      let promptsHistory = (await getCachedPrompts(url)) || [];
+
+      const apiKey = await this.getApiKey();
+      const response = await getPromptResponse(
+        promptText,
+        url,
+        promptsHistory,
+        apiKey
+      );
+
+      // Create new prompt item
+      const promptItem = {
+        prompt: promptText,
+        response: response,
+        timestamp: Date.now(),
+      };
+
+      // Add to history
+      promptsHistory.push(promptItem);
+
+      // Cache the prompts history
+      await cachePrompts(url, promptsHistory);
+
+      // Add to UI
+      this.uiManager.addPromptResponse(promptItem);
+
+      // Clear the input field
+      this.uiManager.clearPromptInput();
+
+      await this.tabStateManager.updateTabState(currentTab.id, {
+        isLoading: false,
+      });
+
+      return true;
+    } catch (error) {
+      console.error("Prompt error:", error);
       this.uiManager.showError(error.message);
 
       await this.tabStateManager.updateTabState(currentTab.id, {
