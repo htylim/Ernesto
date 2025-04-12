@@ -6,8 +6,8 @@ import { getApiKey } from "./apiKeyManager.js";
 import { TabStateManager } from "./tabStateManager.js";
 import { UIStateManager } from "./uiStateManager.js";
 import { AudioController } from "./audioController.js";
-import { getPromptResponse } from "./getPromptResponse.js";
 import { getCachedPrompts, cachePrompts } from "./promptsCache.js";
+import { getResponse } from "./getResponse.js";
 
 const LOADING_MESSAGES = {
   SUMMARY: "Generating Summary...",
@@ -319,7 +319,7 @@ export class ErnestoApp {
       };
 
       const apiKey = await this.getApiKey();
-      const { assistantMessage, assistantMessageId } = await getPromptResponse(
+      const { assistantMessage, assistantMessageId } = await getResponse(
         promptText,
         url,
         conversationHistory.previous_response_id,

@@ -10,7 +10,7 @@
  * @param {string} apiKey - OpenAI API key
  * @returns {Promise<{assistantMessage: string, assistantMessageId: string}>} - The AI response and its ID
  */
-export async function getPromptResponse(
+export async function getResponse(
   prompt,
   url,
   previous_response_id = null,
