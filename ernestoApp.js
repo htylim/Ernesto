@@ -142,7 +142,6 @@ export class ErnestoApp {
               this.uiManager.addPromptResponse({
                 prompt: userMessage.content,
                 response: assistantMessage.content,
-                timestamp: Date.now(),
               });
             }
           }
@@ -341,7 +340,6 @@ export class ErnestoApp {
       const promptItem = {
         prompt: promptText,
         response: assistantMessage,
-        timestamp: Date.now(),
       };
 
       // Add to UI

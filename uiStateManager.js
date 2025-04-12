@@ -286,16 +286,25 @@ export class UIStateManager {
     const promptResponseHtml = `
       <div class="prompt-item">
         <div class="user-prompt">
-          <strong>You:</strong> ${promptData.prompt}
+          ${promptData.prompt}
         </div>
         <div class="ai-response">
-          <strong>AI:</strong> ${promptData.response}
+          ${promptData.response}
         </div>
       </div>
     `;
 
     this.elements.promptResponsesDiv.innerHTML += promptResponseHtml;
     this.showElement(this.elements.promptResponsesDiv);
+
+    // Scroll to the bottom of the responses
+    this.elements.promptResponsesDiv.scrollIntoView({
+      behavior: "smooth",
+      block: "end",
+    });
+
+    // Also ensure the tab content container scrolls to show the new content
+    this.elements.tabContent.scrollTop = this.elements.tabContent.scrollHeight;
   }
 
   /**
