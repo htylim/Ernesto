@@ -10,6 +10,12 @@
   - Clean side panel display of summaries
   - Summarization is done using OpenAI's Responses API (asking the API plainly "summarize this article")
 
+- **Article Question-Answering**
+
+  - Ask questions about the article content
+  - Get AI-powered answers based on the article text
+  - Interactive Q&A interface in the side panel
+
 - **Text-to-Speech**
 
   - Listen to summaries with built-in audio player
@@ -89,12 +95,6 @@ Ernesto/
 
 ## 📅 Roadmap (Ideas for Future Versions)
 
-- To be able to keep the extension popup running when I switch to other window or page (now it closes)
-
-- To be able to have the extension popup persist on the page that it was open, so I could open several pages and in page they would have their own "popup" extension window. (this would allow us to have also state-per-page instead of a global instance like now)
-
-- Add an INPUT box in the extension popup to be able to ask questions about the article.
-
 - Customize TTS voice (maybe use the actual voice from Ernesto Tenembaum) and speed.
 
 - Keyboard shortcuts for faster activation.
@@ -106,36 +106,3 @@ Ernesto/
 - implement rate limiting for external APIs
 - implement quota management to prevent storage limits issues in chrome.storage.local
 - log errors to a service rather than console for production
-
-#####
-
-getCachedPrompts returns ´conversationHistory´
-
-I want that structure to be:
-{
-previous_response_id # for the the last received response.id
-conversation: [
-{
-role: "user"
-content: "my question"
-},
-{
-role: "assistant"
-content: "the answer"
-},
-{
-role: "user"
-content: "followup question"
-},
-...
-]
-}
-
-getPromptResponse() want to rename to getResponse (rename the file as well)
-getPromptResponse is right now returning {assistantMessage, output} and I want it changed to:
-{assistantMessage, assistantMessageId}
-
-in prompt() when we then invoke getPromptResponse and then we do cachePrompt to what we receive I want to update that logic to fit the change that we just did. The updated conversationHistory would now be something like this
-
-conversationHistory.previous_response_id = assistantMessageID
-conversationHistory.conversation.push({role: "user", content: thePrompt}, {role: "assistant", content: assistantMessage})
