@@ -70,7 +70,7 @@ export class AudioController {
     const { playAudioBtn, pauseAudioBtn, restartAudioBtn } =
       this.uiManager.elements;
 
-    playAudioBtn.disabled = playing;
+    playAudioBtn.disabled = playing || !this.audioElement;
     pauseAudioBtn.disabled = !playing;
     restartAudioBtn.disabled = !this.audioElement;
   }
