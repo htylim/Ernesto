@@ -125,9 +125,38 @@ export class ErnestoApp {
 
       // Load cached prompts if available
       const cachedPrompts = await getCachedPrompts(tabState.url);
+
       if (cachedPrompts && cachedPrompts.length > 0) {
-        for (const promptItem of cachedPrompts) {
-          this.uiManager.addPromptResponse(promptItem);
+        // Check if the cached data is in the new format
+        if (cachedPrompts[0].type === "message") {
+          // New format - extract user/assistant pairs
+          for (let i = 0; i < cachedPrompts.length; i += 2) {
+            const userMessage = cachedPrompts[i];
+            const assistantMessage = cachedPrompts[i + 1];
+
+            if (
+              userMessage &&
+              assistantMessage &&
+              userMessage.role === "user" &&
+              assistantMessage.role === "assistant"
+            ) {
+              const promptText = userMessage.content?.[0]?.text || "";
+              const responseText = assistantMessage.content?.[0]?.text || "";
+
+              if (promptText && responseText) {
+                this.uiManager.addPromptResponse({
+                  prompt: promptText,
+                  response: responseText,
+                  timestamp: Date.now(), // We don't have actual timestamp in new format
+                });
+              }
+            }
+          }
+        } else {
+          // Old format - each item has prompt and response
+          for (const promptItem of cachedPrompts) {
+            this.uiManager.addPromptResponse(promptItem);
+          }
         }
       }
     } catch (error) {
@@ -296,28 +325,52 @@ export class ErnestoApp {
       });
 
       // Get any existing prompts history
-      let promptsHistory = (await getCachedPrompts(url)) || [];
+      let conversationHistory = (await getCachedPrompts(url)) || [];
+
+      // Convert older format to new format if needed
+      if (conversationHistory.length > 0 && conversationHistory[0].prompt) {
+        conversationHistory = conversationHistory.flatMap((item) => [
+          {
+            type: "message",
+            role: "user",
+            content: [{ type: "input_text", text: item.prompt }],
+          },
+          {
+            type: "message",
+            status: "completed",
+            role: "assistant",
+            content: [{ type: "output_text", text: item.response }],
+          },
+        ]);
+      }
 
       const apiKey = await this.getApiKey();
-      const response = await getPromptResponse(
+      const { assistantMessage, output } = await getPromptResponse(
         promptText,
         url,
-        promptsHistory,
+        conversationHistory,
         apiKey
       );
 
-      // Create new prompt item
-      const promptItem = {
-        prompt: promptText,
-        response: response,
-        timestamp: Date.now(),
+      // Add user's message and AI response to conversation history
+      const userMessage = {
+        type: "message",
+        role: "user",
+        content: [{ type: "input_text", text: promptText }],
       };
 
-      // Add to history
-      promptsHistory.push(promptItem);
+      // Updated conversation history
+      const updatedHistory = [...conversationHistory, userMessage, ...output];
 
-      // Cache the prompts history
-      await cachePrompts(url, promptsHistory);
+      // Cache the updated conversation history
+      await cachePrompts(url, updatedHistory);
+
+      // Create prompt item for UI display
+      const promptItem = {
+        prompt: promptText,
+        response: assistantMessage,
+        timestamp: Date.now(),
+      };
 
       // Add to UI
       this.uiManager.addPromptResponse(promptItem);
