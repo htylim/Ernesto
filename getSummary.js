@@ -9,6 +9,9 @@ export async function getSummary(url, apiKey) {
     throw new Error("API key not found. Please set it in settings.");
   }
 
+  // - For doing the summary attack it paragraph by paragraph, doing one bullet point per paragraph, each bullet point should be the summary of that paragraph and should be 1 or 2 sentences max.
+  // - Do the summary exhaustive but written in a concise, brief way. Each key point should be a single sentence. If the sentence is too long then probably it should be 2 key points instead.
+
   const requestBody = {
     model: "gpt-4o",
     temperature: 0,
@@ -23,7 +26,7 @@ export async function getSummary(url, apiKey) {
       </ul>
       
       - Make the response in the same language of the article. If the article is in Spanish, use Spanish, if it's in English, use English.
-      - Do the summary exhaustive but written in a concise, brief way. Each key point should be a single sentence. If the sentence is too long then probably it should be 2 key points instead.
+      - For doing the summary attack it paragraph by paragraph, doing one bullet point per paragraph, each bullet point should be the summary of that paragraph and should be 1 or 2 sentences max. Also make each summary very precise and concise.
       - Focus on main ideas, key events, important people, and impactful statistics.
       - Ensure sentences are short and clear for better speech quality.
       - Avoid complex punctuation; prefer commas and periods
