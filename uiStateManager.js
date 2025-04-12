@@ -289,7 +289,7 @@ export class UIStateManager {
           ${promptData.prompt}
         </div>
         <div class="ai-response">
-          ${promptData.response}
+          ${window.marked.parse(promptData.response)}
         </div>
       </div>
     `;

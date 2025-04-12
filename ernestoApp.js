@@ -306,6 +306,7 @@ export class ErnestoApp {
       console.log("Processing prompt for:", url);
 
       this.uiManager.showLoading(LOADING_MESSAGES.PROMPT);
+      this.uiManager.updateButtonStates(); // Disable buttons during loading
 
       await this.tabStateManager.updateTabState(currentTab.id, {
         isLoading: true,
@@ -364,6 +365,7 @@ export class ErnestoApp {
       return false;
     } finally {
       this.uiManager.hideLoading();
+      this.uiManager.updateButtonStates(); // Re-enable buttons after loading
     }
   }
 }
