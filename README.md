@@ -106,3 +106,36 @@ Ernesto/
 - implement rate limiting for external APIs
 - implement quota management to prevent storage limits issues in chrome.storage.local
 - log errors to a service rather than console for production
+
+#####
+
+getCachedPrompts returns ´conversationHistory´
+
+I want that structure to be:
+{
+previous_response_id # for the the last received response.id
+conversation: [
+{
+role: "user"
+content: "my question"
+},
+{
+role: "assistant"
+content: "the answer"
+},
+{
+role: "user"
+content: "followup question"
+},
+...
+]
+}
+
+getPromptResponse() want to rename to getResponse (rename the file as well)
+getPromptResponse is right now returning {assistantMessage, output} and I want it changed to:
+{assistantMessage, assistantMessageId}
+
+in prompt() when we then invoke getPromptResponse and then we do cachePrompt to what we receive I want to update that logic to fit the change that we just did. The updated conversationHistory would now be something like this
+
+conversationHistory.previous_response_id = assistantMessageID
+conversationHistory.conversation.push({role: "user", content: thePrompt}, {role: "assistant", content: assistantMessage})

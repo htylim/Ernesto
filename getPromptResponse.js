@@ -6,14 +6,14 @@
  * Get an AI response for the user's prompt
  * @param {string} prompt - The user's prompt
  * @param {string} url - The URL for context
- * @param {Array} promptHistory - Previous prompts and responses history
+ * @param {string|null} previous_response_id - ID of the previous response for conversation continuity
  * @param {string} apiKey - OpenAI API key
- * @returns {Promise<{assistantMessage: string, output: Array}>} - The AI response and full output
+ * @returns {Promise<{assistantMessage: string, assistantMessageId: string}>} - The AI response and its ID
  */
 export async function getPromptResponse(
   prompt,
   url,
-  promptHistory = [],
+  previous_response_id = null,
   apiKey
 ) {
   if (!apiKey) {
@@ -27,35 +27,19 @@ export async function getPromptResponse(
   }
 
   try {
-    // Prepare input for the API based on conversation history
-    let input = [];
-
-    // If we have previous conversation history, add it to the input
-    if (promptHistory && promptHistory.length > 0) {
-      input = [...promptHistory];
-    }
-
-    // Add the new user prompt
-    input.push({
-      type: "message",
-      role: "user",
-      content: [
-        {
-          type: "input_text",
-          text: prompt,
-        },
-      ],
-    });
-
     // Prepare request body
     const requestBody = {
       model: "gpt-4o",
-      temperature: 0.7,
-      instructions: `You are an assistant helping understand this article ${url}.`,
       tools: [{ type: "web_search", search_context_size: "high" }],
-      input: input,
-      store: false,
+      input: prompt,
     };
+
+    // If first prompt in the conversation add the `instructions`, if is not add the `previous_response_id`
+    if (!previous_response_id) {
+      requestBody.instructions = `You are an assistant helping understand this article ${url}.`;
+    } else {
+      requestBody.previous_response_id = previous_response_id;
+    }
 
     // Make API request
     const response = await fetch("https://api.openai.com/v1/responses", {
@@ -80,26 +64,29 @@ export async function getPromptResponse(
     const data = await response.json();
     console.log("API Success Response:", data);
 
-    // Extract the assistant's message text
-    const assistantMessage = data.output
-      ?.find(
-        (item) =>
-          item.type === "message" &&
-          item.status === "completed" &&
-          item.role === "assistant"
-      )
-      ?.content?.find(
-        (content) => content.type === "output_text" && content.text
-      )?.text;
+    // Extract the assistant's message
+    const assistantMessageObj = data.output?.find(
+      (item) =>
+        item.type === "message" &&
+        item.status === "completed" &&
+        item.role === "assistant"
+    );
+
+    // Extract the text and ID
+    const assistantMessage = assistantMessageObj?.content?.find(
+      (content) => content.type === "output_text" && content.text
+    )?.text;
+
+    const assistantMessageId = data.id || assistantMessageObj?.id;
 
     if (!assistantMessage) {
       throw new Error("Could not find assistant's message in the API response");
     }
 
-    // Return the assistant message text and full output
+    // Return the assistant message text and ID
     return {
       assistantMessage,
-      output: data.output,
+      assistantMessageId,
     };
   } catch (error) {
     console.error("Error getting prompt response:", error);
