@@ -159,9 +159,8 @@ export class UIStateManager {
    */
   updateButtonStates() {
     const isRequestOngoing = this.isElementVisible(this.elements.loadingDiv);
-    const hasSummary = this.isElementVisible(this.elements.summaryDiv);
 
-    this.elements.summarizeBtn.disabled = hasSummary || isRequestOngoing;
+    this.elements.summarizeBtn.disabled = isRequestOngoing;
     this.elements.speechifyBtn.disabled = isRequestOngoing;
     this.elements.submitPromptBtn.disabled = isRequestOngoing;
   }

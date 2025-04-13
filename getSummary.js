@@ -15,7 +15,18 @@ export async function getSummary(url, apiKey) {
   const requestBody = {
     model: "gpt-4o",
     temperature: 0,
-    instructions: `
+    tools: [
+      {
+        type: "web_search",
+        search_context_size: "high",
+      },
+    ],
+    input: `
+      Summarize an article following the instructions below.
+
+      Article: ${url}
+
+      Instructions:
       Return response should be structured like this: 
       
       <h1>Article Title</h1>
@@ -26,19 +37,12 @@ export async function getSummary(url, apiKey) {
       </ul>
       
       - Make the response in the same language of the article. If the article is in Spanish, use Spanish, if it's in English, use English.
-      - For doing the summary attack it paragraph by paragraph, doing one bullet point per paragraph, each bullet point should be the summary of that paragraph and should be 1 or 2 sentences max. Also make each summary very precise and concise.
+      - For doing the summary create a bullet PER PARAGRAPH of the article. If the article has 10 paragraph, create 10 bullets. Each bullet should be the summary of that paragraph. Make each paragraph summary precise and concise to capture the main points of that paragraph.
       - Focus on main ideas, key events, important people, and impactful statistics.
       - Ensure sentences are short and clear for better speech quality.
       - Avoid complex punctuation; prefer commas and periods
-      - If for any reason you can not access the article to summarize say something like 'sorry I cant access the article'
+      - If for any reason you can not access the article or you dont have access to the full article say what happened and just that. 
       `,
-    tools: [
-      {
-        type: "web_search",
-        search_context_size: "high",
-      },
-    ],
-    input: `Summarize this article: ${url}`,
     store: false,
   };
 
