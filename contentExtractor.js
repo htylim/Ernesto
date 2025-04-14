@@ -1,5 +1,5 @@
 /**
- * Content extraction module - processes HTML with Readability and Turndown
+ * Content extraction module - processes HTML with Readability
  * Runs in the extension context, not in content scripts
  */
 
@@ -21,7 +21,7 @@
  */
 
 /**
- * Extract the main article content from HTML using Readability and convert to Markdown
+ * Extract the main article content from HTML using Readability
  * @param {string} htmlContent - The raw HTML content
  * @param {PageMetadata} metadata - Metadata about the page (title, url, etc.)
  * @returns {Promise<ProcessedContent>} - Processed content with metadata
@@ -49,41 +49,14 @@ export async function extractArticleContent(htmlContent, metadata) {
         throw new Error("Readability couldn't extract content");
       }
 
-      // Convert the HTML content to Markdown
-      // Get TurndownService from wherever it's exposed
-      const TurndownServiceClass =
-        TurndownService ||
-        window.TurndownService ||
-        (window.turndown && window.turndown.default);
-
-      if (!TurndownServiceClass) {
-        throw new Error("TurndownService not found");
-      }
-
-      const turndownService = new TurndownServiceClass({
-        headingStyle: "atx",
-        codeBlockStyle: "fenced",
-        bulletListMarker: "-",
-      });
-
-      // Customize Turndown for better results
-      turndownService.addRule("emphasis", {
-        filter: ["em", "i"],
-        replacement: function (content) {
-          return "_" + content + "_";
-        },
-      });
-
-      const markdown = turndownService.turndown(article.content);
-
-      // Return the processed content with metadata
+      // Instead of converting to Markdown, return HTML content directly
       return {
         title: article.title || metadata.title,
         url: metadata.url,
         siteName: article.siteName || metadata.siteName,
         excerpt: article.excerpt || "",
-        content: markdown,
-        contentType: "markdown",
+        content: article.content, // HTML content directly
+        contentType: "html", // Change content type to HTML
       };
     } catch (error) {
       console.error("Error using Readability:", error);
@@ -112,18 +85,10 @@ function checkRequiredLibraries() {
     (typeof window.readability !== "undefined" &&
       typeof window.readability.Readability !== "undefined");
 
-  // Check for TurndownService
-  const hasTurndown =
-    typeof TurndownService !== "undefined" ||
-    typeof window.TurndownService !== "undefined" ||
-    (typeof window.turndown !== "undefined" &&
-      typeof window.turndown.default !== "undefined");
-
   if (!hasDOMPurify) console.error("DOMPurify library not found");
   if (!hasReadability) console.error("Readability library not found");
-  if (!hasTurndown) console.error("Turndown library not found");
 
-  return hasDOMPurify && hasReadability && hasTurndown;
+  return hasDOMPurify && hasReadability;
 }
 
 /**

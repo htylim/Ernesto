@@ -8,7 +8,6 @@ function verifyLibraries() {
   const libraryStatus = {
     domPurify: false,
     readability: false,
-    turndown: false,
   };
 
   // Check DOMPurify
@@ -46,39 +45,8 @@ function verifyLibraries() {
     console.error("❌ Readability error:", e);
   }
 
-  // Check TurndownService
-  try {
-    if (
-      typeof TurndownService !== "undefined" ||
-      typeof window.TurndownService !== "undefined" ||
-      (typeof window.turndown !== "undefined" &&
-        typeof window.turndown.default !== "undefined")
-    ) {
-      // Get TurndownService constructor from wherever it's available
-      const TurndownClass =
-        TurndownService ||
-        window.TurndownService ||
-        (window.turndown && window.turndown.default);
-
-      // Test if we can create an instance
-      const td = new TurndownClass();
-      const sample = td.turndown("<p>Test</p>");
-
-      console.log(`✅ TurndownService loaded (sample output: "${sample}")`);
-      libraryStatus.turndown = true;
-    } else {
-      console.error("❌ TurndownService not found");
-    }
-  } catch (e) {
-    console.error("❌ TurndownService error:", e);
-  }
-
   // Log overall status
-  if (
-    libraryStatus.domPurify &&
-    libraryStatus.readability &&
-    libraryStatus.turndown
-  ) {
+  if (libraryStatus.domPurify && libraryStatus.readability) {
     console.log("✅ All libraries loaded successfully");
     return true;
   } else {

@@ -23,9 +23,6 @@ export async function getSummary(url, apiKey, pageContent) {
     };
   }
 
-  // - For doing the summary attack it paragraph by paragraph, doing one bullet point per paragraph, each bullet point should be the summary of that paragraph and should be 1 or 2 sentences max.
-  // - Do the summary exhaustive but written in a concise, brief way. Each key point should be a single sentence. If the sentence is too long then probably it should be 2 key points instead.
-
   const requestBody = {
     model: "gpt-4o",
     temperature: 0,
@@ -36,7 +33,10 @@ export async function getSummary(url, apiKey, pageContent) {
       URL: ${pageData.url}
       ${pageData.excerpt ? `Excerpt: ${pageData.excerpt}` : ""}
       Content Format: ${pageData.contentType || "text"}
-      Content: ${pageData.content}
+      Content: 
+      --8<----8<--- content starts here ---8<----8<
+      ${pageData.content}
+      --8<----8<--- content stopped here ---8<----8<
 
       Instructions:
       Return response should be structured like this: 
@@ -53,6 +53,7 @@ export async function getSummary(url, apiKey, pageContent) {
       - Focus on main ideas, key events, important people, and impactful statistics.
       - Ensure sentences are short and clear for better speech quality.
       - Avoid complex punctuation; prefer commas and periods
+      - Note that the supplied page contentmay include more than just the article we want summarized. If that's the case ignore anything but the article.
       `,
     store: false,
   };
