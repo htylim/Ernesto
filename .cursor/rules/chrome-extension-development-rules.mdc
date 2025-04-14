@@ -1,7 +1,7 @@
 ---
-description: 
+description: Use when writing or modifying code
 globs: 
-alwaysApply: true
+alwaysApply: false
 ---
 ## Chrome Extension Development Best Practices
 
@@ -23,6 +23,7 @@ alwaysApply: true
    - Use modular architecture
    - Separate concerns (UI, business logic, API interactions)
    - Follow consistent file naming conventions
+   - Document every function/method/exception and Object types and data structures received as argument and/or returned
 
 5. **Testing**
    - Write unit tests for core functionality
@@ -53,3 +54,4 @@ alwaysApply: true
     - Document installation process
     - Provide clear usage instructions
     - Include debugging tips
+

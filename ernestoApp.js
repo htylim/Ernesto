@@ -8,11 +8,13 @@ import { UIStateManager } from "./uiStateManager.js";
 import { AudioController } from "./audioController.js";
 import { getCachedPrompts, cachePrompts } from "./promptsCache.js";
 import { getResponse } from "./getResponse.js";
+import { extractArticleContent } from "./contentExtractor.js";
 
 const LOADING_MESSAGES = {
   SUMMARY: "Generating Summary...",
   AUDIO: "Generating Audio...",
   PROMPT: "Processing your question...",
+  EXTRACTION: "Extracting article content...",
 };
 
 export class ErnestoApp {
@@ -170,7 +172,62 @@ export class ErnestoApp {
     return await getApiKey();
   }
 
+  async getPageContent() {
+    const currentTab = await this.getCurrentTab();
+    if (!currentTab) return null;
+
+    try {
+      // Try to ping the content script first
+      const response = await chrome.tabs
+        .sendMessage(currentTab.id, {
+          action: "ping",
+        })
+        .catch(() => null);
+
+      // If no response, content script isn't ready, try to inject it
+      if (!response) {
+        await chrome.scripting.executeScript({
+          target: { tabId: currentTab.id },
+          files: ["content.js"],
+        });
+        // Wait a bit for the script to initialize
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      }
+
+      // Now try to get the content
+      const contentResponse = await chrome.tabs.sendMessage(currentTab.id, {
+        action: "getPageContent",
+      });
+
+      if (!contentResponse || contentResponse.error) {
+        throw new Error(contentResponse?.error || "Failed to get page content");
+      }
+
+      // Process the content with Readability in the extension context
+      this.uiManager.showLoading(LOADING_MESSAGES.EXTRACTION);
+
+      const processedContent = await extractArticleContent(
+        contentResponse.content,
+        contentResponse.metadata
+      );
+
+      this.uiManager.hideLoading();
+
+      return JSON.stringify(processedContent);
+    } catch (error) {
+      console.error("Error getting page content:", error);
+      this.uiManager.hideLoading();
+      return null;
+    }
+  }
+
   async summarize() {
+    const pageContent = await this.getPageContent();
+    if (!pageContent) {
+      this.uiManager.showError("Could not get page content");
+      return false;
+    }
+
     const currentTab = await this.getCurrentTab();
     if (!currentTab) {
       this.uiManager.showTabUnavailable();
@@ -196,7 +253,7 @@ export class ErnestoApp {
       });
 
       const apiKey = await this.getApiKey();
-      const summary = await getSummary(url, apiKey);
+      const summary = await getSummary(url, apiKey, pageContent);
 
       await cacheSummary(url, summary);
       this.uiManager.showSummary(summary);

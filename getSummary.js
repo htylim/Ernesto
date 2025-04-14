@@ -2,11 +2,25 @@
  * Makes a request to the OpenAI API to summarize a webpage
  * @param {string} url - The URL of the webpage to summarize
  * @param {string} apiKey - The OpenAI API key
+ * @param {string} pageContent - The extracted content of the webpage
  * @returns {Promise<string>} - The summary text
  */
-export async function getSummary(url, apiKey) {
+export async function getSummary(url, apiKey, pageContent) {
   if (!apiKey) {
     throw new Error("API key not found. Please set it in settings.");
+  }
+
+  let pageData;
+  try {
+    pageData = JSON.parse(pageContent);
+  } catch (error) {
+    console.error("Error parsing page content:", error);
+    pageData = {
+      content: pageContent,
+      title: "Article",
+      url,
+      contentType: "text",
+    };
   }
 
   // - For doing the summary attack it paragraph by paragraph, doing one bullet point per paragraph, each bullet point should be the summary of that paragraph and should be 1 or 2 sentences max.
@@ -15,16 +29,14 @@ export async function getSummary(url, apiKey) {
   const requestBody = {
     model: "gpt-4o",
     temperature: 0,
-    tools: [
-      {
-        type: "web_search",
-        search_context_size: "high",
-      },
-    ],
     input: `
-      Summarize an article following the instructions below.
+      Summarize this article following the instructions below.
 
-      Article: ${url}
+      Title: ${pageData.title}
+      URL: ${pageData.url}
+      ${pageData.excerpt ? `Excerpt: ${pageData.excerpt}` : ""}
+      Content Format: ${pageData.contentType || "text"}
+      Content: ${pageData.content}
 
       Instructions:
       Return response should be structured like this: 
@@ -41,12 +53,14 @@ export async function getSummary(url, apiKey) {
       - Focus on main ideas, key events, important people, and impactful statistics.
       - Ensure sentences are short and clear for better speech quality.
       - Avoid complex punctuation; prefer commas and periods
-      - If for any reason you can not access the article or you dont have access to the full article say what happened and just that. 
       `,
     store: false,
   };
 
-  console.log("Request body:", requestBody);
+  console.log(
+    "Request body:",
+    JSON.stringify(requestBody).substring(0, 200) + "..."
+  );
 
   // Make API request
   const response = await fetch("https://api.openai.com/v1/responses", {

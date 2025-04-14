@@ -2,15 +2,19 @@
     "manifest_version": 3,
     "name": "Ernesto",
     "version": "1.0",
-    "description": "Smart article summarization and audio playback",
+    "description": "Article summarization and text-to-speech extension",
     "permissions": [
+        "tabs",
         "storage",
         "activeTab",
-        "tabs",
+        "scripting",
         "sidePanel"
     ],
+    "host_permissions": [
+        "<all_urls>"
+    ],
     "content_security_policy": {
-        "extension_pages": "script-src 'self'; object-src 'self'; style-src 'self' 'unsafe-inline'; connect-src https://api.openai.com; default-src 'none'"
+        "extension_pages": "script-src 'self' 'unsafe-eval'; object-src 'self'; style-src 'self' 'unsafe-inline'; connect-src https://api.openai.com; default-src 'none'"
     },
     "action": {
         "default_icon": {
@@ -36,11 +40,29 @@
                 "speechifyCache.js",
                 "genericCache.js",
                 "cryptoUtils.js",
-                "vendor/marked.min.js"
+                "vendor/marked.min.js",
+                "vendor/readability.js",
+                "vendor/turndown.js",
+                "vendor/purify.min.js",
+                "contentExtractor.js",
+                "library-test.html",
+                "library-test.js",
+                "sidepanel-libraries.js"
             ],
             "matches": [
                 "<all_urls>"
             ]
+        }
+    ],
+    "content_scripts": [
+        {
+            "matches": [
+                "<all_urls>"
+            ],
+            "js": [
+                "content.js"
+            ],
+            "run_at": "document_start"
         }
     ]
 }
