@@ -24,7 +24,7 @@ export async function getSummary(url, apiKey, pageContent) {
   }
 
   const requestBody = {
-    model: "gpt-4o",
+    model: "gpt-4o-mini",
     temperature: 0,
     input: `
       Summarize this article following the instructions below.

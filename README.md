@@ -9,6 +9,7 @@
   - One-click article summarization
   - Clean side panel display of summaries
   - Summarization is done using OpenAI's Responses API (asking the API plainly "summarize this article")
+  - Works with paywalled and bot-protected content by using your authenticated browser view
 
 - **Article Question-Answering**
 
