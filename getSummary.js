@@ -41,7 +41,7 @@ export async function getSummary(url, apiKey, pageContent) {
       Instructions:
       Return response should be structured like this: 
       
-      <h1>Article Title</h1>
+      <h1 id='article-title'>Article Title</h1>
       <ul>
       <li>Summary point 1</li>
       <li>Summary point 2</li>

@@ -285,7 +285,7 @@ export class ErnestoApp {
       return;
     }
 
-    const tabState = await this.tabStateManager.getTabState(currentTab.id);
+    const tabState = this.tabStateManager.getTabState(currentTab.id);
     if (!tabState) {
       this.uiManager.showTabUnavailable();
       return;
@@ -317,7 +317,11 @@ export class ErnestoApp {
       const summaryText = this.uiManager.getSummaryText();
       const audioBlob = await getSpeechifyAudio(summaryText, apiKey);
 
-      await cacheAudio(url, audioBlob);
+      // ----------------------------------------------------------------
+      // temporarily disable caching of audios, we need a better solution
+      // await cacheAudio(url, audioBlob);
+      // ----------------------------------------------------------------
+
       this.audioController.setupAudio(audioBlob, true);
 
       await this.tabStateManager.updateTabState(currentTab.id, {

@@ -38,6 +38,7 @@ export class UIStateManager {
       tabUnavailable: document.getElementById("tab-unavailable"),
       promptInput: document.getElementById("promptInput"),
       submitPromptBtn: document.getElementById("submitPrompt"),
+      audioTitle: document.getElementById("audio-title"),
     };
   }
 
@@ -325,6 +326,29 @@ export class UIStateManager {
       this.elements.promptResponsesDiv.innerHTML = "";
       this.hideElement(this.elements.promptResponsesDiv);
     }
+  }
+
+  /**
+   * sets the article title label
+   * @param {string} title - The article title
+   */
+  setAudioTitle(title) {
+    if (this.elements.audioTitle) {
+      this.elements.audioTitle.innerHTML = title;
+    }
+  }
+
+  /**
+   * extracts from the article the title of the article.
+   * @returns {String} the article title as it appears on the symmary div
+   */
+  readArticleTitle() {
+    const summaryDiv = this.elements.summaryDiv;
+    if (summaryDiv) {
+      const h1Element = summaryDiv.querySelector("h1");
+      return h1Element ? h1Element.textContent.trim() : "";
+    }
+    return "";
   }
 }
 

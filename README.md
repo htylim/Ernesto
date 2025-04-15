@@ -103,6 +103,7 @@ Ernesto/
 ## Pending Tasks (to implement)
 
 - add unit testing for key components and logic
+- add Google Gemini support and have the choose of model to be configurable from the options page.
 - add encryption for API key storage
 - implement rate limiting for external APIs
 - implement quota management to prevent storage limits issues in chrome.storage.local

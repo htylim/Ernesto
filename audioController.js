@@ -118,6 +118,9 @@ export class AudioController {
     this.setupAudioElementListeners();
     this.updateButtonStates({ playing: false });
 
+    const articleTitle = this.uiManager.readArticleTitle();
+    this.uiManager.setAudioTitle(articleTitle);
+
     if (autoPlay) {
       this.audioElement.play();
     }
