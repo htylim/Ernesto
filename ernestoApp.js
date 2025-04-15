@@ -366,6 +366,9 @@ export class ErnestoApp {
       const url = tabState.url;
       console.log("Processing prompt for:", url);
 
+      // Clear the input field
+      this.uiManager.clearPromptInput();
+
       this.uiManager.showLoading(LOADING_MESSAGES.PROMPT);
       this.uiManager.updateButtonStates(); // Disable buttons during loading
 
@@ -406,9 +409,6 @@ export class ErnestoApp {
 
       // Add to UI
       this.uiManager.addPromptResponse(promptItem);
-
-      // Clear the input field
-      this.uiManager.clearPromptInput();
 
       await this.tabStateManager.updateTabState(currentTab.id, {
         isLoading: false,

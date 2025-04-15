@@ -30,9 +30,9 @@ export async function getResponse(
     // Prepare request body
     const requestBody = {
       model: "gpt-4o",
-      instructions: `You are an assistant helping understand this article ${url}. Provide always very concise and brief answers.`,
+      instructions: `You are a helpful assistant provide always very concise and brief answers.`,
       tools: [{ type: "web_search", search_context_size: "high" }],
-      input: prompt,
+      input: `I'm reading this article ${url} and I want to ask you the following: ${prompt}`,
     };
 
     // If first prompt in the conversation add the `instructions`, if is not add the `previous_response_id`
