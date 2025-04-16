@@ -59,6 +59,78 @@
     .cache-item p {
       margin-top: 0;
     }
+    .color-picker-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      margin-bottom: 15px;
+    }
+    .color-option {
+      display: flex;
+      flex-direction: column;
+      width: 45%;
+    }
+    .color-option label {
+      font-size: 14px;
+      margin-bottom: 5px;
+    }
+    .color-picker {
+      display: flex;
+      align-items: center;
+    }
+    input[type="color"] {
+      width: 60px;
+      height: 30px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      background: none;
+      cursor: pointer;
+    }
+    .color-option-with-sync {
+      display: flex;
+      flex-direction: column;
+      width: 45%;
+    }
+    .sync-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 5px;
+    }
+    .sync-button {
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 5px 8px;
+      font-size: 12px;
+      cursor: pointer;
+      white-space: nowrap;
+      height: 26px;
+      display: flex;
+      align-items: center;
+    }
+    .sync-button:hover {
+      background-color: #388E3C;
+    }
+    .sync-icon {
+      width: 14px;
+      height: 14px;
+      margin-right: 4px;
+    }
+    .color-label {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .color-name {
+      font-size: 14px;
+      font-weight: 500;
+    }
+    .color-description {
+      font-size: 12px;
+      color: #666;
+    }
   </style>
 </head>
 <body>
@@ -73,6 +145,60 @@
     </div>
     <button id="save">Save</button>
     <button id="cancel">Cancel</button>
+    
+    <div class="section-divider">
+      <h3>Theme Customization</h3>
+      <div class="color-picker-container">
+        <div class="color-option-with-sync">
+          <div class="color-label">
+            <span class="color-name">Main Accent Color</span>
+            <span class="color-description">Primary buttons</span>
+          </div>
+          <div class="color-picker">
+            <input type="color" id="mainAccentColor">
+          </div>
+          <div class="sync-row">
+            <button id="syncColors" class="sync-button">
+              <svg class="sync-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M4 12a8 8 0 0 1 8-8v2.5M20 12a8 8 0 0 1-8 8v-2.5"></path>
+                <path d="M12 2v4M12 18v4"></path>
+              </svg>
+              Auto-sync colors
+            </button>
+            <div class="help-text">Derive other colors from accent</div>
+          </div>
+        </div>
+        <div class="color-option">
+          <div class="color-label">
+            <span class="color-name">Hover Color</span>
+            <span class="color-description">Button hover states</span>
+          </div>
+          <div class="color-picker">
+            <input type="color" id="hoverColor">
+          </div>
+        </div>
+        <div class="color-option">
+          <div class="color-label">
+            <span class="color-name">Disabled Color</span>
+            <span class="color-description">Inactive buttons</span>
+          </div>
+          <div class="color-picker">
+            <input type="color" id="disabledColor">
+          </div>
+        </div>
+        <div class="color-option">
+          <div class="color-label">
+            <span class="color-name">Summary Background</span>
+            <span class="color-description">Summary section</span>
+          </div>
+          <div class="color-picker">
+            <input type="color" id="summaryBgColor">
+          </div>
+        </div>
+      </div>
+      <button id="saveColors">Apply Colors</button>
+      <button id="resetColors">Reset to Default</button>
+    </div>
     
     <div class="section-divider">
       <h3>Cache Management</h3>
