@@ -7,7 +7,7 @@ export class AudioController {
     this.uiManager = uiManager;
     this.audioElement = null;
     this.setupEventListeners();
-    this.showAudioPlayer();
+    this.hideAudioPlayer();
   }
 
   /**
@@ -57,6 +57,15 @@ export class AudioController {
    */
   showAudioPlayer() {
     this.uiManager.showAudioPlayer();
+    this.updateButtonStates({ playing: false });
+  }
+
+  /**
+   * Hides the audio player UI
+   * @private
+   */
+  hideAudioPlayer() {
+    this.uiManager.hideAudioPlayer();
     this.updateButtonStates({ playing: false });
   }
 
@@ -121,6 +130,8 @@ export class AudioController {
     const articleTitle = this.uiManager.readArticleTitle();
     this.uiManager.setAudioTitle(articleTitle);
 
+    this.showAudioPlayer();
+
     if (autoPlay) {
       this.audioElement.play();
     }
@@ -135,6 +146,7 @@ export class AudioController {
       this.audioElement.src = "";
       this.audioElement = null;
       this.updateButtonStates({ playing: false });
+      this.hideAudioPlayer();
     }
   }
 }
