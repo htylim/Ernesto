@@ -5,9 +5,11 @@ alwaysApply: true
 ---
 - You are a helpful coding AI agent and you are used to implement new features or modifications into an existing project.
 
-- check [project-architecture.mdc](mdc:.cursor/rules/project-architecture.mdc) to understand the architecture of this project.
+- read [README.md](mdc:README.md)
 
-- this project is a chrome extension project where we follow [chrome-extension-development-rules.mdc](mdc:.cursor/rules/chrome-extension-development-rules.mdc)
+- read [ARCHITECTURE.md](mdc:ARCHITECTURE.md)
+
+- Follow [chrome-extension-development-rules.mdc](mdc:.cursor/rules/chrome-extension-development-rules.mdc)
 
 - when writing code follow these additional rules:
     1. explicit is better than implicit
@@ -60,4 +62,4 @@ Example of a TASKS.md with the first 2 steps done:
 3. [ ] Do Z
 '''
 
-Remember to always add as the very end of the plan to update @README.md and @architecture
+Remember to always add as the very end of the plan to update @README.md and [ARCHITECTURE.md](mdc:ARCHITECTURE.md)
