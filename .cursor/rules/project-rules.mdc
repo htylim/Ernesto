@@ -28,7 +28,7 @@ alwaysApply: true
 
 - In case of ambiguity or lack of clarity on a prompt always ask for clarification.
 
-# Procedure to follow to solve every prompt
+# Procedure to follow to solve any prompt
 
 - Always think very thoroughly about what was asked and create a multi-step plan to solve the ask.
 
@@ -42,10 +42,6 @@ Each step of the plan should be delineated in the file like this.
 
 Example of a TASKS.md file:
 '''
-# Prompt
-the description of the prompt
-
-# Tasks
 1. [ ] Do X
 2. [ ] Do Y
     1. [ ] Do Y.a
@@ -57,10 +53,6 @@ When a step or sub-step is completed edit the file to mark the step as done like
 
 Example of a TASKS.md with the first 2 steps done:
 '''
-# Prompt
-the description of the prompt
-
-# Tasks
 1. [x] Do X
 2. [ ] Do Y
     1. [x] Do Y.a
@@ -68,4 +60,4 @@ the description of the prompt
 3. [ ] Do Z
 '''
 
-Remember to always add after all the implementation steps an additional step to update [README.md](mdc:README.md) and [ARCHITECTURE.md](mdc:ARCHITECTURE.md) as stated in [project-rules.mdc](mdc:.cursor/rules/project-rules.mdc)
+Remember to always add as the very end of the plan to update @README.md and @architecture
