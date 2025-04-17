@@ -1,13 +1,15 @@
 // Default color values
-const DEFAULT_COLORS = {
+export const DEFAULT_COLORS = {
   mainAccentColor: "#0066cc",
   hoverColor: "#0052a3",
   disabledColor: "#004d99",
   summaryBgColor: "#f0f7ff",
 };
 
-// Storage key for colors
-const COLORS_STORAGE_KEY = "ernesto_colors";
+// OLD Storage key for colors (will be removed after migration)
+const OLD_COLORS_STORAGE_KEY = "ernesto_colors";
+// NEW Storage key for domain-specific and default themes
+const DOMAIN_COLORS_STORAGE_KEY = "domain_color_themes";
 
 /**
  * Color theme structure
@@ -19,48 +21,191 @@ const COLORS_STORAGE_KEY = "ernesto_colors";
  */
 
 /**
- * Get the current color theme from storage or use defaults
- * @returns {Promise<ColorTheme>} The color theme object
+ * Structure for storing domain-specific themes
+ * @typedef {Object} DomainColorThemes
+ * @property {ColorTheme} default - The default theme
+ * @property {Object.<string, ColorTheme>} domains - Dictionary of domain-specific themes
  */
-export async function getColorTheme() {
+
+/**
+ * Retrieves the entire domain themes structure from storage.
+ * Initializes with defaults if not found.
+ * @returns {Promise<DomainColorThemes>} The domain themes structure.
+ */
+export async function getDomainThemesStructure() {
   return new Promise((resolve) => {
-    chrome.storage.local.get(COLORS_STORAGE_KEY, (result) => {
-      const colors = result[COLORS_STORAGE_KEY] || DEFAULT_COLORS;
-      resolve(colors);
+    chrome.storage.local.get(DOMAIN_COLORS_STORAGE_KEY, (result) => {
+      let themes = result[DOMAIN_COLORS_STORAGE_KEY];
+      if (!themes || !themes.default || !themes.domains) {
+        // Initialize if structure is missing or invalid
+        themes = {
+          default: DEFAULT_COLORS,
+          domains: {},
+        };
+        // Optionally save the initialized structure back,
+        // but migration script should handle initial setup.
+        // chrome.storage.local.set({ [DOMAIN_COLORS_STORAGE_KEY]: themes });
+      }
+      resolve(themes);
     });
   });
 }
 
 /**
- * Save the color theme to storage
- * @param {ColorTheme} colors - The color theme object containing mainAccentColor, hoverColor, disabledColor, and summaryBgColor
+ * Saves the entire domain themes structure to storage.
+ * @param {DomainColorThemes} themes - The themes object to save.
  * @returns {Promise<void>}
  */
-export async function setColorTheme(colors) {
+async function saveDomainThemesStructure(themes) {
   return new Promise((resolve) => {
-    const data = {};
-    data[COLORS_STORAGE_KEY] = colors;
-    chrome.storage.local.set(data, resolve);
+    chrome.storage.local.set({ [DOMAIN_COLORS_STORAGE_KEY]: themes }, resolve);
   });
 }
 
 /**
- * Reset colors to default values
- * @returns {Promise<ColorTheme>} The default colors
+ * Get the appropriate color theme for a given domain.
+ * Falls back to the default theme if no specific theme is found for the domain.
+ * @param {string} [domain] - Optional domain name. If omitted or no theme is found, returns the default theme.
+ * @returns {Promise<ColorTheme>} The resolved color theme object.
  */
-export async function resetToDefaultColors() {
-  await setColorTheme(DEFAULT_COLORS);
+export async function getColorTheme(domain) {
+  const themes = await getDomainThemesStructure();
+  if (domain && themes.domains[domain]) {
+    return themes.domains[domain];
+  }
+  return themes.default;
+}
+
+/**
+ * Get the current default color theme.
+ * @returns {Promise<ColorTheme>} The default color theme object.
+ */
+export async function getDefaultColorTheme() {
+  const themes = await getDomainThemesStructure();
+  return themes.default;
+}
+
+/**
+ * Save the default color theme.
+ * @param {ColorTheme} theme - The color theme object to set as default.
+ * @returns {Promise<void>}
+ */
+export async function setDefaultColorTheme(theme) {
+  const themes = await getDomainThemesStructure();
+  themes.default = theme;
+  await saveDomainThemesStructure(themes);
+}
+
+/**
+ * Save a color theme for a specific domain.
+ * @param {string} domain - The domain name.
+ * @param {ColorTheme} theme - The color theme object.
+ * @returns {Promise<void>}
+ */
+export async function setDomainColorTheme(domain, theme) {
+  if (!domain) throw new Error("Domain cannot be empty");
+  const themes = await getDomainThemesStructure();
+  themes.domains[domain] = theme;
+  await saveDomainThemesStructure(themes);
+}
+
+/**
+ * Remove the color theme for a specific domain.
+ * @param {string} domain - The domain name.
+ * @returns {Promise<void>}
+ */
+export async function removeDomainColorTheme(domain) {
+  if (!domain) throw new Error("Domain cannot be empty");
+  const themes = await getDomainThemesStructure();
+  if (themes.domains[domain]) {
+    delete themes.domains[domain];
+    await saveDomainThemesStructure(themes);
+  }
+}
+
+/**
+ * Reset the default theme to the hardcoded default values.
+ * @returns {Promise<ColorTheme>} The default colors that were set.
+ */
+export async function resetDefaultColorTheme() {
+  await setDefaultColorTheme(DEFAULT_COLORS);
   return DEFAULT_COLORS;
 }
 
 /**
- * Apply the color theme to the document
- * @param {ColorTheme} colors - The color theme object containing mainAccentColor, hoverColor, disabledColor, and summaryBgColor
+ * Apply the color theme to the document root as CSS variables.
+ * (This function remains unchanged in its core logic)
+ * @param {ColorTheme} colors - The color theme object to apply.
  */
 export function applyColorTheme(colors) {
   const root = document.documentElement;
-  root.style.setProperty("--main-accent-color", colors.mainAccentColor);
-  root.style.setProperty("--hover-color", colors.hoverColor);
-  root.style.setProperty("--disabled-color", colors.disabledColor);
-  root.style.setProperty("--summary-bg-color", colors.summaryBgColor);
+  // Ensure colors object is valid, fallback to defaults if not
+  const safeColors =
+    colors && typeof colors === "object" ? colors : DEFAULT_COLORS;
+  root.style.setProperty(
+    "--main-accent-color",
+    safeColors.mainAccentColor || DEFAULT_COLORS.mainAccentColor
+  );
+  root.style.setProperty(
+    "--hover-color",
+    safeColors.hoverColor || DEFAULT_COLORS.hoverColor
+  );
+  root.style.setProperty(
+    "--disabled-color",
+    safeColors.disabledColor || DEFAULT_COLORS.disabledColor
+  );
+  root.style.setProperty(
+    "--summary-bg-color",
+    safeColors.summaryBgColor || DEFAULT_COLORS.summaryBgColor
+  );
+}
+
+// Migration related function (to be called from background script)
+/**
+ * Migrates old theme settings to the new structure.
+ * Reads the old global theme, sets it as the new default, and removes the old key.
+ * If no old theme exists, initializes with hardcoded defaults.
+ * Should ideally be called only once during extension update/install.
+ * @returns {Promise<void>}
+ */
+export async function migrateThemeSettings() {
+  console.log("Checking for theme settings migration...");
+  const oldSettings = await new Promise((resolve) => {
+    chrome.storage.local.get(OLD_COLORS_STORAGE_KEY, resolve);
+  });
+  const newSettings = await new Promise((resolve) => {
+    chrome.storage.local.get(DOMAIN_COLORS_STORAGE_KEY, resolve);
+  });
+
+  if (!newSettings || !newSettings[DOMAIN_COLORS_STORAGE_KEY]) {
+    // New structure doesn't exist, perform migration/initialization
+    const initialDefaultTheme =
+      oldSettings[OLD_COLORS_STORAGE_KEY] || DEFAULT_COLORS;
+    console.log(
+      "Migrating/Initializing theme settings. Using default:",
+      initialDefaultTheme
+    );
+
+    const initialStructure = {
+      default: initialDefaultTheme,
+      domains: {},
+    };
+
+    await saveDomainThemesStructure(initialStructure);
+    console.log("New theme structure initialized.");
+
+    // Remove the old key after successful migration
+    if (oldSettings[OLD_COLORS_STORAGE_KEY]) {
+      await new Promise((resolve) => {
+        chrome.storage.local.remove(OLD_COLORS_STORAGE_KEY, () => {
+          console.log("Old theme settings key removed.");
+          resolve();
+        });
+      });
+    }
+  } else {
+    console.log(
+      "Theme settings structure already exists. No migration needed."
+    );
+  }
 }

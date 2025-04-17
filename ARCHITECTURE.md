@@ -7,12 +7,12 @@ This document outlines the structure and purpose of the files and folders within
 ### Files
 
 - `manifest.json`: The core configuration file for the Chrome Extension. It defines permissions, scripts (background, content, side panel), icons, options page, and other essential extension properties.
-- `background.js`: The extension's service worker. It runs in the background, manages extension lifecycle events (like installation, updates), handles API key storage changes, configures the side panel, schedules periodic cache clearing, and listens for the extension icon click to open the side panel.
+- `background.js`: The extension's service worker. It runs in the background, manages extension lifecycle events (like installation, updates), handles API key storage changes, configures the side panel, schedules periodic cache clearing, listens for the extension icon click to open the side panel, and runs theme setting migrations on install/update.
 - `content.js`: The content script injected into web pages. It listens for messages from other parts of the extension (like the side panel) and responds with the basic HTML content and metadata (title, URL, site name) of the current page. It does minimal processing, leaving heavy lifting to other scripts.
-- `options.html`: The HTML structure for the extension's options/settings page. It includes input fields for the OpenAI API key, controls for theme customization (color pickers), and buttons for cache management (purging summaries, audio, prompts).
-- `options.js`: The JavaScript logic for the `options.html` page. It handles loading/saving the API key (using encryption), managing color theme settings (getting, setting, resetting, deriving colors, applying themes), clearing different types of caches (summaries, audio, prompts), updating cache size display, and managing the UI state of the options page.
+- `options.html`: The HTML structure for the extension's options/settings page. It includes input fields for the OpenAI API key, controls for theme customization (separate sections for default and domain-specific themes with color pickers), and buttons for cache management (purging summaries, audio, prompts).
+- `options.js`: The JavaScript logic for the `options.html` page. It handles loading/saving the API key (using encryption), managing both default and domain-specific color theme settings (getting, setting, editing, deleting, resetting, deriving colors), clearing different types of caches (summaries, audio, prompts), updating cache size display, and managing the UI state of the options page. It notifies other extension parts when themes change.
 - `sidepanel.html`: The HTML structure for the extension's side panel UI. This is the main user interface displayed when the extension icon is clicked. It includes buttons for summarizing, generating audio (speechify), asking questions (prompt), opening options, and closing the panel. It also contains areas to display the page title, loading indicators, the generated summary, prompt responses, and an audio player.
-- `sidepanel.js`: The entry point script for the side panel. It initializes the main application logic (`ErnestoApp`), loads and applies the current color theme, and sets up listeners for theme changes broadcast from the options page.
+- `sidepanel.js`: The entry point script for the side panel. It initializes the main application logic (`ErnestoApp`), loads and applies the correct color theme based on the current tab's domain (using `colorThemeManager.js`), and sets up listeners for theme changes broadcast from the options page, as well as listeners for tab activation and URL updates to re-apply the correct theme.
 - `ernestoApp.js`: The main application logic controller residing in the side panel. It orchestrates the core functionalities:
   - Initializes UI (`UIStateManager`), audio (`AudioController`), and tab state (`TabStateManager`).
   - Sets up event listeners for UI buttons (summarize, speechify, prompt, options, close).
@@ -36,7 +36,7 @@ This document outlines the structure and purpose of the files and folders within
 - `summariesCache.js`: A specific implementation of `GenericCache` for storing and retrieving page summaries, keyed by URL.
 - `speechifyCache.js`: A specific implementation of `GenericCache` for storing and retrieving generated audio (as Blobs), keyed by URL. Includes custom serialization/deserialization to handle Blobs in `chrome.storage.local`.
 - `promptsCache.js`: A specific implementation of `GenericCache` for storing and retrieving conversation history (prompts and responses) for a page, keyed by URL.
-- `colorThemeManager.js`: Manages the color theme settings (main accent, hover, disabled, summary background). Provides functions to get, set, reset, and apply the theme colors using CSS variables. Used by `options.js` and `sidepanel.js`.
+- `colorThemeManager.js`: Manages the color theme settings. Stores a default theme and domain-specific themes in `chrome.storage.local`. Provides functions to get the appropriate theme for a given domain (falling back to default), set/remove domain themes, set/reset the default theme, migrate old settings, and apply theme colors using CSS variables. Used by `options.js`, `sidepanel.js`, and `background.js` (for migration).
 - `sidepanel-libraries.js`: Likely intended to load or manage external libraries specifically for the side panel, although its current content might be minimal or placeholder. `manifest.json` lists it as a web accessible resource.
 - `library-test.html` / `library-test.js`: Appear to be test files, potentially for experimenting with or verifying the functionality of external libraries like Readability, Marked, DOMPurify, Turndown, etc., which are listed in `manifest.json` as web accessible resources.
 - `package.json`: Standard Node.js manifest file defining project metadata, dependencies, and scripts. Indicates the project might use npm/Node.js for development tooling or dependency management, although the core extension is vanilla JS.
@@ -57,7 +57,7 @@ This document outlines the structure and purpose of the files and folders within
 
 1.  **Installation/Load:** `background.js` runs, sets up the side panel via `chrome.sidePanel.setOptions`, and schedules cache clearing.
 2.  **User Interaction (Icon Click):** `background.js` listens for `chrome.action.onClicked` and opens `sidepanel.html`.
-3.  **Side Panel Load:** `sidepanel.html` loads. `sidepanel.js` runs, applies the theme via `colorThemeManager.js`, and initializes `ErnestoApp`.
+3.  **Side Panel Load:** `sidepanel.html` loads. `sidepanel.js` runs, determines the current tab's domain, applies the corresponding theme (domain-specific or default) via `colorThemeManager.js`, and initializes `ErnestoApp`. It also sets up listeners to re-apply themes on tab switches, URL changes, or notifications from `options.js`.
 4.  **`ErnestoApp` Initialization:**
     - Creates instances of `UIStateManager`, `AudioController`, `TabStateManager`.
     - Sets up button listeners.
@@ -98,6 +98,6 @@ This document outlines the structure and purpose of the files and folders within
     - Displays response using `UIStateManager`.
 9.  **Options Page:**
     - User opens `options.html`.
-    - `options.js` loads API key (`apiKeyManager.js`) and theme (`colorThemeManager.js`).
-    - User changes settings and saves.
-    - `options.js` saves API key/theme, potentially clearing caches or notifying other parts of the extension (like the side panel for theme changes).
+    - `options.js` loads API key (`apiKeyManager.js`) and all themes (`colorThemeManager.js`), displaying the default theme and the list of domain themes.
+    - User changes settings (API key, default theme, add/edit/delete domain themes) and saves.
+    - `options.js` saves changes using the respective managers, potentially clearing caches, and sends a generic notification if themes were modified.

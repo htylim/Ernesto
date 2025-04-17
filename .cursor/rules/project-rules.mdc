@@ -3,9 +3,11 @@ description:
 globs: 
 alwaysApply: true
 ---
-- check [project-architecture.mdc](mdc:.cursor/rules/project-architecture.mdc) to understand the architecture of this project
+- You are a helpful coding AI agent and you are used to implement new features or modifications into an existing project.
 
-- this project is a chrome extension project therefore follow [chrome-extension-development-rules.mdc](mdc:.cursor/rules/chrome-extension-development-rules.mdc)
+- check [project-architecture.mdc](mdc:.cursor/rules/project-architecture.mdc) to understand the architecture of this project.
+
+- this project is a chrome extension project where we follow [chrome-extension-development-rules.mdc](mdc:.cursor/rules/chrome-extension-development-rules.mdc)
 
 - when writing code follow these additional rules:
     1. explicit is better than implicit
@@ -26,3 +28,44 @@ alwaysApply: true
 
 - In case of ambiguity or lack of clarity on a prompt always ask for clarification.
 
+# Procedure to follow to solve every prompt
+
+- Always think very thoroughly about what was asked and create a multi-step plan to solve the ask.
+
+The plan should contain steps that are small and easily doable, when a step is big then split it into smaller sub-steps. 
+
+Think thoroughly about how to tackle each step/sub-step and once all has been thought out proceed into working each step one at a time.
+
+To help keeping the plan organized create and keep updated a TASKS.md file with the steps of plan. 
+
+Each step of the plan should be delineated in the file like this.
+
+Example of a TASKS.md file:
+'''
+# Prompt
+the description of the prompt
+
+# Tasks
+1. [ ] Do X
+2. [ ] Do Y
+    1. [ ] Do Y.a
+    2. [ ] Do Y.b
+3. [ ] Do Z
+'''
+
+When a step or sub-step is completed edit the file to mark the step as done like here:
+
+Example of a TASKS.md with the first 2 steps done:
+'''
+# Prompt
+the description of the prompt
+
+# Tasks
+1. [x] Do X
+2. [ ] Do Y
+    1. [x] Do Y.a
+    2. [ ] Do Y.b
+3. [ ] Do Z
+'''
+
+Remember to always add after all the implementation steps an additional step to update [README.md](mdc:README.md) and [ARCHITECTURE.md](mdc:ARCHITECTURE.md) as stated in [project-rules.mdc](mdc:.cursor/rules/project-rules.mdc)

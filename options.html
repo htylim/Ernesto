@@ -131,6 +131,33 @@
       font-size: 12px;
       color: #666;
     }
+    .domain-theme-list-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      margin-bottom: 10px;
+    }
+    .domain-theme-actions button {
+      margin-left: 5px;
+      font-size: 12px;
+      padding: 4px 8px;
+    }
+    .domain-theme-form {
+        margin-top: 20px;
+        padding: 15px;
+        border: 1px solid #eee;
+        border-radius: 4px;
+        background-color: #f9f9f9;
+    }
+    .domain-theme-form h4 {
+        margin-top: 0;
+    }
+    .hidden {
+        display: none;
+    }
   </style>
 </head>
 <body>
@@ -148,7 +175,11 @@
     
     <div class="section-divider">
       <h3>Theme Customization</h3>
-      <div class="color-picker-container">
+      
+      <!-- Default Theme Section -->
+      <h4>Default Theme</h4>
+      <p class="help-text">This theme applies to all websites unless a specific theme is set below.</p>
+      <div class="color-picker-container" id="default-theme-pickers">
         <div class="color-option-with-sync">
           <div class="color-label">
             <span class="color-name">Main Accent Color</span>
@@ -196,8 +227,57 @@
           </div>
         </div>
       </div>
-      <button id="saveColors">Apply Colors</button>
-      <button id="resetColors">Reset to Default</button>
+      <button id="saveDefaultTheme">Save Default Theme</button>
+      <button id="resetDefaultTheme">Reset Default Theme</button>
+
+      <!-- Domain Specific Themes Section -->
+      <div class="section-divider"></div>
+      <h4>Domain Specific Themes</h4>
+      <p class="help-text">Set custom themes for specific websites.</p>
+
+      <div id="domain-themes-list">
+          <!-- Domain themes will be listed here by options.js -->
+      </div>
+      
+      <div class="domain-theme-form">
+          <h4>Add/Edit Domain Theme</h4>
+          <div class="form-group">
+              <label for="domainName">Domain Name (e.g., example.com)</label>
+              <input type="text" id="domainName" placeholder="Enter domain name">
+              <input type="hidden" id="editingDomainName">
+          </div>
+          <div class="color-picker-container" id="domain-theme-pickers">
+              <div class="color-option-with-sync">
+                  <label for="domainMainAccentColor">Main Accent Color</label>
+                  <input type="color" id="domainMainAccentColor">
+                  <div class="sync-row">
+                      <button id="syncDomainColors" class="sync-button">
+                          <svg class="sync-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                              <path d="M4 12a8 8 0 0 1 8-8v2.5M20 12a8 8 0 0 1-8 8v-2.5"></path>
+                              <path d="M12 2v4M12 18v4"></path>
+                          </svg>
+                          Auto-sync colors
+                      </button>
+                      <div class="help-text">Derive other colors from accent</div>
+                  </div>
+              </div>
+              <div class="color-option">
+                  <label for="domainHoverColor">Hover Color</label>
+                  <input type="color" id="domainHoverColor">
+              </div>
+              <div class="color-option">
+                  <label for="domainDisabledColor">Disabled Color</label>
+                  <input type="color" id="domainDisabledColor">
+              </div>
+              <div class="color-option">
+                  <label for="domainSummaryBgColor">Summary Background</label>
+                  <input type="color" id="domainSummaryBgColor">
+              </div>
+          </div>
+          <button id="saveDomainTheme">Save Domain Theme</button>
+          <button id="cancelEditDomainTheme" class="hidden">Cancel Edit</button>
+      </div>
+
     </div>
     
     <div class="section-divider">

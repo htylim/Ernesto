@@ -32,6 +32,7 @@
 - **Configuration**
   - OpenAI's KEY for both APIs is the only required configuration. User will have to generate and provide their own keys for the extension to work.
   - API keys are securely stored with encryption
+  - Customizable color themes, settable globally (default) or per-domain.
 
 ## 🛠️ Tech Stack
 

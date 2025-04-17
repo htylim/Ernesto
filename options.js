@@ -6,9 +6,14 @@ import { getApiKey, setApiKey } from "./apiKeyManager.js";
 import { clearPromptsCache } from "./promptsCache.js";
 import { promptsCache } from "./promptsCache.js";
 import {
-  getColorTheme,
-  setColorTheme,
-  resetToDefaultColors,
+  getDomainThemesStructure,
+  getDefaultColorTheme,
+  setDefaultColorTheme,
+  setDomainColorTheme,
+  removeDomainColorTheme,
+  resetDefaultColorTheme,
+  applyColorTheme,
+  DEFAULT_COLORS,
 } from "./colorThemeManager.js";
 
 // Constants
@@ -188,14 +193,25 @@ class UIStateManager {
       summariesSize: document.querySelector("#summariesSize"),
       audioSize: document.querySelector("#audioSize"),
       promptsSize: document.querySelector("#promptsSize"),
-      // Color picker elements
       mainAccentColor: document.querySelector("#mainAccentColor"),
       hoverColor: document.querySelector("#hoverColor"),
       disabledColor: document.querySelector("#disabledColor"),
       summaryBgColor: document.querySelector("#summaryBgColor"),
-      saveColorsButton: document.querySelector("#saveColors"),
-      resetColorsButton: document.querySelector("#resetColors"),
+      saveDefaultThemeButton: document.querySelector("#saveDefaultTheme"),
+      resetDefaultThemeButton: document.querySelector("#resetDefaultTheme"),
       syncColorsButton: document.querySelector("#syncColors"),
+      domainThemesList: document.querySelector("#domain-themes-list"),
+      domainNameInput: document.querySelector("#domainName"),
+      editingDomainNameHidden: document.querySelector("#editingDomainName"),
+      domainMainAccentColor: document.querySelector("#domainMainAccentColor"),
+      domainHoverColor: document.querySelector("#domainHoverColor"),
+      domainDisabledColor: document.querySelector("#domainDisabledColor"),
+      domainSummaryBgColor: document.querySelector("#domainSummaryBgColor"),
+      saveDomainThemeButton: document.querySelector("#saveDomainTheme"),
+      cancelEditDomainThemeButton: document.querySelector(
+        "#cancelEditDomainTheme"
+      ),
+      syncDomainColorsButton: document.querySelector("#syncDomainColors"),
     };
     this.validateElements();
   }
@@ -250,14 +266,14 @@ class UIStateManager {
     return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
   }
 
-  updateColorPickers(colors) {
+  updateDefaultColorPickers(colors) {
     this.elements.mainAccentColor.value = colors.mainAccentColor;
     this.elements.hoverColor.value = colors.hoverColor;
     this.elements.disabledColor.value = colors.disabledColor;
     this.elements.summaryBgColor.value = colors.summaryBgColor;
   }
 
-  getColorValues() {
+  getDefaultColorValues() {
     return {
       mainAccentColor: this.elements.mainAccentColor.value,
       hoverColor: this.elements.hoverColor.value,
@@ -266,10 +282,107 @@ class UIStateManager {
     };
   }
 
+  updateDomainColorPickers(colors) {
+    this.elements.domainMainAccentColor.value = colors.mainAccentColor;
+    this.elements.domainHoverColor.value = colors.hoverColor;
+    this.elements.domainDisabledColor.value = colors.disabledColor;
+    this.elements.domainSummaryBgColor.value = colors.summaryBgColor;
+  }
+
+  getDomainColorValues() {
+    return {
+      mainAccentColor: this.elements.domainMainAccentColor.value,
+      hoverColor: this.elements.domainHoverColor.value,
+      disabledColor: this.elements.domainDisabledColor.value,
+      summaryBgColor: this.elements.domainSummaryBgColor.value,
+    };
+  }
+
+  getDomainNameValue() {
+    return this.elements.domainNameInput.value.trim().toLowerCase();
+  }
+
+  setDomainNameValue(domain) {
+    this.elements.domainNameInput.value = domain;
+  }
+
+  getEditingDomainName() {
+    return this.elements.editingDomainNameHidden.value;
+  }
+
+  setEditingDomainName(domain) {
+    this.elements.editingDomainNameHidden.value = domain;
+  }
+
+  resetDomainForm(useDefaults = false) {
+    this.setDomainNameValue("");
+    this.setEditingDomainName("");
+    const colorsToSet = useDefaults
+      ? DEFAULT_COLORS
+      : this.getDomainColorValues();
+    this.updateDomainColorPickers(colorsToSet);
+    this.elements.cancelEditDomainThemeButton.classList.add("hidden");
+    this.elements.domainNameInput.disabled = false;
+  }
+
+  prepareDomainFormForEdit(domain, colors) {
+    this.setDomainNameValue(domain);
+    this.setEditingDomainName(domain);
+    this.updateDomainColorPickers(colors);
+    this.elements.cancelEditDomainThemeButton.classList.remove("hidden");
+    this.elements.domainNameInput.focus();
+  }
+
+  renderDomainThemesList(domains, editCallback, deleteCallback) {
+    this.elements.domainThemesList.innerHTML = "";
+    const sortedDomains = Object.keys(domains).sort();
+
+    if (sortedDomains.length === 0) {
+      this.elements.domainThemesList.innerHTML = `<p>No domain-specific themes configured yet.</p>`;
+      return;
+    }
+
+    sortedDomains.forEach((domain) => {
+      const theme = domains[domain];
+      const listItem = document.createElement("div");
+      listItem.classList.add("domain-theme-list-item");
+      listItem.dataset.domain = domain;
+
+      const domainInfo = document.createElement("span");
+      const swatch = document.createElement("span");
+      swatch.style.display = "inline-block";
+      swatch.style.width = "15px";
+      swatch.style.height = "15px";
+      swatch.style.backgroundColor = theme.mainAccentColor;
+      swatch.style.marginRight = "8px";
+      swatch.style.border = "1px solid #ccc";
+      domainInfo.appendChild(swatch);
+      domainInfo.appendChild(document.createTextNode(domain));
+      listItem.appendChild(domainInfo);
+
+      const actions = document.createElement("div");
+      actions.classList.add("domain-theme-actions");
+
+      const editButton = document.createElement("button");
+      editButton.textContent = "Edit";
+      editButton.onclick = () => editCallback(domain, theme);
+      actions.appendChild(editButton);
+
+      const deleteButton = document.createElement("button");
+      deleteButton.textContent = "Delete";
+      deleteButton.classList.add("danger-button");
+      deleteButton.onclick = () => deleteCallback(domain);
+      actions.appendChild(deleteButton);
+
+      listItem.appendChild(actions);
+      this.elements.domainThemesList.appendChild(listItem);
+    });
+  }
+
   syncColorsFromAccent() {
     const mainAccentColor = this.elements.mainAccentColor.value;
     const derivedColors = colorUtils.deriveColors(mainAccentColor);
-    this.updateColorPickers(derivedColors);
+    this.updateDefaultColorPickers(derivedColors);
     return derivedColors;
   }
 }
@@ -334,7 +447,6 @@ class CacheManager {
     }
 
     try {
-      // Disable buttons and set initial status
       statuses.forEach(({ buttonName, statusPrefix, isAudio, isPrompts }) => {
         this.uiManager.setButtonDisabled(buttonName, true);
         this.uiManager.setPurgeStatus(
@@ -344,11 +456,9 @@ class CacheManager {
         );
       });
 
-      // Execute all purge operations
       await Promise.all(operations);
       await this.updateCacheSizes();
 
-      // Update status for each operation
       statuses.forEach(({ buttonName, statusPrefix, isAudio, isPrompts }) => {
         this.uiManager.setPurgeStatus(
           `${statusPrefix} cache purged successfully!`,
@@ -378,46 +488,154 @@ class CacheManager {
 class ColorManager {
   constructor(uiManager) {
     this.uiManager = uiManager;
+    this.currentThemes = { default: DEFAULT_COLORS, domains: {} };
   }
 
-  async loadColors() {
+  async loadThemes() {
     try {
-      const colors = await getColorTheme();
-      this.uiManager.updateColorPickers(colors);
+      this.currentThemes = await getDomainThemesStructure();
+      this.uiManager.updateDefaultColorPickers(this.currentThemes.default);
+      this.uiManager.renderDomainThemesList(
+        this.currentThemes.domains,
+        this.handleEditDomain.bind(this),
+        this.handleDeleteDomain.bind(this)
+      );
+      this.uiManager.resetDomainForm(true);
     } catch (error) {
-      console.error("Error loading colors:", error);
+      console.error("Error loading themes:", error);
     }
   }
 
-  async saveColors() {
+  async saveDefaultTheme() {
     try {
-      const colors = this.uiManager.getColorValues();
-      await setColorTheme(colors);
-      // Notify other extension components about the color change
-      this.notifyColorChange(colors);
+      const colors = this.uiManager.getDefaultColorValues();
+      await setDefaultColorTheme(colors);
+      this.currentThemes.default = colors;
+      this.notifyColorChange();
+      console.log("Default theme saved.");
       return true;
     } catch (error) {
-      console.error("Error saving colors:", error);
+      console.error("Error saving default theme:", error);
+      alert("Error saving default theme.");
       return false;
     }
   }
 
-  async resetColors() {
+  async resetDefaultTheme() {
+    if (
+      !confirm(
+        "Are you sure you want to reset the default theme to its original colors?"
+      )
+    ) {
+      return false;
+    }
     try {
-      const defaultColors = await resetToDefaultColors();
-      this.uiManager.updateColorPickers(defaultColors);
-      // Notify other extension components about the color change
-      this.notifyColorChange(defaultColors);
+      const defaultColors = await resetDefaultColorTheme();
+      this.currentThemes.default = defaultColors;
+      this.uiManager.updateDefaultColorPickers(defaultColors);
+      this.notifyColorChange();
+      console.log("Default theme reset.");
       return true;
     } catch (error) {
-      console.error("Error resetting colors:", error);
+      console.error("Error resetting default theme:", error);
+      alert("Error resetting default theme.");
       return false;
+    }
+  }
+
+  async saveDomainTheme() {
+    const newDomain = this.uiManager.getDomainNameValue();
+    const originalDomain = this.uiManager.getEditingDomainName();
+    const isEditing = !!originalDomain;
+    const isRenaming = isEditing && originalDomain !== newDomain;
+
+    if (!newDomain) {
+      alert("Please enter a domain name.");
+      return false;
+    }
+    // Basic validation: check if it looks like a domain
+    if (!newDomain.includes(".")) {
+      alert("Please enter a valid domain name (e.g., example.com).");
+      return false;
+    }
+
+    // Check if the target domain name already exists (and isn't the original name)
+    if (this.currentThemes.domains[newDomain] && newDomain !== originalDomain) {
+      if (!confirm(`A theme already exists for ${newDomain}. Overwrite it?`)) {
+        return false;
+      }
+      // If overwriting, we might need to handle removing the existing theme for newDomain
+      // Although setDomainColorTheme will just overwrite it anyway.
+    }
+
+    try {
+      const colors = this.uiManager.getDomainColorValues();
+
+      // If renaming, remove the old domain entry first
+      if (isRenaming) {
+        console.log(`Renaming theme from ${originalDomain} to ${newDomain}`);
+        await removeDomainColorTheme(originalDomain);
+        delete this.currentThemes.domains[originalDomain]; // Update local cache immediately
+      }
+
+      // Save the theme under the new/current domain name
+      await setDomainColorTheme(newDomain, colors);
+      this.currentThemes.domains[newDomain] = colors; // Update local cache
+
+      // Re-render the list and reset the form
+      this.uiManager.renderDomainThemesList(
+        this.currentThemes.domains,
+        this.handleEditDomain.bind(this),
+        this.handleDeleteDomain.bind(this)
+      );
+      this.uiManager.resetDomainForm(true); // Reset form after saving
+      console.log(`Theme for ${newDomain} saved.`); // Optional console log
+      this.notifyColorChange(); // Notify about potential change for this domain
+      return true;
+    } catch (error) {
+      console.error(`Error saving theme for ${newDomain}:`, error);
+      alert(`Error saving theme for ${newDomain}.`);
+      // If renaming failed, the old theme might be gone. Consider adding it back?
+      return false;
+    }
+  }
+
+  handleEditDomain(domain, theme) {
+    this.uiManager.prepareDomainFormForEdit(domain, theme);
+  }
+
+  handleCancelEditDomain() {
+    this.uiManager.resetDomainForm(true);
+  }
+
+  async handleDeleteDomain(domain) {
+    if (!confirm(`Are you sure you want to delete the theme for ${domain}?`)) {
+      return;
+    }
+    try {
+      await removeDomainColorTheme(domain);
+      delete this.currentThemes.domains[domain];
+      this.uiManager.renderDomainThemesList(
+        this.currentThemes.domains,
+        this.handleEditDomain.bind(this),
+        this.handleDeleteDomain.bind(this)
+      );
+      if (this.uiManager.getEditingDomainName() === domain) {
+        this.uiManager.resetDomainForm(true);
+      }
+      console.log(`Theme for ${domain} deleted.`);
+      this.notifyColorChange();
+    } catch (error) {
+      console.error(`Error deleting theme for ${domain}:`, error);
+      alert(`Error deleting theme for ${domain}.`);
     }
   }
 
   syncColors() {
     try {
-      const derivedColors = this.uiManager.syncColorsFromAccent();
+      const mainAccent = this.uiManager.elements.mainAccentColor.value;
+      const derivedColors = colorUtils.deriveColors(mainAccent);
+      this.uiManager.updateDefaultColorPickers(derivedColors);
       return derivedColors;
     } catch (error) {
       console.error("Error syncing colors:", error);
@@ -425,15 +643,25 @@ class ColorManager {
     }
   }
 
-  // Notify other parts of the extension about color changes
-  notifyColorChange(colors) {
+  notifyColorChange() {
     try {
-      chrome.runtime.sendMessage({
-        action: "colorThemeChanged",
-        colors: colors,
-      });
+      chrome.runtime.sendMessage({ action: "colorThemeChanged" });
+      console.log("Sent colorThemeChanged message");
     } catch (error) {
       console.error("Error notifying about color change:", error);
+    }
+  }
+
+  // Sync derived colors for the domain theme form
+  syncDomainColors() {
+    try {
+      const mainAccent = this.uiManager.elements.domainMainAccentColor.value;
+      const derivedColors = colorUtils.deriveColors(mainAccent);
+      this.uiManager.updateDomainColorPickers(derivedColors);
+      return derivedColors;
+    } catch (error) {
+      console.error("Error syncing domain colors:", error);
+      return null;
     }
   }
 }
@@ -458,9 +686,12 @@ class OptionsPageController {
       hoverColor,
       disabledColor,
       summaryBgColor,
-      saveColorsButton,
-      resetColorsButton,
+      saveDefaultThemeButton,
+      resetDefaultThemeButton,
       syncColorsButton,
+      saveDomainThemeButton,
+      cancelEditDomainThemeButton,
+      syncDomainColorsButton,
     } = this.uiManager.elements;
 
     saveButton.addEventListener("click", () => this.handleSave());
@@ -477,7 +708,6 @@ class OptionsPageController {
       );
     }
 
-    // Color picker events
     [mainAccentColor, hoverColor, disabledColor, summaryBgColor].forEach(
       (element) => {
         if (element) {
@@ -488,24 +718,16 @@ class OptionsPageController {
       }
     );
 
-    if (saveColorsButton) {
-      saveColorsButton.addEventListener("click", async () => {
-        const success = await this.colorManager.saveColors();
-        if (!success) {
-          alert("Error applying colors. Please try again.");
-        }
-      });
+    if (saveDefaultThemeButton) {
+      saveDefaultThemeButton.addEventListener("click", () =>
+        this.colorManager.saveDefaultTheme()
+      );
     }
 
-    if (resetColorsButton) {
-      resetColorsButton.addEventListener("click", async () => {
-        const success = await this.colorManager.resetColors();
-        if (success) {
-          alert("Colors reset to default!");
-        } else {
-          alert("Error resetting colors. Please try again.");
-        }
-      });
+    if (resetDefaultThemeButton) {
+      resetDefaultThemeButton.addEventListener("click", () =>
+        this.colorManager.resetDefaultTheme()
+      );
     }
 
     if (syncColorsButton) {
@@ -513,17 +735,35 @@ class OptionsPageController {
         this.colorManager.syncColors();
       });
     }
+
+    if (saveDomainThemeButton) {
+      saveDomainThemeButton.addEventListener("click", () =>
+        this.colorManager.saveDomainTheme()
+      );
+    }
+
+    if (cancelEditDomainThemeButton) {
+      cancelEditDomainThemeButton.addEventListener("click", () =>
+        this.colorManager.handleCancelEditDomain()
+      );
+    }
+
+    if (syncDomainColorsButton) {
+      syncDomainColorsButton.addEventListener("click", () => {
+        this.colorManager.syncDomainColors();
+      });
+    }
   }
 
   async init() {
     try {
-      await Promise.all([
+      await Promise.allSettled([
         this.loadApiKey(),
         this.cacheManager.updateCacheSizes(),
-        this.colorManager.loadColors(),
+        this.colorManager.loadThemes(),
       ]);
     } catch (error) {
-      console.error("Error initializing options page:", error);
+      console.error("Critical error initializing options page:", error);
     }
   }
 
@@ -552,12 +792,7 @@ class OptionsPageController {
   }
 }
 
-// Initialize the options page when DOM is loaded
-document.addEventListener("DOMContentLoaded", async () => {
-  try {
-    const optionsPage = new OptionsPageController();
-    await optionsPage.init();
-  } catch (error) {
-    console.error("Error initializing options page:", error);
-  }
+document.addEventListener("DOMContentLoaded", () => {
+  const controller = new OptionsPageController();
+  controller.init();
 });

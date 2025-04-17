@@ -7,6 +7,7 @@
 import { clearExpiredCache } from "./summariesCache.js";
 import { clearExpiredAudioCache } from "./speechifyCache.js";
 import { clearExpiredPromptsCache } from "./promptsCache.js";
+import { migrateThemeSettings } from "./colorThemeManager.js";
 
 /**
  * Clears all expired caches
@@ -38,8 +39,12 @@ function configureSidePanel() {
   });
 }
 
-// Configure and enable the side panel
-chrome.runtime.onInstalled.addListener(configureSidePanel);
+// Configure and enable the side panel, and run migrations
+chrome.runtime.onInstalled.addListener(async (details) => {
+  configureSidePanel();
+  // Run theme migration on install/update
+  await migrateThemeSettings();
+});
 
 // Handle extension icon click to open side panel
 chrome.action.onClicked.addListener((tab) => {
