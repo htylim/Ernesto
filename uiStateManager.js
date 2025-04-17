@@ -1,9 +1,3 @@
-// Constants
-const DISPLAY_STATES = {
-  VISIBLE: "block",
-  HIDDEN: "none",
-};
-
 /**
  * Manages the UI state and interactions for the extension's side panel
  * @class
@@ -39,6 +33,7 @@ export class UIStateManager {
       promptInput: document.getElementById("promptInput"),
       submitPromptBtn: document.getElementById("submitPrompt"),
       audioTitle: document.getElementById("audio-title"),
+      promptContainer: document.querySelector(".prompt-container"),
     };
   }
 
@@ -65,6 +60,7 @@ export class UIStateManager {
       "tabUnavailable",
       "promptInput",
       "submitPromptBtn",
+      "promptContainer",
     ];
 
     const missingElements = requiredElements
@@ -79,41 +75,35 @@ export class UIStateManager {
   }
 
   /**
-   * Sets display style for an element
-   * @private
-   * @param {HTMLElement} element - Element to set display style for
-   * @param {string} displayState - Display state from DISPLAY_STATES
-   */
-  setElementDisplay(element, displayState) {
-    element.style.display = displayState;
-  }
-
-  /**
-   * Shows an element
+   * Shows an element by removing the 'hidden' class
    * @private
    * @param {HTMLElement} element - Element to show
    */
   showElement(element) {
-    this.setElementDisplay(element, DISPLAY_STATES.VISIBLE);
+    if (element) {
+      element.classList.remove("hidden");
+    }
   }
 
   /**
-   * Hides an element
+   * Hides an element by adding the 'hidden' class
    * @private
    * @param {HTMLElement} element - Element to hide
    */
   hideElement(element) {
-    this.setElementDisplay(element, DISPLAY_STATES.HIDDEN);
+    if (element) {
+      element.classList.add("hidden");
+    }
   }
 
   /**
-   * Checks if an element is visible
+   * Checks if an element is visible (does not have the 'hidden' class)
    * @private
    * @param {HTMLElement} element - Element to check
    * @returns {boolean} Whether element is visible
    */
   isElementVisible(element) {
-    return element.style.display === DISPLAY_STATES.VISIBLE;
+    return element ? !element.classList.contains("hidden") : false;
   }
 
   /**
@@ -173,6 +163,7 @@ export class UIStateManager {
   showTabContent(tab) {
     this.showElement(this.elements.tabContent);
     this.hideElement(this.elements.tabUnavailable);
+    this.showElement(this.elements.promptContainer);
     this.elements.pageTitle.textContent = tab?.title || "Current Page";
   }
 
@@ -182,6 +173,7 @@ export class UIStateManager {
   showTabUnavailable() {
     this.hideElement(this.elements.tabContent);
     this.showElement(this.elements.tabUnavailable);
+    this.hideElement(this.elements.promptContainer);
   }
 
   /**
@@ -192,6 +184,7 @@ export class UIStateManager {
     this.hideElement(this.elements.summaryDiv);
     this.hideElement(this.elements.loadingDiv);
     this.clearPromptResponses();
+    this.hideElement(this.elements.promptContainer);
     this.updateButtonStates();
   }
 
@@ -351,5 +344,3 @@ export class UIStateManager {
     return "";
   }
 }
-
-export { DISPLAY_STATES };
