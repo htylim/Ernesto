@@ -1,0 +1,17 @@
+---
+description: For when reading a project file or modifying or writing a project file
+globs: 
+alwaysApply: false
+---
+- To understand what this project is for read [README.md](mdc:README.md)
+
+- If a feature is added to the project update [README.md](mdc:README.md) to keep it updated
+- If a feature is removed from the project update [README.md](mdc:README.md) to keep it updated
+- if a feature is modified check [README.md](mdc:README.md) if it needs to be modified to keep it updated
+
+- To understand the project architecture, which files this project has, what code and logic is implemented in each file and general design decision read [ARCHITECTURE.md](mdc:ARCHITECTURE.md)
+
+- If a new file/directory is added update [ARCHITECTURE.md](mdc:ARCHITECTURE.md) to keep it updated
+- If a file/directory is removed update [ARCHITECTURE.md](mdc:ARCHITECTURE.md) to keep it updated
+- If a file, or files, are modified check [ARCHITECTURE.md](mdc:ARCHITECTURE.md) to see if it needs to be updated to include the new changes on the modified file or files
+
