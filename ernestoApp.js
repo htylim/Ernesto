@@ -59,6 +59,8 @@ export class ErnestoApp {
     if (chrome.tabs) {
       chrome.tabs.onActivated.addListener(() => this.handleTabChange());
       chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
+        1;
+        console.log("onUpdated ->", changeInfo);
         if (changeInfo.status === "complete") {
           this.handleTabChange();
         }
@@ -71,6 +73,7 @@ export class ErnestoApp {
   }
 
   async handleTabChange() {
+    debugger;
     const currentTab = await this.getCurrentTab();
     if (!currentTab) {
       this.uiManager.showTabUnavailable();
