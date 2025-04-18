@@ -3,63 +3,62 @@ description:
 globs: 
 alwaysApply: true
 ---
-- You are a helpful coding AI agent and you are used to implement new features or modifications into an existing project.
+- You are a chrome extension senior lead software developer, you know how to apply coding best practices and write good clean maintenable code. 
 
-- read [README.md](mdc:README.md)
+- You are expert in typescript/css/html languages.
 
-- read [ARCHITECTURE.md](mdc:ARCHITECTURE.md)
+# Coding guidelines
 
-- Follow [chrome-extension-development-rules.mdc](mdc:.cursor/rules/chrome-extension-development-rules.mdc)
+- explicit > implicit
+- simple > complex > complicated
+- flat > nested
+- sparse > dense
+- readability matters
+- consistent naming project-wide
+- no rule‑breaking edge cases
+- practicality > purity
+- errors never pass silently (only if silenced on purpose)
+- when ambiguous, don’t guess
+- hard to explain ⇒ bad; easy ⇒ maybe good
+- match existing style unless told otherwise
+- document function and types
+- always update docs
+- modular architectures; split UI/logic/API
 
-- when writing code follow these additional rules:
-    1. explicit is better than implicit
-    2. simple is better than complex
-    3. complex is better than complicated
-    4. flat is better than nested
-    5. sparse is better than dense
-    6. readability counts
-    7. special cases aren't special enough to break the rules.
-    8. althouth practicality beats purity
-    9. errors should never pass silently
-    10. unless explicitly silenced.
-    11. in the face of ambiguity refuse the temptation to guess
-    12. if the implementation is hard to explain, its a bad idea.
-    13. if the implementation is easy to explain, it may be a good idea.
-    14. keep any new design/implementation consistent with the existing design/implementation, UNLESS, it has been explicitly said to write such design/implementation that way.
-    15. Always document your code and keep your code documentation updated.
+# Chrome extension development guidelines
 
-- In case of ambiguity or lack of clarity on a prompt always ask for clarification.
+- Manifest V3 → service worker
+- Security → CSP, least‑priv perms, sanitize inputs
+- Performance → cache TTL + auto‑prune, ≤5 MB/item
+- Tests → unit, mock Chrome, multi‑version
+- Errors → log, user‑friendly msgs, graceful API fail
+- UX → responsive popup, consistent patterns, clear feedback
+- APIs → secure keys, auth, rate‑limit + retry
+- Storage → chrome.storage, (de)serialize, quota aware
+- Docs → install, usage, debug tips
 
-# Procedure to follow to solve any prompt
+# Procedure for solving prompts
 
-- Always think very thoroughly about what was asked and create a multi-step plan to solve the ask.
+- read [README.md](mdc:README.md) for understanding what this project is and what is for.
+- read [ARCHITECTURE.md](mdc:ARCHITECTURE.md) to understand all coding decisions.
+- Think **thoroughly** on the problem and what it is required for it.
+- create an empty TASKS.md file (overwrite if exists) and detail a multi-step plan
+    - each step should be small and easy enough to do. Include it in TASKS.md as this:
+    ```
+    [ ] do X
+    ```
+    - for major steps, split it into smaller steps like this:
+    ```
+    [ ] macro step X
+        [ ] sub step X.1
+        [ ] sub step X.2
+        etc
+    ```
+- To solve the prompt execute the plan doing one step at a time, in order.
+    - When a step is solved, mark it done:
+    ```
+    [x] do X (remarks about what was done on X)
+    ```
+- update README.md if solving the prompt required features or functional requirements changes
+- update ARCHITECTURE.md if solving the prompt required adding/removing files, or classes, or any change to the architecture at all.
 
-The plan should contain steps that are small and easily doable, when a step is big then split it into smaller sub-steps. 
-
-Think thoroughly about how to tackle each step/sub-step and once all has been thought out proceed into working each step one at a time.
-
-To help keeping the plan organized create and keep updated a TASKS.md file with the steps of plan. 
-
-Each step of the plan should be delineated in the file like this.
-
-Example of a TASKS.md file:
-'''
-1. [ ] Do X
-2. [ ] Do Y
-    1. [ ] Do Y.a
-    2. [ ] Do Y.b
-3. [ ] Do Z
-'''
-
-When a step or sub-step is completed edit the file to mark the step as done like here:
-
-Example of a TASKS.md with the first 2 steps done:
-'''
-1. [x] Do X
-2. [ ] Do Y
-    1. [x] Do Y.a
-    2. [ ] Do Y.b
-3. [ ] Do Z
-'''
-
-Remember to always add as the very end of the plan to update @README.md and [ARCHITECTURE.md](mdc:ARCHITECTURE.md)

@@ -1,103 +1,111 @@
 # Project Architecture
 
-This document outlines the structure and purpose of the files and folders within the Ernesto Chrome Extension project.
+Concise overview of the Ernesto Chrome Extension structure for AI understanding.
 
-## Root Directory
+## Core Components
 
-### Files
+### Side Panel (Main UI & Logic)
 
-- `manifest.json`: The core configuration file for the Chrome Extension. It defines permissions, scripts (background, content, side panel), icons, options page, and other essential extension properties.
-- `background.js`: The extension's service worker. It runs in the background, manages extension lifecycle events (like installation, updates), handles API key storage changes, configures the side panel, schedules periodic cache clearing, listens for the extension icon click to open the side panel, and runs theme setting migrations on install/update.
-- `content.js`: The content script injected into web pages. It listens for messages from other parts of the extension (like the side panel) and responds with the basic HTML content and metadata (title, URL, site name) of the current page. It does minimal processing, leaving heavy lifting to other scripts.
-- `options.html`: The HTML structure for the extension's options/settings page. It includes input fields for the OpenAI API key, controls for theme customization (separate sections for default and domain-specific themes with color pickers), and buttons for cache management (purging summaries, audio, prompts).
-- `options.js`: The JavaScript logic for the `options.html` page. It handles loading/saving the API key (using encryption), managing both default and domain-specific color theme settings (getting, setting, editing, deleting, resetting, deriving colors), clearing different types of caches (summaries, audio, prompts), updating cache size display, and managing the UI state of the options page. It notifies other extension parts when themes change.
-- `sidepanel.html`: The HTML structure for the extension's side panel UI. This is the main user interface displayed when the extension icon is clicked. It includes buttons for summarizing, generating audio (speechify), asking questions (prompt), opening options, and closing the panel. It also contains areas to display the page title, loading indicators, the generated summary, prompt responses, and an audio player.
-- `sidepanel.js`: The entry point script for the side panel. It initializes the main application logic (`ErnestoApp`), loads and applies the correct color theme based on the current tab's domain (using `colorThemeManager.js`), and sets up listeners for theme changes broadcast from the options page, as well as listeners for tab activation and URL updates to re-apply the correct theme.
-- `ernestoApp.js`: The main application logic controller residing in the side panel. It orchestrates the core functionalities:
-  - Initializes UI (`UIStateManager`), audio (`AudioController`), and tab state (`TabStateManager`).
-  - Sets up event listeners for UI buttons (summarize, speechify, prompt, options, close).
-  - Handles tab changes (activation, updates) to load the correct context and state.
-  - Restores previous state (summary, prompts) for a tab when reopened.
-  - Coordinates fetching page content via `content.js` and `contentExtractor.js`.
-  - Calls `getSummary.js` to generate summaries via the OpenAI API, handles caching via `summariesCache.js`.
-  - Calls `getSpeechifyAudio.js` to generate audio via the OpenAI API, handles caching via `speechifyCache.js`, and manages playback via `AudioController`.
-  - Calls `getResponse.js` to handle user prompts/questions, maintains conversation history, and handles caching via `promptsCache.js`.
-  - Displays loading states, results, and errors using `UIStateManager`.
-- `uiStateManager.js`: Manages the state and updates of the side panel's UI (`sidepanel.html`). It provides methods to show/hide elements (loading indicators, summary, audio player, errors, prompt responses), update button states, set text content, manage prompt input/output, and reset the UI.
-- `audioController.js`: Handles audio playback logic within the side panel. It manages the `Audio` element, controls play/pause/restart actions, updates UI button states based on playback status, sets up audio from a Blob, and handles cleanup.
-- `getSummary.js`: Contains the function to call the OpenAI API (`/v1/responses` with specific instructions) to generate a summary for the provided page content. It constructs the prompt with detailed instructions for formatting the summary.
-- `getSpeechifyAudio.js`: Contains the function to call the OpenAI API (`/v1/audio/speech`) to convert text (usually the summary) into speech (audio blob). It includes instructions for the TTS model (tone, pace, etc.).
-- `getResponse.js`: Contains the function to call the OpenAI API (`/v1/responses` with web search tool) to get answers to user prompts related to the current page content. It manages conversation history by passing the `previous_response_id`.
-- `contentExtractor.js`: Processes the raw HTML fetched by `content.js`. It uses the `Readability.js` library (if available) to extract the main article content from the HTML structure. If Readability fails or is unavailable, it uses fallback methods (searching common selectors, finding the element with the most text) and basic cleanup to extract content. It returns the processed content (HTML or text) along with metadata. This script runs in the extension context (likely side panel or background), not the content script context.
-- `apiKeyManager.js`: Manages secure storage and retrieval of the OpenAI API key. It uses `cryptoUtils.js` to encrypt the key before saving it to `chrome.storage.local` and decrypt it when needed.
-- `cryptoUtils.js`: Provides utility functions (`encryptValue`, `decryptValue`) for encrypting and decrypting strings using the Web Crypto API (AES-GCM). It generates a unique encryption key based on the extension's ID for security.
-- `tabStateManager.js`: Manages the state associated with each browser tab (URL, title, loading status). It uses a `Map` to store the state keyed by `tabId`. This state is used by `ErnestoApp` to track context changes.
-- `genericCache.js`: Implements a generic caching mechanism using `chrome.storage.local`. It supports time-to-live (TTL) for cache entries, custom key generation, serialization/deserialization, cache clearing (all or expired), and size calculation. It's used as the base for specific caches.
-- `summariesCache.js`: A specific implementation of `GenericCache` for storing and retrieving page summaries, keyed by URL.
-- `speechifyCache.js`: A specific implementation of `GenericCache` for storing and retrieving generated audio (as Blobs), keyed by URL. Includes custom serialization/deserialization to handle Blobs in `chrome.storage.local`.
-- `promptsCache.js`: A specific implementation of `GenericCache` for storing and retrieving conversation history (prompts and responses) for a page, keyed by URL.
-- `colorThemeManager.js`: Manages the color theme settings. Stores a default theme and domain-specific themes in `chrome.storage.local`. Provides functions to get the appropriate theme for a given domain (falling back to default), set/remove domain themes, set/reset the default theme, migrate old settings, and apply theme colors using CSS variables. Used by `options.js`, `sidepanel.js`, and `background.js` (for migration).
-- `sidepanel-libraries.js`: Likely intended to load or manage external libraries specifically for the side panel, although its current content might be minimal or placeholder. `manifest.json` lists it as a web accessible resource.
-- `library-test.html` / `library-test.js`: Appear to be test files, potentially for experimenting with or verifying the functionality of external libraries like Readability, Marked, DOMPurify, Turndown, etc., which are listed in `manifest.json` as web accessible resources.
-- `package.json`: Standard Node.js manifest file defining project metadata, dependencies, and scripts. Indicates the project might use npm/Node.js for development tooling or dependency management, although the core extension is vanilla JS.
-- `package-lock.json`: Automatically generated file that records the exact versions of dependencies installed. Ensures reproducible builds.
-- `README.md`: Contains information about the project, setup instructions, features, etc. (This file is being read/written).
-- `.gitignore`: Specifies intentionally untracked files that Git should ignore (e.g., `node_modules`, build artifacts, sensitive files).
-- `.cursor.json`: Configuration file for the Cursor IDE/editor.
+- `sidepanel.html`: Defines the structure of the extension's main user interface panel.
+- `sidepanel.js`: Initializes the side panel UI, manages themes, and loads the main application controller (`ErnestoApp`).
+- `ernestoApp.js`: Orchestrates core features like summarization, speech synthesis, and Q&A by coordinating UI, API calls, caching, and state management.
+  - `ErnestoApp`: Main class handling UI events, tab state, and coordinating backend calls.
+- `uiStateManager.js`: Manages the state and visibility of elements within `sidepanel.html`.
+  - `UIStateManager`: Class providing methods to update UI elements based on application state.
+- `audioController.js`: Controls audio playback for the synthesized speech within the side panel.
+  - `AudioController`: Class managing the `<audio>` element and playback states.
 
-### Directories
+### Background Operations
 
-- `icons/`: Contains the extension's icons (`icon16.png`, `icon48.png`, `icon128.png`) used in the browser UI (toolbar, extension management page).
-- `vendor/`: Contains third-party libraries used by the extension (e.g., `marked.min.js`, `purify.min.js`, `readability.js`, `turndown.js` based on `manifest.json`). These are bundled directly instead of being installed via npm.
-- `.git/`: Standard Git directory containing repository metadata and history (usually hidden).
-- `node_modules/`: Contains Node.js dependencies installed via npm (usually ignored by Git as specified in `.gitignore`).
-- `.cursor/`: Directory potentially used by the Cursor IDE for its own state or configuration related to the workspace.
+- `background.js`: Service worker managing extension lifecycle events, side panel setup, background tasks (cache clearing), and theme migrations.
+- `content.js`: Content script injected into pages to extract basic HTML and metadata upon request from other parts of the extension.
 
-## Flow Overview
+### API Interaction & Data Processing
 
-1.  **Installation/Load:** `background.js` runs, sets up the side panel via `chrome.sidePanel.setOptions`, and schedules cache clearing.
-2.  **User Interaction (Icon Click):** `background.js` listens for `chrome.action.onClicked` and opens `sidepanel.html`.
-3.  **Side Panel Load:** `sidepanel.html` loads. `sidepanel.js` runs, determines the current tab's domain, applies the corresponding theme (domain-specific or default) via `colorThemeManager.js`, and initializes `ErnestoApp`. It also sets up listeners to re-apply themes on tab switches, URL changes, or notifications from `options.js`.
-4.  **`ErnestoApp` Initialization:**
-    - Creates instances of `UIStateManager`, `AudioController`, `TabStateManager`.
-    - Sets up button listeners.
-    - Calls `handleTabChange` to get the current tab info.
-5.  **`handleTabChange`:**
-    - Gets the active tab's URL and title.
-    - Updates UI with tab info via `UIStateManager`.
-    - Restores cached summary (`summariesCache.js`) and prompts (`promptsCache.js`) for the current URL via `restoreTabState`.
-6.  **User Clicks "Summarize":**
-    - `ErnestoApp` triggers the summarize flow.
-    - Retrieves API key (`apiKeyManager.js`).
-    - Requests page content from `content.js`.
-    - `content.js` sends back raw HTML.
-    - `contentExtractor.js` processes HTML using Readability/fallback.
-    - Checks `summariesCache.js` for a cached summary.
-    - If no cache, calls `getSummary.js` with content and API key.
-    - `getSummary.js` calls OpenAI API.
-    - Stores result in `summariesCache.js`.
-    - Displays summary using `UIStateManager`.
-7.  **User Clicks "Speechify":**
-    - `ErnestoApp` triggers the speechify flow.
-    - Retrieves API key.
-    - Gets summary text from `UIStateManager`.
-    - Checks `speechifyCache.js` for cached audio.
-    - If no cache, calls `getSpeechifyAudio.js` with summary text and API key.
-    - `getSpeechifyAudio.js` calls OpenAI TTS API.
-    - Stores result (Blob) in `speechifyCache.js`.
-    - Sets up `AudioController` with the audio Blob.
-    - `UIStateManager` shows the audio player.
-8.  **User Asks a Question:**
-    - `ErnestoApp` triggers the prompt flow.
-    - Retrieves API key.
-    - Gets prompt text from `UIStateManager`.
-    - Retrieves conversation history from `promptsCache.js`.
-    - Calls `getResponse.js` with prompt, URL, API key, and previous response ID.
-    - `getResponse.js` calls OpenAI API.
-    - Stores updated conversation in `promptsCache.js`.
-    - Displays response using `UIStateManager`.
-9.  **Options Page:**
-    - User opens `options.html`.
-    - `options.js` loads API key (`apiKeyManager.js`) and all themes (`colorThemeManager.js`), displaying the default theme and the list of domain themes.
-    - User changes settings (API key, default theme, add/edit/delete domain themes) and saves.
-    - `options.js` saves changes using the respective managers, potentially clearing caches, and sends a generic notification if themes were modified.
+- `getSummary.js`: Calls OpenAI API to generate summaries from page content.
+- `getSpeechifyAudio.js`: Calls OpenAI API to convert text (summary) into speech audio.
+- `getResponse.js`: Calls OpenAI API to answer user prompts based on page content and conversation history.
+- `contentExtractor.js`: Processes raw HTML (using Readability.js or fallbacks) to extract the main content for analysis.
+
+## Utility Components
+
+### Caching
+
+- `genericCache.js`: Base class providing time-limited, storage-based caching functionality.
+  - `GenericCache`: Implements core caching logic (TTL, get, set, clear, size).
+- `summariesCache.js`: Specializes `GenericCache` for storing page summaries keyed by URL.
+- `speechifyCache.js`: Specializes `GenericCache` for storing speech audio Blobs keyed by URL.
+- `promptsCache.js`: Specializes `GenericCache` for storing prompt conversation history keyed by URL.
+
+### State & Settings Management
+
+- `tabStateManager.js`: Tracks the state (URL, title) associated with browser tabs.
+  - `TabStateManager`: Manages tab state using a Map.
+- `apiKeyManager.js`: Securely stores and retrieves the OpenAI API key using encryption.
+- `cryptoUtils.js`: Provides AES-GCM encryption/decryption utilities for sensitive data like the API key.
+- `colorThemeManager.js`: Manages default and domain-specific color themes, applying them via CSS variables.
+
+### Options Page
+
+- `options.html`: Defines the structure for the extension's settings page (API key, themes, cache).
+- `options.js`: Handles logic for the options page: saving settings, managing themes, clearing caches, and updating UI.
+
+## Configuration & Other Files
+
+- `manifest.json`: Core Chrome Extension configuration file (permissions, scripts, icons, etc.).
+- `icons/`: Contains extension icons (`icon16.png`, `icon48.png`, `icon128.png`).
+- `vendor/`: Holds third-party libraries (Readability, Marked, DOMPurify, Turndown).
+- `package.json` / `package-lock.json`: Node.js project configuration and dependency lock files.
+- `README.md`: Project documentation (setup, features).
+- `ARCHITECTURE.md`: This file, outlining the project structure.
+- `.gitignore`: Specifies files ignored by Git.
+- `.cursor*`: Files/directories for the Cursor IDE.
+- `library-test.html` / `library-test.js`: Test files for vendor libraries.
+- `sidepanel-libraries.js`: Potentially loads/manages libraries for the side panel (listed as web accessible).
+
+## Simplified Flow Overview
+
+```mermaid
+graph TD
+    A[User Clicks Icon] --> B(background.js opens sidepanel.html);
+    B --> C{sidepanel.js};
+    C --> D[Loads Theme via colorThemeManager];
+    C --> E[Initializes ErnestoApp];
+    E --> F[Sets up UIStateManager, AudioController, TabStateManager];
+    E --> G{Listens for Button Clicks};
+
+    subgraph "User Action: Summarize"
+        G -- Summarize --> H[Request Content from content.js];
+        H --> I[contentExtractor processes HTML];
+        I --> J{Check summariesCache};
+        J -- Cache Miss --> K[getSummary calls OpenAI];
+        K --> L[Store in summariesCache];
+        J -- Cache Hit --> M[Display Summary via UIStateManager];
+        L --> M;
+    end
+
+    subgraph "User Action: Speechify"
+        G -- Speechify --> N[Get Summary Text];
+        N --> O{Check speechifyCache};
+        O -- Cache Miss --> P[getSpeechifyAudio calls OpenAI TTS];
+        P --> Q[Store Blob in speechifyCache];
+        O -- Cache Hit --> R[Setup AudioController];
+        Q --> R;
+        R --> S[Show Player via UIStateManager];
+    end
+
+    subgraph "User Action: Ask Question"
+        G -- Ask --> T[Get Prompt & History from promptsCache];
+        T --> U[getResponse calls OpenAI];
+        U --> V[Store Response in promptsCache];
+        V --> W[Display Response via UIStateManager];
+    end
+
+    subgraph "Options Page"
+        X[User Opens options.html] --> Y(options.js loads settings);
+        Y --> Z[Uses apiKeyManager, colorThemeManager];
+        Z --> AA[User Changes Settings];
+        AA --> BB[options.js saves changes];
+        BB -- Theme Changed --> C;
+    end
+```
