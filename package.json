@@ -13,8 +13,7 @@
         "puppeteer": "^24.6.1"
     },
     "jest": {
-        "preset": "jest-puppeteer",
-        "testEnvironment": "jest-environment-puppeteer",
+        "testEnvironment": "jsdom",
         "setupFilesAfterEnv": [
             "./jest.setup.js"
         ],
