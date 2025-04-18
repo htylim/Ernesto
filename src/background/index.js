@@ -4,10 +4,10 @@
  * @property {number} maxSize - Maximum size in bytes
  */
 
-import { clearExpiredCache } from "./summariesCache.js";
-import { clearExpiredAudioCache } from "./speechifyCache.js";
-import { clearExpiredPromptsCache } from "./promptsCache.js";
-import { migrateThemeSettings } from "./colorThemeManager.js";
+import { clearExpiredCache } from "../common/cache/summariesCache.js";
+import { clearExpiredAudioCache } from "../common/cache/speechifyCache.js";
+import { clearExpiredPromptsCache } from "../common/cache/promptsCache.js";
+import { migrateThemeSettings } from "../common/managers/colorThemeManager.js";
 
 /**
  * Clears all expired caches
@@ -34,7 +34,7 @@ clearAllExpiredCaches();
 function configureSidePanel() {
   chrome.sidePanel.setOptions({
     enabled: true,
-    path: "sidepanel.html",
+    path: "src/sidepanel/index.html",
     tabId: null,
   });
 }

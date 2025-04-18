@@ -1,4 +1,4 @@
-import { encryptValue, decryptValue } from "./cryptoUtils.js";
+import { encryptValue, decryptValue } from "../crypto/cryptoUtils.js";
 
 const STORAGE_KEY = "encryptedApiKey";
 

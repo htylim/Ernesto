@@ -1,5 +1,8 @@
-import { ErnestoApp } from "./ernestoApp.js";
-import { getColorTheme, applyColorTheme } from "./colorThemeManager.js";
+import { ErnestoApp } from "../core/ernestoApp.js";
+import {
+  getColorTheme,
+  applyColorTheme,
+} from "../common/managers/colorThemeManager.js";
 
 // Utility function to extract domain from URL
 function getDomainFromUrl(urlString) {

@@ -1,10 +1,10 @@
-import { clearCache } from "./summariesCache.js";
-import { clearAudioCache } from "./speechifyCache.js";
-import { audioCache } from "./speechifyCache.js";
-import { summariesCache } from "./summariesCache.js";
-import { getApiKey, setApiKey } from "./apiKeyManager.js";
-import { clearPromptsCache } from "./promptsCache.js";
-import { promptsCache } from "./promptsCache.js";
+import { clearCache } from "../common/cache/summariesCache.js";
+import { clearAudioCache } from "../common/cache/speechifyCache.js";
+import { audioCache } from "../common/cache/speechifyCache.js";
+import { summariesCache } from "../common/cache/summariesCache.js";
+import { getApiKey, setApiKey } from "../common/managers/apiKeyManager.js";
+import { clearPromptsCache } from "../common/cache/promptsCache.js";
+import { promptsCache } from "../common/cache/promptsCache.js";
 import {
   getDomainThemesStructure,
   getDefaultColorTheme,
@@ -14,7 +14,7 @@ import {
   resetDefaultColorTheme,
   applyColorTheme,
   DEFAULT_COLORS,
-} from "./colorThemeManager.js";
+} from "../common/managers/colorThemeManager.js";
 
 // Constants
 const DISPLAY_STATES = {

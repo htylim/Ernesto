@@ -18,36 +18,36 @@
     },
     "action": {
         "default_icon": {
-            "16": "icons/icon16.png",
-            "48": "icons/icon48.png",
-            "128": "icons/icon128.png"
+            "16": "public/icons/icon16.png",
+            "48": "public/icons/icon48.png",
+            "128": "public/icons/icon128.png"
         }
     },
-    "options_page": "options.html",
+    "options_page": "src/options/index.html",
     "background": {
-        "service_worker": "background.js",
+        "service_worker": "src/background/index.js",
         "type": "module"
     },
     "side_panel": {
-        "default_path": "sidepanel.html"
+        "default_path": "src/sidepanel/index.html"
     },
     "web_accessible_resources": [
         {
             "resources": [
-                "getSummary.js",
-                "summariesCache.js",
-                "getSpeechifyAudio.js",
-                "speechifyCache.js",
-                "genericCache.js",
-                "cryptoUtils.js",
-                "vendor/marked.min.js",
-                "vendor/readability.js",
-                "vendor/turndown.js",
-                "vendor/purify.min.js",
-                "contentExtractor.js",
+                "src/common/api/getSummary.js",
+                "src/common/cache/summariesCache.js",
+                "src/common/api/getSpeechifyAudio.js",
+                "src/common/cache/speechifyCache.js",
+                "src/common/cache/genericCache.js",
+                "src/common/crypto/cryptoUtils.js",
+                "src/vendor/marked.min.js",
+                "src/vendor/readability.js",
+                "src/vendor/turndown.js",
+                "src/vendor/purify.min.js",
+                "src/core/contentExtractor.js",
                 "library-test.html",
                 "library-test.js",
-                "sidepanel-libraries.js"
+                "src/sidepanel/libraries.js"
             ],
             "matches": [
                 "<all_urls>"
@@ -60,7 +60,7 @@
                 "<all_urls>"
             ],
             "js": [
-                "content.js"
+                "src/content/index.js"
             ],
             "run_at": "document_start"
         }

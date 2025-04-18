@@ -1,4 +1,7 @@
-import { encryptValue, decryptValue } from "./cryptoUtils.js";
+import {
+  encryptValue,
+  decryptValue,
+} from "../../src/common/crypto/cryptoUtils.js";
 
 describe("cryptoUtils", () => {
   // Add tests here

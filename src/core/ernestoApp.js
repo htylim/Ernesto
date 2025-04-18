@@ -1,13 +1,19 @@
-import { getSummary } from "./getSummary.js";
-import { getCachedSummary, cacheSummary } from "./summariesCache.js";
-import { getSpeechifyAudio } from "./getSpeechifyAudio.js";
-import { getCachedAudio, cacheAudio } from "./speechifyCache.js";
-import { getApiKey } from "./apiKeyManager.js";
-import { TabStateManager } from "./tabStateManager.js";
-import { UIStateManager } from "./uiStateManager.js";
-import { AudioController } from "./audioController.js";
-import { getCachedPrompts, cachePrompts } from "./promptsCache.js";
-import { getResponse } from "./getResponse.js";
+import { getSummary } from "../common/api/getSummary.js";
+import {
+  getCachedSummary,
+  cacheSummary,
+} from "../common/cache/summariesCache.js";
+import { getSpeechifyAudio } from "../common/api/getSpeechifyAudio.js";
+import { getCachedAudio, cacheAudio } from "../common/cache/speechifyCache.js";
+import { getApiKey } from "../common/managers/apiKeyManager.js";
+import { TabStateManager } from "../common/managers/tabStateManager.js";
+import { UIStateManager } from "../sidepanel/uiStateManager.js";
+import { AudioController } from "../common/ui/audioController.js";
+import {
+  getCachedPrompts,
+  cachePrompts,
+} from "../common/cache/promptsCache.js";
+import { getResponse } from "../common/api/getResponse.js";
 import { extractArticleContent } from "./contentExtractor.js";
 
 const LOADING_MESSAGES = {
@@ -59,8 +65,6 @@ export class ErnestoApp {
     if (chrome.tabs) {
       chrome.tabs.onActivated.addListener(() => this.handleTabChange());
       chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
-        1;
-        console.log("onUpdated ->", changeInfo);
         if (changeInfo.status === "complete") {
           this.handleTabChange();
         }
@@ -191,7 +195,7 @@ export class ErnestoApp {
       if (!response) {
         await chrome.scripting.executeScript({
           target: { tabId: currentTab.id },
-          files: ["content.js"],
+          files: ["src/content/index.js"],
         });
         // Wait a bit for the script to initialize
         await new Promise((resolve) => setTimeout(resolve, 100));
