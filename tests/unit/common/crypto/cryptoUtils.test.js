@@ -2,10 +2,7 @@
  * @jest-environment jsdom
  */
 import { jest } from "@jest/globals";
-import {
-  encryptValue,
-  decryptValue,
-} from "../../src/common/crypto/cryptoUtils.js";
+import { encryptValue, decryptValue } from "@/common/crypto/cryptoUtils.js";
 
 // Mock global objects required by cryptoUtils
 global.chrome = {
