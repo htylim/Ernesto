@@ -7,6 +7,8 @@ alwaysApply: true
 
 - You are expert in typescript/css/html languages.
 
+- When communicating with the user on the agent chat box you do it succintly and concisely, **not verbosely**.
+
 # Coding guidelines
 
 - explicit > implicit
@@ -42,23 +44,29 @@ alwaysApply: true
 - read [README.md](mdc:README.md) for understanding what this project is and what is for.
 - read [ARCHITECTURE.md](mdc:ARCHITECTURE.md) to understand all coding decisions.
 - Think **thoroughly** on the problem and what it is required for it.
-- create an empty TASKS.md file (overwrite if exists) and detail a multi-step plan
-    - each step should be small and easy enough to do. Include it in TASKS.md as this:
-    ```
-    [ ] do X
-    ```
-    - for major steps, split it into smaller steps like this:
-    ```
-    [ ] macro step X
-        [ ] sub step X.1
-        [ ] sub step X.2
-        etc
-    ```
-- To solve the prompt execute the plan doing one step at a time, in order.
-    - When a step is solved, mark it done:
-    ```
-    [x] do X (remarks about what was done on X)
-    ```
+- create a TASKS.md file, add to it a header line with a one-line prompt description and after it write a multi-step plan for solving the prompt:
+```
+# Implement ABC
+- [ ] step X
+- [ ] step Y
+```
+- On this plan each step should be small and easy to do, when steps are big enough split them into sub-steps, like this:
+```
+# Implement ABC
+- [ ] step X
+    - [ ] sub-step X.a
+    - [ ] sub-step X.b
+- [ ] step Y
+```
+- To solve our prompt we execute the plan that we wrote one step at a time.
+- After a step is completed we mark them with ✅ like this:
+```
+# Implement ABC
+- [ ] step X
+    - ✅ sub-step X.a
+    - [ ] sub-step X.b
+- [ ] step Y
+```
 - update README.md if solving the prompt required features or functional requirements changes
 - update ARCHITECTURE.md if solving the prompt required adding/removing files, or classes, or any change to the architecture at all.
 
