@@ -58,7 +58,7 @@ Concise overview of the Ernesto Chrome Extension structure for AI understanding.
 - `package.json` / `package-lock.json`: Node.js project configuration and dependency lock files.
 - `jest.setup.js`: Jest global setup file.
 - `jest-puppeteer.config.cjs`: Jest Puppeteer configuration file.
-- `tests/`: Directory containing test files (e.g., `tests/unit/cryptoUtils.test.js`).
+- `tests/`: Directory containing test files (e.g., `tests/unit/common/crypto/cryptoUtils.test.js`).
 - `README.md`: Project documentation (setup, features).
 - `ARCHITECTURE.md`: This file, outlining the project structure.
 - `.gitignore`: Specifies files ignored by Git.

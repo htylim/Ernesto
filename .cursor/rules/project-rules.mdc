@@ -27,6 +27,12 @@ alwaysApply: true
 - always update docs
 - modular architectures; split UI/logic/API
 
+# Testing guidelines
+
+- to run all tests execute `npm test` or `npm test test-name` to run a specific test case.
+- remember to run tests before and after of implementing something to make sure that nothing gets broken with the new implementation.
+- Unit tests should be located under the `/tests/unit`, with a subdirectory structure that matches the file that is tested. Example: for `src/common/crypto/cryptoUtils.js` should be `tests/unit/common/crypto/crytoUtils.test.js`
+
 # Chrome extension development guidelines
 
 - Manifest V3 → service worker
@@ -69,4 +75,5 @@ alwaysApply: true
 ```
 - update README.md if solving the prompt required features or functional requirements changes
 - update ARCHITECTURE.md if solving the prompt required adding/removing files, or classes, or any change to the architecture at all.
+- Execute `npm test` to ensure no test is broken at the end of the process.
 
