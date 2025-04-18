@@ -8,11 +8,14 @@
     },
     "devDependencies": {
         "jest": "^29.7.0",
-        "jest-environment-jsdom": "^29.7.0"
+        "jest-environment-jsdom": "^29.7.0",
+        "jest-puppeteer": "^11.0.0",
+        "puppeteer": "^24.6.1"
     },
     "jest": {
-        "testEnvironment": "jsdom",
-        "setupFiles": [
+        "preset": "jest-puppeteer",
+        "testEnvironment": "jest-environment-puppeteer",
+        "setupFilesAfterEnv": [
             "./jest.setup.js"
         ],
         "transform": {},
