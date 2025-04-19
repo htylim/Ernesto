@@ -7,7 +7,6 @@
 import { clearExpiredCache } from "../common/cache/summariesCache.js";
 import { clearExpiredAudioCache } from "../common/cache/speechifyCache.js";
 import { clearExpiredPromptsCache } from "../common/cache/promptsCache.js";
-import { migrateThemeSettings } from "../common/managers/colorThemeManager.js";
 
 /**
  * Clears all expired caches
@@ -42,7 +41,6 @@ function configureSidePanel() {
 // Configure and enable the side panel, and run migrations
 chrome.runtime.onInstalled.addListener(async (details) => {
   configureSidePanel();
-  // Run theme migration on install/update - REMOVED
 });
 
 // Handle extension icon click to open side panel

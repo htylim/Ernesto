@@ -1,4 +1,3 @@
-// import { jest, describe, test, expect, beforeEach, afterEach } from "@jest/globals"; // REMOVED
 // Use Vitest globals
 import { getSummary } from "../../../../src/common/api/getSummary.js";
 

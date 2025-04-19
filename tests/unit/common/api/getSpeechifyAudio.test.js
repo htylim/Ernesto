@@ -1,4 +1,3 @@
-// import { jest, describe, test, expect, beforeEach, afterEach } from "@jest/globals"; // REMOVED
 // Use Vitest globals
 import { getSpeechifyAudio } from "../../../../src/common/api/getSpeechifyAudio.js";
 

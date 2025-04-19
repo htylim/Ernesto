@@ -1,9 +1,5 @@
-// import { jest } from "@jest/globals"; // REMOVED
 // Use Vitest globals
-import { vi } from "vitest"; // Import vi
-
-// Set a longer timeout for this suite due to async operations - REMOVED, configure in vitest.config if needed
-// vi.setTimeout(10000);
+import { vi } from "vitest";
 
 // --- Mocking Setup (using vi) ---
 
@@ -74,12 +70,8 @@ global.chrome = {
   // Add other chrome APIs if needed
 };
 
-// Mock console to prevent clutter during tests (optional)
-// global.console = { log: vi.fn(), error: vi.fn(), warn: vi.fn() };
-
 // --- Constants needed for tests (as they are not exported from the module) ---
 const DOMAIN_COLORS_STORAGE_KEY = "domain_color_themes";
-const OLD_COLORS_STORAGE_KEY = "ernesto_colors"; // Needed for migration test
 
 // --- Static Import of Module Under Test ---
 // Import AFTER mocks are defined globally
@@ -410,6 +402,4 @@ describe("colorThemeManager", () => {
 
     spy.mockRestore(); // Clean up the spy
   });
-
-  // REMOVED migrateThemeSettings tests as the function was removed earlier
 });

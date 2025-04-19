@@ -1,7 +1,3 @@
-/**
- * @jest-environment jsdom
- */
-// import { jest } from "@jest/globals"; // REMOVED
 // Use Vitest globals
 import { vi } from "vitest"; // Import vi
 

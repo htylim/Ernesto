@@ -6,8 +6,6 @@ export const DEFAULT_COLORS = {
   summaryBgColor: "#f0f7ff",
 };
 
-// OLD Storage key for colors (will be removed after migration)
-const OLD_COLORS_STORAGE_KEY = "ernesto_colors";
 // NEW Storage key for domain-specific and default themes
 const DOMAIN_COLORS_STORAGE_KEY = "domain_color_themes";
 
