@@ -64,4 +64,31 @@ describe("Background Service", () => {
     expect(clearExpiredAudioCache).toHaveBeenCalled();
     expect(clearExpiredPromptsCache).toHaveBeenCalled();
   });
+
+  it("should configure sidepanel on extension install", async () => {
+    await import("../../../src/background/index.js");
+
+    // Simulate extension install
+    const onInstalledCallback =
+      chrome.runtime.onInstalled.addListener.mock.calls[0][0];
+    await onInstalledCallback({ reason: "install" });
+
+    expect(chrome.sidePanel.setOptions).toHaveBeenCalledWith({
+      enabled: true,
+      path: "src/sidepanel/index.html",
+      tabId: null,
+    });
+  });
+
+  it("should open sidepanel when extension icon is clicked", async () => {
+    await import("../../../src/background/index.js");
+
+    // Simulate extension icon click
+    const onClickedCallback =
+      chrome.action.onClicked.addListener.mock.calls[0][0];
+    const mockTab = { id: 123 };
+    onClickedCallback(mockTab);
+
+    expect(chrome.sidePanel.open).toHaveBeenCalledWith({ tabId: 123 });
+  });
 });

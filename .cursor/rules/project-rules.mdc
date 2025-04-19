@@ -30,8 +30,8 @@ alwaysApply: true
 # Testing guidelines
 
 - to run all tests execute `npm test` or `npm test test-name` to run a specific test case.
-- remember to run tests before and after of implementing something to make sure that nothing gets broken with the new implementation.
 - Unit tests should be located under the `/tests/unit`, with a subdirectory structure that matches the file that is tested. Example: for `src/common/crypto/cryptoUtils.js` should be `tests/unit/common/crypto/crytoUtils.test.js`
+- When creating or modifying test code execyte the tests and keep working on them until they all pass.
 
 # Chrome extension development guidelines
 
