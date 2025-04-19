@@ -26,12 +26,15 @@ alwaysApply: true
 - document function and types
 - always update docs
 - modular architectures; split UI/logic/API
+- DO NOT COMMENT OUT CODE, just remove
+- DO NOT LEAVE LEFTOVER CODE from previous logic. Dead code or dangling variables, always remove.
 
 # Testing guidelines
 
+- For testing use vitest.
 - to run all tests execute `npm test` or `npm test test-name` to run a specific test case.
 - Unit tests should be located under the `/tests/unit`, with a subdirectory structure that matches the file that is tested. Example: for `src/common/crypto/cryptoUtils.js` should be `tests/unit/common/crypto/crytoUtils.test.js`
-- When creating or modifying test code execyte the tests and keep working on them until they all pass.
+- When creating or modifying tests before finishing up the turn execute **all** the tests (`npm test`) that none broke. Always keep working on **all** of them until they **all** pass.
 
 # Chrome extension development guidelines
 

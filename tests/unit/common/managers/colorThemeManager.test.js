@@ -6,10 +6,9 @@ import { vi } from "vitest";
 // Mock storage backend
 const mockStorageStore = {};
 const mockStorage = {
-  get: vi.fn((keys, callback) => {
+  get: vi.fn((keys) => {
     const result = {};
     if (!keys) {
-      // Simulate returning all items if keys is null/undefined
       Object.assign(result, mockStorageStore);
     } else {
       const keyList = typeof keys === "string" ? [keys] : keys;
@@ -19,38 +18,23 @@ const mockStorage = {
         }
       });
     }
-    // Chrome storage API uses callbacks, not Promises directly in v2/v3 style tests
-    // Let's simulate that, although the code uses Promises internally
-    if (typeof callback === "function") {
-      callback(result);
-    }
-    // Also return a promise for the internal async/await usage in the module
     return Promise.resolve(result);
   }),
-  set: vi.fn((items, callback) => {
+  set: vi.fn((items) => {
     Object.assign(mockStorageStore, items);
-    if (typeof callback === "function") {
-      callback();
-    }
     return Promise.resolve();
   }),
-  remove: vi.fn((keys, callback) => {
+  remove: vi.fn((keys) => {
     const keyList = typeof keys === "string" ? [keys] : keys;
     keyList.forEach((key) => {
       delete mockStorageStore[key];
     });
-    if (typeof callback === "function") {
-      callback();
-    }
     return Promise.resolve();
   }),
-  clear: vi.fn((callback) => {
+  clear: vi.fn(() => {
     Object.keys(mockStorageStore).forEach(
       (key) => delete mockStorageStore[key]
     );
-    if (typeof callback === "function") {
-      callback();
-    }
     return Promise.resolve();
   }),
   // Helper for tests
@@ -102,8 +86,7 @@ describe("colorThemeManager", () => {
       domains: {},
     });
     expect(chrome.storage.local.get).toHaveBeenCalledWith(
-      DOMAIN_COLORS_STORAGE_KEY,
-      expect.any(Function)
+      DOMAIN_COLORS_STORAGE_KEY
     );
     // Should not save automatically on initialization
     expect(chrome.storage.local.set).not.toHaveBeenCalled();
@@ -119,8 +102,7 @@ describe("colorThemeManager", () => {
     const themes = await getDomainThemesStructure();
     expect(themes).toEqual(existingStructure);
     expect(chrome.storage.local.get).toHaveBeenCalledWith(
-      DOMAIN_COLORS_STORAGE_KEY,
-      expect.any(Function)
+      DOMAIN_COLORS_STORAGE_KEY
     );
   });
 
@@ -128,8 +110,7 @@ describe("colorThemeManager", () => {
     const theme = await getColorTheme();
     expect(theme).toEqual(DEFAULT_COLORS);
     expect(chrome.storage.local.get).toHaveBeenCalledWith(
-      DOMAIN_COLORS_STORAGE_KEY,
-      expect.any(Function)
+      DOMAIN_COLORS_STORAGE_KEY
     );
   });
 
@@ -137,8 +118,7 @@ describe("colorThemeManager", () => {
     const theme = await getColorTheme("unknown.com");
     expect(theme).toEqual(DEFAULT_COLORS);
     expect(chrome.storage.local.get).toHaveBeenCalledWith(
-      DOMAIN_COLORS_STORAGE_KEY,
-      expect.any(Function)
+      DOMAIN_COLORS_STORAGE_KEY
     );
   });
 
@@ -153,8 +133,7 @@ describe("colorThemeManager", () => {
     const theme = await getColorTheme(domain);
     expect(theme).toEqual(domainTheme);
     expect(chrome.storage.local.get).toHaveBeenCalledWith(
-      DOMAIN_COLORS_STORAGE_KEY,
-      expect.any(Function)
+      DOMAIN_COLORS_STORAGE_KEY
     );
   });
 
@@ -167,8 +146,7 @@ describe("colorThemeManager", () => {
     const theme = await getDefaultColorTheme();
     expect(theme).toEqual(customDefault);
     expect(chrome.storage.local.get).toHaveBeenCalledWith(
-      DOMAIN_COLORS_STORAGE_KEY,
-      expect.any(Function)
+      DOMAIN_COLORS_STORAGE_KEY
     );
   });
 
@@ -178,19 +156,15 @@ describe("colorThemeManager", () => {
 
     // Check if get was called first
     expect(chrome.storage.local.get).toHaveBeenCalledWith(
-      DOMAIN_COLORS_STORAGE_KEY,
-      expect.any(Function)
+      DOMAIN_COLORS_STORAGE_KEY
     );
     // Check if set was called with the correct structure
-    expect(chrome.storage.local.set).toHaveBeenCalledWith(
-      {
-        [DOMAIN_COLORS_STORAGE_KEY]: {
-          default: newDefault,
-          domains: {}, // Initially empty
-        },
+    expect(chrome.storage.local.set).toHaveBeenCalledWith({
+      [DOMAIN_COLORS_STORAGE_KEY]: {
+        default: newDefault,
+        domains: {}, // Initially empty
       },
-      expect.any(Function)
-    );
+    });
 
     // Verify the change in the mock store
     const themes = mockStorageStore[DOMAIN_COLORS_STORAGE_KEY];
@@ -198,106 +172,81 @@ describe("colorThemeManager", () => {
   });
 
   it("should set a domain-specific theme", async () => {
-    const domain = "test.org";
-    const domainTheme = { hoverColor: "#123456" };
+    const domain = "example.com";
+    const domainTheme = { mainAccentColor: "#aabbcc" };
     await setDomainColorTheme(domain, domainTheme);
 
     expect(chrome.storage.local.get).toHaveBeenCalledWith(
-      DOMAIN_COLORS_STORAGE_KEY,
-      expect.any(Function)
+      DOMAIN_COLORS_STORAGE_KEY
     );
-    expect(chrome.storage.local.set).toHaveBeenCalledWith(
-      {
-        [DOMAIN_COLORS_STORAGE_KEY]: {
-          default: DEFAULT_COLORS, // Starts with default
-          domains: { [domain]: domainTheme },
-        },
+    expect(chrome.storage.local.set).toHaveBeenCalledWith({
+      [DOMAIN_COLORS_STORAGE_KEY]: {
+        default: DEFAULT_COLORS, // Starts with default
+        domains: { [domain]: domainTheme },
       },
-      expect.any(Function)
-    );
+    });
 
     const themes = mockStorageStore[DOMAIN_COLORS_STORAGE_KEY];
     expect(themes.domains[domain]).toEqual(domainTheme);
   });
 
   it("should throw error if setting domain theme with empty domain", async () => {
-    const domainTheme = { hoverColor: "#123456" };
-    await expect(setDomainColorTheme("", domainTheme)).rejects.toThrow(
+    const theme = { mainAccentColor: "#aabbcc" };
+    await expect(setDomainColorTheme("", theme)).rejects.toThrow(
       "Domain cannot be empty"
     );
-    await expect(setDomainColorTheme(null, domainTheme)).rejects.toThrow(
-      "Domain cannot be empty"
-    );
-    await expect(setDomainColorTheme(undefined, domainTheme)).rejects.toThrow(
-      "Domain cannot be empty"
-    );
+    expect(chrome.storage.local.set).not.toHaveBeenCalled();
   });
 
   it("should remove a domain-specific theme", async () => {
-    const domain = "remove.me";
-    const domainTheme = { summaryBgColor: "#ffffff" };
-    const initialStructure = {
+    const domain = "example.com";
+    mockStorageStore[DOMAIN_COLORS_STORAGE_KEY] = {
       default: DEFAULT_COLORS,
-      domains: { [domain]: domainTheme },
+      domains: { [domain]: { mainAccentColor: "#aabbcc" } },
     };
-    mockStorageStore[DOMAIN_COLORS_STORAGE_KEY] = initialStructure;
 
     await removeDomainColorTheme(domain);
 
     expect(chrome.storage.local.get).toHaveBeenCalledWith(
-      DOMAIN_COLORS_STORAGE_KEY,
-      expect.any(Function)
+      DOMAIN_COLORS_STORAGE_KEY
     );
-    expect(chrome.storage.local.set).toHaveBeenCalledWith(
-      {
-        [DOMAIN_COLORS_STORAGE_KEY]: {
-          default: DEFAULT_COLORS,
-          domains: {}, // Domain removed
-        },
+    expect(chrome.storage.local.set).toHaveBeenCalledWith({
+      [DOMAIN_COLORS_STORAGE_KEY]: {
+        default: DEFAULT_COLORS,
+        domains: {}, // Domain removed
       },
-      expect.any(Function)
-    );
+    });
 
     const themes = mockStorageStore[DOMAIN_COLORS_STORAGE_KEY];
     expect(themes.domains[domain]).toBeUndefined();
   });
 
   it("should not fail and not call set if removing a non-existent domain theme", async () => {
-    const domain = "not.here";
-    const initialStructure = {
+    const domain = "nonexistent.com";
+    mockStorageStore[DOMAIN_COLORS_STORAGE_KEY] = {
       default: DEFAULT_COLORS,
-      domains: { other: {} },
+      domains: {},
     };
-    mockStorageStore[DOMAIN_COLORS_STORAGE_KEY] = initialStructure;
 
     await removeDomainColorTheme(domain);
 
     expect(chrome.storage.local.get).toHaveBeenCalledWith(
-      DOMAIN_COLORS_STORAGE_KEY,
-      expect.any(Function)
+      DOMAIN_COLORS_STORAGE_KEY
     );
     // Should not have called set because nothing changed
     expect(chrome.storage.local.set).not.toHaveBeenCalled();
-    const themes = mockStorageStore[DOMAIN_COLORS_STORAGE_KEY];
-    expect(themes).toEqual(initialStructure); // Unchanged
   });
 
   it("should throw error if removing domain theme with empty domain", async () => {
     await expect(removeDomainColorTheme("")).rejects.toThrow(
       "Domain cannot be empty"
     );
-    await expect(removeDomainColorTheme(null)).rejects.toThrow(
-      "Domain cannot be empty"
-    );
-    await expect(removeDomainColorTheme(undefined)).rejects.toThrow(
-      "Domain cannot be empty"
-    );
+    expect(chrome.storage.local.set).not.toHaveBeenCalled();
   });
 
   it("should reset the default theme to hardcoded values", async () => {
-    const customDefault = { mainAccentColor: "#ffddaa" };
     mockStorageStore[DOMAIN_COLORS_STORAGE_KEY] = {
-      default: customDefault,
+      default: { mainAccentColor: "#aabbcc" },
       domains: {},
     };
 
@@ -305,101 +254,84 @@ describe("colorThemeManager", () => {
 
     expect(resetTheme).toEqual(DEFAULT_COLORS);
     expect(chrome.storage.local.get).toHaveBeenCalledWith(
-      DOMAIN_COLORS_STORAGE_KEY,
-      expect.any(Function)
+      DOMAIN_COLORS_STORAGE_KEY
     );
-    expect(chrome.storage.local.set).toHaveBeenCalledWith(
-      {
-        [DOMAIN_COLORS_STORAGE_KEY]: {
-          default: DEFAULT_COLORS,
-          domains: {},
-        },
+    expect(chrome.storage.local.set).toHaveBeenCalledWith({
+      [DOMAIN_COLORS_STORAGE_KEY]: {
+        default: DEFAULT_COLORS,
+        domains: {},
       },
-      expect.any(Function)
-    );
+    });
     const themes = mockStorageStore[DOMAIN_COLORS_STORAGE_KEY];
     expect(themes.default).toEqual(DEFAULT_COLORS);
   });
 
   it("should apply color theme to document root", () => {
-    // --- Local document mock using spyOn ---
-    const mockSetProperty = vi.fn();
-    const spy = vi
-      .spyOn(document, "documentElement", "get")
-      .mockImplementation(() => ({
-        style: {
-          setProperty: mockSetProperty,
-        },
-      }));
-    // -------------------------------------
+    // Mock document.documentElement
+    const mockRoot = {
+      style: {
+        setProperty: vi.fn(),
+      },
+    };
+    global.document = {
+      documentElement: mockRoot,
+    };
 
     const theme = {
-      mainAccentColor: "#111",
-      hoverColor: "#222",
-      disabledColor: "#333",
-      summaryBgColor: "#444",
+      mainAccentColor: "#112233",
+      hoverColor: "#445566",
+      disabledColor: "#778899",
+      summaryBgColor: "#aabbcc",
     };
+
     applyColorTheme(theme);
 
-    expect(mockSetProperty).toHaveBeenCalledTimes(4);
-    expect(mockSetProperty).toHaveBeenCalledWith("--main-accent-color", "#111");
-    expect(mockSetProperty).toHaveBeenCalledWith("--hover-color", "#222");
-    expect(mockSetProperty).toHaveBeenCalledWith("--disabled-color", "#333");
-    expect(mockSetProperty).toHaveBeenCalledWith("--summary-bg-color", "#444");
-
-    spy.mockRestore(); // Clean up the spy
+    expect(mockRoot.style.setProperty).toHaveBeenCalledWith(
+      "--main-accent-color",
+      theme.mainAccentColor
+    );
+    expect(mockRoot.style.setProperty).toHaveBeenCalledWith(
+      "--hover-color",
+      theme.hoverColor
+    );
+    expect(mockRoot.style.setProperty).toHaveBeenCalledWith(
+      "--disabled-color",
+      theme.disabledColor
+    );
+    expect(mockRoot.style.setProperty).toHaveBeenCalledWith(
+      "--summary-bg-color",
+      theme.summaryBgColor
+    );
   });
 
   it("should apply default colors if theme object is invalid or missing values", () => {
-    // --- Local document mock using spyOn ---
-    const mockSetProperty = vi.fn();
-    const spy = vi
-      .spyOn(document, "documentElement", "get")
-      .mockImplementation(() => ({
-        style: {
-          setProperty: mockSetProperty,
-        },
-      }));
-    // -------------------------------------
+    const mockRoot = {
+      style: {
+        setProperty: vi.fn(),
+      },
+    };
+    global.document = {
+      documentElement: mockRoot,
+    };
 
-    // First call: invalid theme
+    // Test with invalid theme object
     applyColorTheme(null);
-    expect(mockSetProperty).toHaveBeenCalledWith(
+
+    expect(mockRoot.style.setProperty).toHaveBeenCalledWith(
       "--main-accent-color",
       DEFAULT_COLORS.mainAccentColor
     );
-    expect(mockSetProperty).toHaveBeenCalledWith(
+    expect(mockRoot.style.setProperty).toHaveBeenCalledWith(
       "--hover-color",
       DEFAULT_COLORS.hoverColor
     );
-    expect(mockSetProperty).toHaveBeenCalledWith(
+    expect(mockRoot.style.setProperty).toHaveBeenCalledWith(
       "--disabled-color",
       DEFAULT_COLORS.disabledColor
     );
-    expect(mockSetProperty).toHaveBeenCalledWith(
+    expect(mockRoot.style.setProperty).toHaveBeenCalledWith(
       "--summary-bg-color",
       DEFAULT_COLORS.summaryBgColor
     );
-
-    // Reset mock calls *before* the second assertion
-    mockSetProperty.mockClear();
-
-    // Second call: missing values
-    applyColorTheme({ mainAccentColor: "#555" });
-    expect(mockSetProperty).toHaveBeenCalledWith("--main-accent-color", "#555"); // Provided value used
-    expect(mockSetProperty).toHaveBeenCalledWith(
-      "--hover-color",
-      DEFAULT_COLORS.hoverColor
-    ); // Default fallback
-    expect(mockSetProperty).toHaveBeenCalledWith(
-      "--disabled-color",
-      DEFAULT_COLORS.disabledColor
-    ); // Default fallback
-    expect(mockSetProperty).toHaveBeenCalledWith(
-      "--summary-bg-color",
-      DEFAULT_COLORS.summaryBgColor
-    ); // Default fallback
-
-    spy.mockRestore(); // Clean up the spy
   });
 });

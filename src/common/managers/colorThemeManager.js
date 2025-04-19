@@ -31,22 +31,15 @@ const DOMAIN_COLORS_STORAGE_KEY = "domain_color_themes";
  * @returns {Promise<DomainColorThemes>} The domain themes structure.
  */
 export async function getDomainThemesStructure() {
-  return new Promise((resolve) => {
-    chrome.storage.local.get(DOMAIN_COLORS_STORAGE_KEY, (result) => {
-      let themes = result[DOMAIN_COLORS_STORAGE_KEY];
-      if (!themes || !themes.default || !themes.domains) {
-        // Initialize if structure is missing or invalid
-        themes = {
-          default: DEFAULT_COLORS,
-          domains: {},
-        };
-        // Optionally save the initialized structure back,
-        // but migration script should handle initial setup.
-        // chrome.storage.local.set({ [DOMAIN_COLORS_STORAGE_KEY]: themes });
-      }
-      resolve(themes);
-    });
-  });
+  const result = await chrome.storage.local.get(DOMAIN_COLORS_STORAGE_KEY);
+  let themes = result[DOMAIN_COLORS_STORAGE_KEY];
+  if (!themes || !themes.default || !themes.domains) {
+    themes = {
+      default: DEFAULT_COLORS,
+      domains: {},
+    };
+  }
+  return themes;
 }
 
 /**
@@ -55,9 +48,7 @@ export async function getDomainThemesStructure() {
  * @returns {Promise<void>}
  */
 async function saveDomainThemesStructure(themes) {
-  return new Promise((resolve) => {
-    chrome.storage.local.set({ [DOMAIN_COLORS_STORAGE_KEY]: themes }, resolve);
-  });
+  await chrome.storage.local.set({ [DOMAIN_COLORS_STORAGE_KEY]: themes });
 }
 
 /**
