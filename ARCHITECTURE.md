@@ -56,8 +56,8 @@ Concise overview of the Ernesto Chrome Extension structure for AI understanding.
 - `public/icons/`: Contains extension icons (`icon16.png`, `icon48.png`, `icon128.png`).
 - `src/vendor/`: Holds third-party libraries (Readability, Marked, DOMPurify, Turndown).
 - `package.json` / `package-lock.json`: Node.js project configuration and dependency lock files.
-- `jest.setup.js`: Jest global setup file.
-- `jest-puppeteer.config.cjs`: Jest Puppeteer configuration file.
+- `vitest.setup.js`: Vitest global setup file.
+- `vitest.config.js`: Vitest configuration file.
 - `tests/`: Directory containing test files (e.g., `tests/unit/common/crypto/cryptoUtils.test.js`).
 - `README.md`: Project documentation (setup, features).
 - `ARCHITECTURE.md`: This file, outlining the project structure.
