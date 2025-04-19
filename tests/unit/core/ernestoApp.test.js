@@ -106,6 +106,11 @@ describe("ErnestoApp", () => {
       },
     }));
 
+    // Mock window.close
+    global.window = {
+      close: vi.fn(),
+    };
+
     // Create instance
     ernestoApp = new ErnestoApp();
   });
@@ -266,5 +271,136 @@ describe("ErnestoApp", () => {
     expect(UIStateManager.prototype.showError).toHaveBeenCalledWith(
       error.message
     );
+  });
+
+  it("should setup event listeners for control buttons", () => {
+    const { summarizeBtn, speechifyBtn, openOptionsBtn, closeBtn } =
+      ernestoApp.uiManager.getControlButtons();
+    const { promptInput, submitPromptBtn } =
+      ernestoApp.uiManager.getPromptElements();
+
+    expect(summarizeBtn.addEventListener).toHaveBeenCalledWith(
+      "click",
+      expect.any(Function)
+    );
+    expect(speechifyBtn.addEventListener).toHaveBeenCalledWith(
+      "click",
+      expect.any(Function)
+    );
+    expect(openOptionsBtn.addEventListener).toHaveBeenCalledWith(
+      "click",
+      expect.any(Function)
+    );
+    expect(closeBtn.addEventListener).toHaveBeenCalledWith(
+      "click",
+      expect.any(Function)
+    );
+    expect(submitPromptBtn.addEventListener).toHaveBeenCalledWith(
+      "click",
+      expect.any(Function)
+    );
+    expect(promptInput.addEventListener).toHaveBeenCalledWith(
+      "keypress",
+      expect.any(Function)
+    );
+  });
+
+  it("should call summarize when summarize button is clicked", async () => {
+    const { summarizeBtn } = ernestoApp.uiManager.getControlButtons();
+    const clickHandler = summarizeBtn.addEventListener.mock.calls[0][1];
+
+    await clickHandler();
+
+    expect(UIStateManager.prototype.showLoading).toHaveBeenCalled();
+    expect(UIStateManager.prototype.hideLoading).toHaveBeenCalled();
+  });
+
+  it("should call speechify when speechify button is clicked", async () => {
+    const { speechifyBtn } = ernestoApp.uiManager.getControlButtons();
+    const clickHandler = speechifyBtn.addEventListener.mock.calls[0][1];
+
+    // Mock required dependencies
+    const mockTab = { id: 1, url: "https://example.com" };
+    global.chrome.tabs.query.mockResolvedValueOnce([mockTab]);
+    TabStateManager.prototype.getTabState.mockResolvedValueOnce({
+      url: mockTab.url,
+    });
+    UIStateManager.prototype.getSummaryText.mockReturnValue("test summary");
+    UIStateManager.prototype.isSummaryVisible.mockReturnValue(true);
+    getSpeechifyAudio.mockResolvedValue(new Blob());
+
+    await clickHandler();
+
+    expect(UIStateManager.prototype.showLoading).toHaveBeenCalled();
+    expect(UIStateManager.prototype.hideLoading).toHaveBeenCalled();
+  });
+
+  it("should call prompt when submit button is clicked", async () => {
+    const { submitPromptBtn } = ernestoApp.uiManager.getPromptElements();
+    const clickHandler = submitPromptBtn.addEventListener.mock.calls[0][1];
+
+    // Mock required dependencies
+    const mockTab = { id: 1, url: "https://example.com" };
+    global.chrome.tabs.query.mockResolvedValueOnce([mockTab]);
+    TabStateManager.prototype.getTabState.mockResolvedValueOnce({
+      url: mockTab.url,
+    });
+    UIStateManager.prototype.getPromptText.mockReturnValue("test prompt");
+    getResponse.mockResolvedValue({
+      assistantMessage: "test response",
+      assistantMessageId: "test-id",
+    });
+
+    await clickHandler();
+
+    expect(UIStateManager.prototype.showLoading).toHaveBeenCalled();
+    expect(UIStateManager.prototype.hideLoading).toHaveBeenCalled();
+  });
+
+  it("should call prompt when enter key is pressed in prompt input", async () => {
+    const { promptInput } = ernestoApp.uiManager.getPromptElements();
+    const keypressHandler = promptInput.addEventListener.mock.calls[0][1];
+
+    // Mock required dependencies
+    const mockTab = { id: 1, url: "https://example.com" };
+    global.chrome.tabs.query.mockResolvedValueOnce([mockTab]);
+    TabStateManager.prototype.getTabState.mockResolvedValueOnce({
+      url: mockTab.url,
+    });
+    UIStateManager.prototype.getPromptText.mockReturnValue("test prompt");
+    getResponse.mockResolvedValue({
+      assistantMessage: "test response",
+      assistantMessageId: "test-id",
+    });
+
+    // Mock API key
+    global.chrome.storage.local.get.mockResolvedValueOnce({
+      apiKey: "test-api-key",
+    });
+
+    // Spy on prompt method
+    const promptSpy = vi.spyOn(ernestoApp, "prompt");
+
+    await keypressHandler({ key: "Enter", preventDefault: vi.fn() });
+
+    expect(promptSpy).toHaveBeenCalled();
+  });
+
+  it("should open options page when options button is clicked", () => {
+    const { openOptionsBtn } = ernestoApp.uiManager.getControlButtons();
+    const clickHandler = openOptionsBtn.addEventListener.mock.calls[0][1];
+
+    clickHandler();
+
+    expect(chrome.runtime.openOptionsPage).toHaveBeenCalled();
+  });
+
+  it("should close window when close button is clicked", () => {
+    const { closeBtn } = ernestoApp.uiManager.getControlButtons();
+    const clickHandler = closeBtn.addEventListener.mock.calls[0][1];
+
+    clickHandler();
+
+    expect(window.close).toHaveBeenCalled();
   });
 });
