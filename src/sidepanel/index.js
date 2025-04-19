@@ -5,7 +5,7 @@ import {
 } from "../common/managers/colorThemeManager.js";
 
 // Utility function to extract domain from URL
-function getDomainFromUrl(urlString) {
+export function getDomainFromUrl(urlString) {
   try {
     const url = new URL(urlString);
     // Handle special chrome/edge URLs
@@ -25,7 +25,7 @@ function getDomainFromUrl(urlString) {
 }
 
 // Apply color theme based on the current tab's domain
-async function loadAndApplyColorTheme() {
+export async function loadAndApplyColorTheme() {
   try {
     // Get the current active tab in the current window
     const [tab] = await chrome.tabs.query({
@@ -43,13 +43,11 @@ async function loadAndApplyColorTheme() {
 }
 
 // Listen for color theme changes (generic notification)
-function setupColorThemeListener() {
+export function setupColorThemeListener() {
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.action === "colorThemeChanged") {
       // Reload the theme based on the current tab's domain
       loadAndApplyColorTheme();
-      // We don't have an immediate result to send back, maybe just acknowledge?
-      // sendResponse({ success: true }); // Optional: acknowledge receipt
       return true; // Indicate potential async response (though we don't use sendResponse here)
     }
     return true; // Keep the messaging channel open for other listeners
@@ -57,7 +55,7 @@ function setupColorThemeListener() {
 }
 
 // Listen for tab activation changes
-function setupTabActivationListener() {
+export function setupTabActivationListener() {
   chrome.tabs.onActivated.addListener(async (activeInfo) => {
     // activeInfo contains windowId and tabId
     // The side panel is implicitly associated with the active tab in the current window
@@ -80,7 +78,7 @@ function setupTabActivationListener() {
 }
 
 // Listen for tab URL updates
-function setupTabUpdateListener() {
+export function setupTabUpdateListener() {
   chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
     // Check if the URL changed and if the tab is the active one in the current window
     if (changeInfo.url && tab.active) {
