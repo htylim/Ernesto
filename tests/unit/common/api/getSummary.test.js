@@ -1,15 +1,9 @@
-import {
-  jest,
-  describe,
-  test,
-  expect,
-  beforeEach,
-  afterEach,
-} from "@jest/globals";
+// import { jest, describe, test, expect, beforeEach, afterEach } from "@jest/globals"; // REMOVED
+// Use Vitest globals
 import { getSummary } from "../../../../src/common/api/getSummary.js";
 
 // Mock the global fetch function
-global.fetch = jest.fn();
+global.fetch = vi.fn();
 
 describe("getSummary", () => {
   const apiKey = "test-api-key";
@@ -28,8 +22,8 @@ describe("getSummary", () => {
     // Clear mock calls before each test
     fetch.mockClear();
     // Reset console mocks if necessary (optional)
-    jest.spyOn(console, "error").mockImplementation(() => {});
-    jest.spyOn(console, "log").mockImplementation(() => {});
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.spyOn(console, "log").mockImplementation(() => {});
   });
 
   afterEach(() => {

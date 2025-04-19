@@ -1,16 +1,15 @@
 /**
  * @jest-environment jsdom
  */
-import { jest } from "@jest/globals";
+// import { jest } from "@jest/globals"; // REMOVED
+// Use Vitest globals
+import { vi } from "vitest"; // Import vi
 
-// Use unstable_mockModule before importing the modules that depend on it
-jest.unstable_mockModule(
-  "../../../../src/common/crypto/cryptoUtils.js",
-  () => ({
-    encryptValue: jest.fn(),
-    decryptValue: jest.fn(),
-  })
-);
+// Use vi.mock before importing the modules that depend on it
+vi.mock("../../../../src/common/crypto/cryptoUtils.js", () => ({
+  encryptValue: vi.fn(),
+  decryptValue: vi.fn(),
+}));
 
 // Now import the modules AFTER mocking
 const cryptoUtils = await import(
@@ -30,10 +29,10 @@ describe("apiKeyManager", () => {
 
   beforeEach(() => {
     // Reset mocks and setup chrome.storage mock for each test
-    jest.clearAllMocks();
+    vi.clearAllMocks();
 
-    mockStorageGet = jest.fn();
-    mockStorageSet = jest.fn();
+    mockStorageGet = vi.fn();
+    mockStorageSet = vi.fn();
 
     global.chrome = {
       storage: {

@@ -42,8 +42,7 @@ function configureSidePanel() {
 // Configure and enable the side panel, and run migrations
 chrome.runtime.onInstalled.addListener(async (details) => {
   configureSidePanel();
-  // Run theme migration on install/update
-  await migrateThemeSettings();
+  // Run theme migration on install/update - REMOVED
 });
 
 // Handle extension icon click to open side panel
@@ -61,7 +60,7 @@ chrome.storage.onChanged.addListener((changes) => {
   }
 });
 
-// Schedule cache cleanup every 12 hours
-const CACHE_CLEANUP_INTERVAL = 12 * 60 * 60 * 1000; // 12 hours in milliseconds
+// Schedule cache cleanup every 1 hour
+const CACHE_CLEANUP_INTERVAL = 1 * 60 * 60 * 1000; // 1 hour in milliseconds
 
 setInterval(clearAllExpiredCaches, CACHE_CLEANUP_INTERVAL);

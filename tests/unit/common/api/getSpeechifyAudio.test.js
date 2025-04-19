@@ -1,16 +1,10 @@
-import {
-  jest,
-  describe,
-  test,
-  expect,
-  beforeEach,
-  afterEach,
-} from "@jest/globals";
+// import { jest, describe, test, expect, beforeEach, afterEach } from "@jest/globals"; // REMOVED
+// Use Vitest globals
 import { getSpeechifyAudio } from "../../../../src/common/api/getSpeechifyAudio.js";
 
-// Mock the global fetch function
-global.fetch = jest.fn();
-// Mock Blob for Node environment if needed (Jest runs in Node)
+// Mock the global fetch function using vi.fn()
+global.fetch = vi.fn();
+// Mock Blob for Node environment if needed (Vitest runs in Node)
 if (typeof Blob === "undefined") {
   global.Blob = class Blob {
     constructor(parts, options) {
@@ -23,6 +17,19 @@ if (typeof Blob === "undefined") {
     async text() {
       return this.parts.join("");
     }
+    // Minimal mock for arrayBuffer if needed by any internal checks
+    async arrayBuffer() {
+      const buffer = new ArrayBuffer(this.size);
+      const view = new Uint8Array(buffer);
+      let offset = 0;
+      for (const part of this.parts) {
+        // Assuming parts are strings for simplicity here
+        const partBuffer = new TextEncoder().encode(part);
+        view.set(partBuffer, offset);
+        offset += partBuffer.length;
+      }
+      return buffer;
+    }
   };
 }
 
@@ -31,14 +38,16 @@ describe("getSpeechifyAudio", () => {
   const text = "Convert this text to speech.";
   const mockBlob = new Blob(["mock audio data"], { type: "audio/mpeg" });
 
+  let consoleErrorSpy;
+
   beforeEach(() => {
-    fetch.mockClear();
-    jest.spyOn(console, "error").mockImplementation(() => {});
-    // No console.log in the original function to mock
+    vi.clearAllMocks(); // Use vi
+    // Use vi.spyOn
+    consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
   });
 
   afterEach(() => {
-    console.error.mockRestore();
+    consoleErrorSpy.mockRestore();
   });
 
   test("should return audio blob on successful API call", async () => {
@@ -49,7 +58,8 @@ describe("getSpeechifyAudio", () => {
     });
 
     const result = await getSpeechifyAudio(text, apiKey);
-    expect(result).toBeInstanceOf(Blob);
+    // Check if it's an instance of the potentially polyfilled Blob
+    expect(result).toBeInstanceOf(global.Blob);
     expect(result.size).toBe(mockBlob.size);
     expect(result.type).toBe(mockBlob.type);
     expect(fetch).toHaveBeenCalledTimes(1);

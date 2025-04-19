@@ -1,15 +1,9 @@
-import {
-  jest,
-  describe,
-  test,
-  expect,
-  beforeEach,
-  afterEach,
-} from "@jest/globals";
+// import { jest, describe, test, expect, beforeEach, afterEach } from "@jest/globals"; // REMOVED
+// Use Vitest globals
 import { getResponse } from "../../../../src/common/api/getResponse.js";
 
-// Mock the global fetch function
-global.fetch = jest.fn();
+// Mock the global fetch function using vi.fn()
+global.fetch = vi.fn();
 
 describe("getResponse", () => {
   const apiKey = "test-api-key";
@@ -19,18 +13,23 @@ describe("getResponse", () => {
   const expectedAssistantMessage = "This page is about testing.";
   const expectedAssistantMessageId = "resp_456";
 
+  let consoleErrorSpy;
+  let consoleLogSpy;
+
   beforeEach(() => {
-    fetch.mockClear();
-    jest.spyOn(console, "error").mockImplementation(() => {});
-    jest.spyOn(console, "log").mockImplementation(() => {});
+    vi.clearAllMocks(); // Use vi
+    // Use vi.spyOn
+    consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    consoleLogSpy = vi.spyOn(console, "log").mockImplementation(() => {});
   });
 
   afterEach(() => {
-    console.error.mockRestore();
-    console.log.mockRestore();
+    consoleErrorSpy.mockRestore();
+    consoleLogSpy.mockRestore();
   });
 
   test("should return response on successful API call (first prompt)", async () => {
+    // fetch mock setup remains the same, just uses vi.fn()
     fetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({
@@ -64,6 +63,7 @@ describe("getResponse", () => {
     expect(requestBody.input).toContain(prompt);
     expect(requestBody.input).toContain(url);
     expect(requestBody.previous_response_id).toBeUndefined(); // No previous ID for first prompt
+    expect(console.error).not.toHaveBeenCalled(); // Example of using spy
   });
 
   test("should return response on successful API call (subsequent prompt)", async () => {
@@ -132,7 +132,8 @@ describe("getResponse", () => {
       `API request failed: 401 - ${errorText}`
     );
     expect(fetch).toHaveBeenCalledTimes(1);
-    expect(console.error).toHaveBeenCalledWith(
+    // Use the spy variable directly
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
       "API Error Response:",
       expect.objectContaining({
         status: 401,

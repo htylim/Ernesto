@@ -1,14 +1,16 @@
-import { jest } from "@jest/globals";
+// import { jest } from "@jest/globals"; // REMOVED
+// Use Vitest globals
+import { vi } from "vitest"; // Import vi
 
-// Set a longer timeout for this suite due to async operations
-jest.setTimeout(10000); // 10 seconds
+// Set a longer timeout for this suite due to async operations - REMOVED, configure in vitest.config if needed
+// vi.setTimeout(10000);
 
-// --- Jest Mocking Setup ---
+// --- Mocking Setup (using vi) ---
 
 // Mock storage backend
 const mockStorageStore = {};
 const mockStorage = {
-  get: jest.fn((keys, callback) => {
+  get: vi.fn((keys, callback) => {
     const result = {};
     if (!keys) {
       // Simulate returning all items if keys is null/undefined
@@ -29,14 +31,14 @@ const mockStorage = {
     // Also return a promise for the internal async/await usage in the module
     return Promise.resolve(result);
   }),
-  set: jest.fn((items, callback) => {
+  set: vi.fn((items, callback) => {
     Object.assign(mockStorageStore, items);
     if (typeof callback === "function") {
       callback();
     }
     return Promise.resolve();
   }),
-  remove: jest.fn((keys, callback) => {
+  remove: vi.fn((keys, callback) => {
     const keyList = typeof keys === "string" ? [keys] : keys;
     keyList.forEach((key) => {
       delete mockStorageStore[key];
@@ -46,7 +48,7 @@ const mockStorage = {
     }
     return Promise.resolve();
   }),
-  clear: jest.fn((callback) => {
+  clear: vi.fn((callback) => {
     Object.keys(mockStorageStore).forEach(
       (key) => delete mockStorageStore[key]
     );
@@ -73,7 +75,7 @@ global.chrome = {
 };
 
 // Mock console to prevent clutter during tests (optional)
-// global.console = { log: jest.fn(), error: jest.fn(), warn: jest.fn() };
+// global.console = { log: vi.fn(), error: vi.fn(), warn: vi.fn() };
 
 // --- Constants needed for tests (as they are not exported from the module) ---
 const DOMAIN_COLORS_STORAGE_KEY = "domain_color_themes";
@@ -91,16 +93,14 @@ import {
   removeDomainColorTheme,
   resetDefaultColorTheme,
   applyColorTheme,
-  migrateThemeSettings,
 } from "../../../../src/common/managers/colorThemeManager.js";
 
 describe("colorThemeManager", () => {
   beforeEach(() => {
     // Reset mocks and storage before each test
     mockStorage._clearStore();
-    jest.clearAllMocks(); // Clears calls/instances for chrome.storage and document mocks
-    // Restore any potential spies after each test
-    jest.restoreAllMocks();
+    vi.clearAllMocks(); // Use vi
+    // vi.restoreAllMocks(); // Only needed if using vi.spyOn
   });
 
   it("should initialize with default structure if storage is empty", async () => {
@@ -331,8 +331,8 @@ describe("colorThemeManager", () => {
 
   it("should apply color theme to document root", () => {
     // --- Local document mock using spyOn ---
-    const mockSetProperty = jest.fn();
-    const spy = jest
+    const mockSetProperty = vi.fn();
+    const spy = vi
       .spyOn(document, "documentElement", "get")
       .mockImplementation(() => ({
         style: {
@@ -360,8 +360,8 @@ describe("colorThemeManager", () => {
 
   it("should apply default colors if theme object is invalid or missing values", () => {
     // --- Local document mock using spyOn ---
-    const mockSetProperty = jest.fn();
-    const spy = jest
+    const mockSetProperty = vi.fn();
+    const spy = vi
       .spyOn(document, "documentElement", "get")
       .mockImplementation(() => ({
         style: {
@@ -411,94 +411,5 @@ describe("colorThemeManager", () => {
     spy.mockRestore(); // Clean up the spy
   });
 
-  // --- Migration Tests ---
-
-  it("should initialize new structure with defaults if neither old nor new exists", async () => {
-    await migrateThemeSettings();
-
-    expect(chrome.storage.local.get).toHaveBeenCalledWith(
-      OLD_COLORS_STORAGE_KEY,
-      expect.any(Function)
-    );
-    expect(chrome.storage.local.get).toHaveBeenCalledWith(
-      DOMAIN_COLORS_STORAGE_KEY,
-      expect.any(Function)
-    );
-    expect(chrome.storage.local.set).toHaveBeenCalledWith(
-      {
-        [DOMAIN_COLORS_STORAGE_KEY]: {
-          default: DEFAULT_COLORS,
-          domains: {},
-        },
-      },
-      expect.any(Function)
-    );
-    expect(chrome.storage.local.remove).not.toHaveBeenCalled(); // Old key didn't exist
-    const themes = mockStorageStore[DOMAIN_COLORS_STORAGE_KEY]; // Verify structure exists now
-    expect(themes).toEqual({ default: DEFAULT_COLORS, domains: {} });
-  });
-
-  it("should migrate old settings to new default if only old exists", async () => {
-    const oldTheme = { mainAccentColor: "#fedcba" };
-    mockStorageStore[OLD_COLORS_STORAGE_KEY] = oldTheme;
-
-    await migrateThemeSettings();
-
-    expect(chrome.storage.local.get).toHaveBeenCalledWith(
-      OLD_COLORS_STORAGE_KEY,
-      expect.any(Function)
-    );
-    expect(chrome.storage.local.get).toHaveBeenCalledWith(
-      DOMAIN_COLORS_STORAGE_KEY,
-      expect.any(Function)
-    );
-    expect(chrome.storage.local.set).toHaveBeenCalledWith(
-      {
-        [DOMAIN_COLORS_STORAGE_KEY]: {
-          default: oldTheme, // Old theme becomes the new default
-          domains: {},
-        },
-      },
-      expect.any(Function)
-    );
-    expect(chrome.storage.local.remove).toHaveBeenCalledWith(
-      OLD_COLORS_STORAGE_KEY,
-      expect.any(Function)
-    ); // Old key removed
-
-    // Verify final state
-    const themes = mockStorageStore[DOMAIN_COLORS_STORAGE_KEY];
-    expect(themes.default).toEqual(oldTheme);
-    expect(mockStorageStore[OLD_COLORS_STORAGE_KEY]).toBeUndefined();
-  });
-
-  it("should do nothing if new structure already exists", async () => {
-    const existingStructure = {
-      default: { mainAccentColor: "#abcdef" },
-      domains: { "exist.com": {} },
-    };
-    const oldTheme = { mainAccentColor: "#oldone" }; // Simulate old key also existing
-
-    mockStorageStore[DOMAIN_COLORS_STORAGE_KEY] = existingStructure;
-    mockStorageStore[OLD_COLORS_STORAGE_KEY] = oldTheme;
-
-    await migrateThemeSettings();
-
-    expect(chrome.storage.local.get).toHaveBeenCalledWith(
-      OLD_COLORS_STORAGE_KEY,
-      expect.any(Function)
-    );
-    expect(chrome.storage.local.get).toHaveBeenCalledWith(
-      DOMAIN_COLORS_STORAGE_KEY,
-      expect.any(Function)
-    );
-    // Crucially, set and remove should NOT be called
-    expect(chrome.storage.local.set).not.toHaveBeenCalled();
-    expect(chrome.storage.local.remove).not.toHaveBeenCalled();
-
-    // Verify structure and old key remain unchanged
-    const themes = mockStorageStore[DOMAIN_COLORS_STORAGE_KEY];
-    expect(themes).toEqual(existingStructure);
-    expect(mockStorageStore[OLD_COLORS_STORAGE_KEY]).toEqual(oldTheme);
-  });
+  // REMOVED migrateThemeSettings tests as the function was removed earlier
 });

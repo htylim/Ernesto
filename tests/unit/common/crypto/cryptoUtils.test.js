@@ -1,7 +1,8 @@
 /**
  * @jest-environment jsdom
  */
-import { jest } from "@jest/globals";
+// import { jest } from "@jest/globals"; // REMOVED
+// Use Vitest globals
 import {
   encryptValue,
   decryptValue,
@@ -14,7 +15,7 @@ global.chrome = {
   },
 };
 
-// Mock crypto APIs
+// Mock crypto APIs using vi.fn()
 const mockKeyData = new ArrayBuffer(32); // Mock raw key data (SHA-256 hash)
 const mockCryptoKey = {
   type: "secret",
@@ -24,32 +25,13 @@ const mockCryptoKey = {
 const mockIv = new Uint8Array(12).fill(1); // Deterministic IV for testing
 const mockEncryptedData = new Uint8Array([1, 2, 3, 4, 5]).buffer; // Mock encrypted data
 
-global.crypto = {
-  subtle: {
-    digest: jest.fn().mockResolvedValue(mockKeyData),
-    importKey: jest.fn().mockResolvedValue(mockCryptoKey),
-    encrypt: jest.fn().mockResolvedValue(mockEncryptedData),
-    // Mock decrypt to return the original data for simplicity in this example
-    // In a real scenario, you might want more sophisticated mock decryption
-    decrypt: jest.fn().mockImplementation(async (algo, key, data) => {
-      // This mock assumes the 'data' passed to decrypt is the original plaintext
-      // which isn't realistic but simplifies testing the flow.
-      // A better mock would reverse the mock encryption process.
-      // For now, let's return a fixed known ArrayBuffer.
-      const decoder = new TextDecoder();
-      const encoder = new TextEncoder();
-      // Find the original plaintext corresponding to mockEncryptedData for consistency
-      // Based on how encryptValue works, it combines IV + encrypted.
-      // Decrypt gets the part after IV. So this mock needs to know what plaintext
-      // would result in `mockEncryptedData` after encryption with `mockCryptoKey` and `mockIv`.
-      // Let's assume the plaintext "test data" was encrypted.
-      return encoder.encode("test data").buffer;
-    }),
-  },
-  getRandomValues: jest.fn().mockReturnValue(mockIv),
-};
+// Note: The setup file (vitest.setup.js) already stubs global.crypto.subtle methods.
+// We rely on those mocks being reset by vi.clearAllMocks() in beforeEach.
+// We only need to mock getRandomValues here if we need deterministic IVs for tests.
+if (typeof global.crypto === "undefined") global.crypto = {}; // Ensure crypto exists
+global.crypto.getRandomValues = vi.fn().mockReturnValue(mockIv);
 
-// Mock browser built-ins used
+// Mock browser built-ins used (Keep for now, maybe simplify later)
 global.TextEncoder = class TextEncoder {
   encode(str) {
     // Simple polyfill sufficient for testing
@@ -96,103 +78,120 @@ describe("cryptoUtils", () => {
 
   beforeEach(() => {
     // Reset mocks before each test
-    jest.clearAllMocks();
-    // Re-assign mock implementations since clearAllMocks removes them
-    global.crypto.subtle.digest = jest.fn().mockResolvedValue(mockKeyData);
-    global.crypto.subtle.importKey = jest.fn().mockResolvedValue(mockCryptoKey);
-    global.crypto.subtle.encrypt = jest
-      .fn()
-      .mockResolvedValue(mockEncryptedData);
-    // Adjust mock decrypt to return the *correct* original data based on our testString
-    const encoder = new TextEncoder();
-    global.crypto.subtle.decrypt = jest
-      .fn()
-      .mockResolvedValue(encoder.encode(testString).buffer);
-    global.crypto.getRandomValues = jest.fn().mockReturnValue(mockIv);
+    vi.clearAllMocks();
+    // Re-assign getRandomValues mock for deterministic IV per test
+    global.crypto.getRandomValues = vi.fn().mockReturnValue(mockIv);
+
+    // Restore default mock implementations for subtle methods from setup if needed
+    // This might be necessary if a previous test used mockRejectedValue
+    const subtleDigestMock = vi.mocked(global.crypto.subtle.digest);
+    const subtleImportKeyMock = vi.mocked(global.crypto.subtle.importKey);
+    const subtleEncryptMock = vi.mocked(global.crypto.subtle.encrypt);
+    const subtleDecryptMock = vi.mocked(global.crypto.subtle.decrypt);
+
+    subtleDigestMock.mockResolvedValue(mockKeyData);
+    subtleImportKeyMock.mockResolvedValue(mockCryptoKey);
+    subtleEncryptMock.mockResolvedValue(mockEncryptedData);
+    subtleDecryptMock.mockResolvedValue(
+      new TextEncoder().encode(testString).buffer
+    );
   });
 
   test("encryptValue should encrypt a string", async () => {
+    const subtleEncryptMock = vi.mocked(global.crypto.subtle.encrypt);
+    const subtleDigestMock = vi.mocked(global.crypto.subtle.digest);
+    const subtleImportKeyMock = vi.mocked(global.crypto.subtle.importKey);
+
     const encrypted = await encryptValue(testString);
 
     expect(encrypted).toBe(expectedBase64Encrypted);
-    expect(crypto.subtle.digest).toHaveBeenCalledWith(
+    expect(subtleDigestMock).toHaveBeenCalledWith(
       "SHA-256",
       expect.any(Uint8Array)
     );
-    expect(crypto.subtle.importKey).toHaveBeenCalledWith(
+    expect(subtleImportKeyMock).toHaveBeenCalledWith(
       "raw",
       mockKeyData,
       { name: "AES-GCM" },
       false,
       ["encrypt", "decrypt"]
     );
-    expect(crypto.getRandomValues).toHaveBeenCalledWith(new Uint8Array(12));
-    expect(crypto.subtle.encrypt).toHaveBeenCalledWith(
+    expect(global.crypto.getRandomValues).toHaveBeenCalledWith(
+      new Uint8Array(12)
+    );
+    expect(subtleEncryptMock).toHaveBeenCalledWith(
       { name: "AES-GCM", iv: mockIv },
       mockCryptoKey,
       expect.any(Uint8Array) // Check the encoded data if necessary
     );
-    // Check that the input to encrypt matches the test string
     const encodedTestString = new TextEncoder().encode(testString);
-    expect(crypto.subtle.encrypt.mock.calls[0][2]).toEqual(encodedTestString);
+    expect(subtleEncryptMock.mock.calls[0][2]).toEqual(encodedTestString);
   });
 
   test("decryptValue should decrypt a string", async () => {
+    const subtleDecryptMock = vi.mocked(global.crypto.subtle.decrypt);
+    const subtleDigestMock = vi.mocked(global.crypto.subtle.digest);
+    const subtleImportKeyMock = vi.mocked(global.crypto.subtle.importKey);
+
     const decrypted = await decryptValue(expectedBase64Encrypted);
 
     expect(decrypted).toBe(testString);
-    expect(crypto.subtle.digest).toHaveBeenCalledWith(
+    expect(subtleDigestMock).toHaveBeenCalledWith(
       "SHA-256",
       expect.any(Uint8Array)
     );
-    expect(crypto.subtle.importKey).toHaveBeenCalledWith(
+    expect(subtleImportKeyMock).toHaveBeenCalledWith(
       "raw",
       mockKeyData,
       { name: "AES-GCM" },
       false,
       ["encrypt", "decrypt"]
     );
-    expect(crypto.subtle.decrypt).toHaveBeenCalledWith(
+    expect(subtleDecryptMock).toHaveBeenCalledWith(
       { name: "AES-GCM", iv: mockIv },
       mockCryptoKey,
-      expect.objectContaining({ buffer: mockEncryptedData }) // Compare the underlying buffer
+      expect.objectContaining({ buffer: mockEncryptedData })
     );
   });
 
   test("encryptValue should return empty string for empty input", async () => {
     expect(await encryptValue("")).toBe("");
-    expect(crypto.subtle.encrypt).not.toHaveBeenCalled();
+    expect(vi.mocked(global.crypto.subtle.encrypt)).not.toHaveBeenCalled();
   });
 
   test("decryptValue should return empty string for empty input", async () => {
     expect(await decryptValue("")).toBe("");
-    expect(crypto.subtle.decrypt).not.toHaveBeenCalled();
+    expect(vi.mocked(global.crypto.subtle.decrypt)).not.toHaveBeenCalled();
   });
 
   test("encryptValue should handle errors", async () => {
-    crypto.subtle.encrypt.mockRejectedValue(new Error("Encryption failed"));
+    vi.mocked(global.crypto.subtle.encrypt).mockRejectedValue(
+      new Error("Encryption failed")
+    );
     await expect(encryptValue(testString)).rejects.toThrow(
       "Failed to encrypt data"
     );
   });
 
   test("decryptValue should handle errors", async () => {
-    crypto.subtle.decrypt.mockRejectedValue(new Error("Decryption failed"));
+    vi.mocked(global.crypto.subtle.decrypt).mockRejectedValue(
+      new Error("Decryption failed")
+    );
     await expect(decryptValue(expectedBase64Encrypted)).rejects.toThrow(
       "Failed to decrypt data"
     );
   });
 
   test("decryptValue should handle invalid base64 input", async () => {
-    // Provide input that cannot be correctly base64 decoded or doesn't match IV + data structure
     const invalidBase64 = "this is not valid base64%%%";
-    global.atob = jest.fn().mockImplementation(() => {
+    const originalAtob = global.atob;
+    global.atob = vi.fn().mockImplementation(() => {
+      // Use vi.fn
       throw new Error("Invalid character");
-    }); // Mock atob to throw
+    });
     await expect(decryptValue(invalidBase64)).rejects.toThrow(
       "Failed to decrypt data"
     );
-    // Restore atob if needed for other tests, or ensure it's reset in beforeEach/afterEach
-    global.atob = (b64) => Buffer.from(b64, "base64").toString("binary"); // Restore original mock
+    global.atob = originalAtob; // Restore original mock
   });
 });

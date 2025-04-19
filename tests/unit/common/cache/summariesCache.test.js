@@ -1,33 +1,46 @@
-import { jest } from "@jest/globals";
+// No import for vi needed with globals: true
 
-// 1. Define the mock instance structure
-const mockGenericCacheInstance = {
-  get: jest.fn(),
-  set: jest.fn(),
-  clearExpired: jest.fn(),
-  clear: jest.fn(),
-};
+// 1. Define the mock instance structure using vi.fn() - MOVED INSIDE MOCK
+// const mockGenericCacheInstance = {
+//   get: vi.fn(),
+//   set: vi.fn(),
+//   clearExpired: vi.fn(),
+//   clear: vi.fn(),
+// };
 
-// 2. Use jest.unstable_mockModule to mock GenericCache *before* any imports
-jest.unstable_mockModule(
+// 2. Use vi.mock to mock GenericCache *before* any imports.
+vi.mock(
   "../../../../src/common/cache/genericCache.js",
-  () => ({
-    // Mock the default export (the class)
-    default: jest.fn().mockImplementation(() => {
-      // The constructor returns our mock instance
-      return mockGenericCacheInstance;
-    }),
-  })
+  async (importOriginal) => {
+    // Import the original if needed, or define mock structure
+    const actual = await importOriginal(); // Optional: if you need parts of the original
+    const mockGenericCacheInstance = {
+      get: vi.fn(),
+      set: vi.fn(),
+      clearExpired: vi.fn(),
+      clear: vi.fn(),
+    };
+    return {
+      // Mock the default export (the class)
+      default: vi.fn().mockImplementation(() => {
+        return mockGenericCacheInstance;
+      }),
+      // Export the mock instance itself so tests can import it
+      __mockInstance: mockGenericCacheInstance,
+    };
+  }
 );
 
-// 3. Dynamically import the module to test AFTER the mock is set up
-const {
+// 3. Statically import the module to test AND the exported mock instance.
+import {
   getCachedSummary,
   cacheSummary,
   clearExpiredCache,
   clearCache,
   summariesCache,
-} = await import("../../../../src/common/cache/summariesCache.js");
+} from "../../../../src/common/cache/summariesCache.js";
+// Import the instance exported from the mock factory
+import { __mockInstance as mockGenericCacheInstance } from "../../../../src/common/cache/genericCache.js";
 
 describe("Summaries Cache Functions", () => {
   const testUrl = "http://example.com/summary";
@@ -35,7 +48,7 @@ describe("Summaries Cache Functions", () => {
 
   beforeEach(() => {
     // Reset mocks before each test
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   test("summariesCache instance should be the mock instance", () => {
