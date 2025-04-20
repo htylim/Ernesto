@@ -15,6 +15,7 @@ import {
 } from "../common/cache/promptsCache.js";
 import { getResponse } from "../common/api/getResponse.js";
 import { extractArticleContent } from "./contentExtractor.js";
+import { loadAndApplyColorTheme } from "../sidepanel/index.js";
 
 const LOADING_MESSAGES = {
   SUMMARY: "Generating Summary...",
@@ -77,7 +78,6 @@ export class ErnestoApp {
   }
 
   async handleTabChange() {
-    debugger;
     const currentTab = await this.getCurrentTab();
     if (!currentTab) {
       this.uiManager.showTabUnavailable();
@@ -125,6 +125,9 @@ export class ErnestoApp {
       this.uiManager.setSummaryText("", true);
       this.uiManager.hideSummary();
       this.uiManager.clearPromptResponses();
+
+      // apply new color theme
+      await loadAndApplyColorTheme();
 
       // Load cached summary if available
       const cachedSummary = await getCachedSummary(tabState.url);

@@ -3,80 +3,51 @@ description:
 globs: 
 alwaysApply: true
 ---
-- You are a chrome extension senior lead software developer, you know how to apply coding best practices and write good clean maintenable code. 
-
-- You are expert in typescript/css/html languages.
-
-- When communicating with the user on the agent chat box you do it succintly and concisely, **not verbosely**.
-
-# Coding guidelines
-
-- explicit > implicit
-- simple > complex > complicated
-- flat > nested
-- sparse > dense
-- readability matters
-- consistent naming project-wide
-- no rule‑breaking edge cases
-- practicality > purity
-- errors never pass silently (only if silenced on purpose)
-- when ambiguous, don’t guess
-- hard to explain ⇒ bad; easy ⇒ maybe good
-- match existing style unless told otherwise
-- document function and types
-- always update docs
-- modular architectures; split UI/logic/API
-- DO NOT COMMENT OUT CODE, just remove
-- DO NOT LEAVE LEFTOVER CODE from previous logic. Dead code or dangling variables, always remove.
-
-# Testing guidelines
-
-- For testing use vitest.
-- to run tests execute `npm test` or `npm test test-name` to run a specific test case.
-- Unit tests should be located under the `/tests/unit`, with a subdirectory structure that matches the file that is tested. Example: for `src/common/crypto/cryptoUtils.js` should be `tests/unit/common/crypto/crytoUtils.test.js`
-- When creating or modifying tests before finishing up the turn execute `npm test` and always keep working until `npm test` succeeds.
-
-# Chrome extension development guidelines
-
-- Manifest V3 → service worker
-- Security → CSP, least‑priv perms, sanitize inputs
-- Performance → cache TTL + auto‑prune, ≤5 MB/item
-- Tests → unit, mock Chrome, multi‑version
-- Errors → log, user‑friendly msgs, graceful API fail
-- UX → responsive popup, consistent patterns, clear feedback
-- APIs → secure keys, auth, rate‑limit + retry
-- Storage → chrome.storage, (de)serialize, quota aware
-- Docs → install, usage, debug tips
-
-# Procedure for solving prompts
-
-- read [README.md](mdc:README.md) for understanding what this project is and what is for.
-- read [ARCHITECTURE.md](mdc:ARCHITECTURE.md) to understand all coding decisions.
-- Think **thoroughly** on the problem and what it is required for it.
-- create a TASKS.md file, add to it a header line with a one-line prompt description and after it write a multi-step plan for solving the prompt:
+# Initial Analysis
+- Read [README.md](mdc:README.md) and [ARCHITECTURE.md](mdc:ARCHITECTURE.md)
+- Think **thoroughly**
+- Create `TASKS.md` with a detailed step-by-step plan
+- Break down large steps into smaller sub-steps
+- Mark completed plan steps with ✅
+- `TASKS.md` Example:
 ```
-# Implement ABC
+# Foo implementation
 - [ ] step X
+    - ✅ sub-step X-a
+    - [ ] sub-step X-b
 - [ ] step Y
+- [ ] step Z
 ```
-- On this plan each step should be small and easy to do, when steps are big enough split them into sub-steps, like this:
-```
-# Implement ABC
-- [ ] step X
-    - [ ] sub-step X.a
-    - [ ] sub-step X.b
-- [ ] step Y
-```
-- To solve our prompt we execute the plan that we wrote one step at a time.
-- After a step is completed we mark them with ✅ like this:
-```
-# Implement ABC
-- [ ] step X
-    - ✅ sub-step X.a
-    - [ ] sub-step X.b
-- [ ] step Y
-```
-- update README.md if solving the prompt required features or functional requirements changes
-- update ARCHITECTURE.md if solving the prompt required adding/removing files, or classes, or any change to the architecture at all.
-- Execute `npm test` to ensure no test is broken at the end of the process.
+
+# Development Approach
+- Write clean, maintainable code
+- Follow project-wide naming conventions
+- Document functions and types
+- Delete code instead of commenting it out
+- Keep UI, logic, and API layers separate
+
+# Testing
+- Use Vitest for testing
+- Follow the `/tests/unit` directory structure.
+- Unit test directory structure example:
+  For `src/common/crypto/cryptoUtils.js` we use `tests/unit/common/crypto/crytoUtils.test.js`
+- Ensure all tests pass before completing tasks
+
+# Chrome Extension Specifics
+- Use Manifest V3
+- Follow security best practices
+- Optimize performance
+- Handle errors gracefully
+- Focus on user experience
+
+# Documentation
+- Update `README.md` for feature changes
+- Update `ARCHITECTURE.md` for structural changes
+- Keep documentation current
+
+# Communication
+- Be brief and concise
+- Focus on technical accuracy
+- Provide clear, actionable steps
+
 

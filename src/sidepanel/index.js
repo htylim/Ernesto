@@ -37,8 +37,6 @@ export async function loadAndApplyColorTheme() {
     applyColorTheme(colors);
   } catch (error) {
     console.error("Error loading or applying color theme:", error);
-    // Apply default theme as a fallback in case of error?
-    // applyColorTheme(DEFAULT_COLORS); // Requires importing DEFAULT_COLORS
   }
 }
 
@@ -54,51 +52,11 @@ export function setupColorThemeListener() {
   });
 }
 
-// Listen for tab activation changes
-export function setupTabActivationListener() {
-  chrome.tabs.onActivated.addListener(async (activeInfo) => {
-    // activeInfo contains windowId and tabId
-    // The side panel is implicitly associated with the active tab in the current window
-    // when opened via chrome.action. No need to pass tabId explicitly here.
-    await loadAndApplyColorTheme();
-  });
-  // Also listen for window focus changes, as the active tab might change implicitly
-  chrome.windows.onFocusChanged.addListener(async (windowId) => {
-    if (windowId !== chrome.windows.WINDOW_ID_NONE) {
-      // Query the active tab in the newly focused window
-      const [tab] = await chrome.tabs.query({
-        active: true,
-        windowId: windowId,
-      });
-      if (tab) {
-        await loadAndApplyColorTheme();
-      }
-    }
-  });
-}
-
-// Listen for tab URL updates
-export function setupTabUpdateListener() {
-  chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
-    // Check if the URL changed and if the tab is the active one in the current window
-    if (changeInfo.url && tab.active) {
-      await loadAndApplyColorTheme();
-    }
-  });
-}
-
 // Initialize the application
 document.addEventListener("DOMContentLoaded", async () => {
   try {
-    // Load and apply the correct color theme first
-    await loadAndApplyColorTheme();
-
     // Set up listener for theme changes
     setupColorThemeListener();
-    // Set up listener for tab/window activation
-    setupTabActivationListener();
-    // Set up listener for tab URL updates
-    setupTabUpdateListener();
 
     // Then initialize the application
     new ErnestoApp();
