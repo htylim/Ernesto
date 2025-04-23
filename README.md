@@ -42,3 +42,11 @@
 3. Enable **Developer mode** (top right).
 4. Click **Load unpacked** and select the project folder.
 5. You should now see the Ernesto icon in your toolbar.
+
+## 🛠️ Pending
+
+- when there is a summarize request in progress and we get the response don't load it if the active URL is not anymore the one from the summar.y
+- Audio caching is disabled. Need to find a better solution
+- Improve Options page UIUX. Is awful
+- Find a way to automatically detect a page's accent color and use that to colorize the sidepanel (instead of today manual option)
+- Provide button and action for different "summaries strategies" (ie we could have a very short summary, a longer summary, a per paragraph summary (current), etc..)

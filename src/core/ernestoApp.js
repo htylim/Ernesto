@@ -100,8 +100,6 @@ export class ErnestoApp {
       }
 
       if (tabState.url !== currentTab.url) {
-        this.uiManager.resetUI();
-
         await this.tabStateManager.updateTabState(currentTab.id, {
           url: currentTab.url,
           title: currentTab.title,
@@ -231,6 +229,20 @@ export class ErnestoApp {
     }
   }
 
+  async getCurrentTabUrl() {
+    const currentTab = await this.getCurrentTab();
+    if (!currentTab) {
+      return null;
+    }
+
+    const tabState = await this.tabStateManager.getTabState(currentTab.id);
+    if (!tabState || !tabState.url) {
+      return null;
+    }
+
+    return tabState?.url;
+  }
+
   async summarize() {
     const pageContent = await this.getPageContent();
     if (!pageContent) {
@@ -266,12 +278,17 @@ export class ErnestoApp {
       const summary = await getSummary(url, apiKey, pageContent);
 
       await cacheSummary(url, summary);
-      this.uiManager.showSummary(summary);
 
       await this.tabStateManager.updateTabState(currentTab.id, {
-        summary: summary,
         isLoading: false,
       });
+
+      // the user might navigated away from `url` since we initiated the request.
+      // don't update the UI if we are not at `url` anymore
+      const currentUrl = await this.getCurrentTabUrl();
+      if (currentUrl && url === currentUrl) {
+        this.uiManager.showSummary(summary);
+      }
 
       return true;
     } catch (error) {
