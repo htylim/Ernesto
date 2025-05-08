@@ -3,51 +3,42 @@ description:
 globs: 
 alwaysApply: true
 ---
-# Initial Analysis
-- Read [README.md](mdc:README.md) and [ARCHITECTURE.md](mdc:ARCHITECTURE.md)
-- Think **thoroughly**
-- Create `TASKS.md` with a detailed step-by-step plan
-- Break down large steps into smaller sub-steps
-- Mark completed plan steps with ✅
-- `TASKS.md` Example:
+- Every time you choose to apply a rule explicitly state the rule(s) in the conversation. Abbreviate the rule description to a single word or phrase. ie: [rule:test writing]
+
+## Project Context
+
+- Read **thoroughly** [README.md](mdc:README.md) and [ARCHITECTURE.md](mdc:ARCHITECTURE.md)
+- This is your memory of past decisions and changes. Keep both documents updated.
+
+## Prompt solving rules
+
+- Plan your approach first writing it into a `TASKS.md` file
+- Break down large steps into smaller steps
+- Completed steps mark with ✅
+- Use a format like this:
+
 ```
-# Foo implementation
+# <short sentence description of the prompt>
+<larger description of the complex task that is needed to do>
 - [ ] step X
     - ✅ sub-step X-a
     - [ ] sub-step X-b
 - [ ] step Y
 - [ ] step Z
 ```
+- Each step should include the implementation of a test to covers its logic, or be already covered by an already existing test.
+- Run `npm test` at the end of each step to ensure the step was implemented correctly. Keep working on the step if not.
 
-# Development Approach
-- Write clean, maintainable code
-- Follow project-wide naming conventions
-- Document functions and types
-- Delete code instead of commenting it out
-- Keep UI, logic, and API layers separate
+# Test rules
 
-# Testing
-- Use Vitest for testing
-- Follow the `/tests/unit` directory structure.
-- Unit test directory structure example:
-  For `src/common/crypto/cryptoUtils.js` we use `tests/unit/common/crypto/crytoUtils.test.js`
-- Ensure all tests pass before completing tasks
+- Use Vitest
+- Follow this structure:
+  For a file like `src/common/crypto/cryptoUtils.js` we will use a test file named like this `tests/unit/common/crypto/crytoUtils.test.js`
 
 # Chrome Extension Specifics
+
 - Use Manifest V3
 - Follow security best practices
 - Optimize performance
 - Handle errors gracefully
 - Focus on user experience
-
-# Documentation
-- Update `README.md` for feature changes
-- Update `ARCHITECTURE.md` for structural changes
-- Keep documentation current
-
-# Communication
-- Be brief and concise
-- Focus on technical accuracy
-- Provide clear, actionable steps
-
-
