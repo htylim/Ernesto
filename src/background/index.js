@@ -38,10 +38,21 @@ function configureSidePanel() {
   });
 }
 
-// Configure and enable the side panel, and run migrations
+// --- One-time Setup ---
+// Configure and enable the side panel, create context menu, and run migrations
 chrome.runtime.onInstalled.addListener(async (details) => {
+  console.log('Ernesto extension installed/updated. Performing setup.', details);
   configureSidePanel();
+
+  // Create context menu item
+  chrome.contextMenus.create({
+    id: "openAndSummarize",
+    title: "Open && Summarize", // Using your version with '&&'
+    contexts: ["link"]
+  });
 });
+
+// --- Global Event Listeners ---
 
 // Handle extension icon click to open side panel
 chrome.action.onClicked.addListener((tab) => {
@@ -55,6 +66,19 @@ chrome.storage.onChanged.addListener((changes) => {
       "API Key changed:",
       changes.openaiApiKey.newValue ? "✓ Key set" : "✗ Key cleared"
     );
+  }
+});
+
+// Handle context menu click
+chrome.contextMenus.onClicked.addListener((info, tab) => {
+  if (info.menuItemId === "openAndSummarize") {
+    console.log("Hello World (context menu clicked)");
+    // In a future step, we will open the link in a new tab and summarize.
+    // For now, we just log to the console.
+    if (info.linkUrl) {
+      // console.log("Link clicked:", info.linkUrl);
+      // chrome.tabs.create({ url: info.linkUrl, active: true });
+    }
   }
 });
 

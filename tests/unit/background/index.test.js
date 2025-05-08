@@ -7,29 +7,6 @@ vi.mock("../../../src/common/cache/summariesCache.js");
 vi.mock("../../../src/common/cache/speechifyCache.js");
 vi.mock("../../../src/common/cache/promptsCache.js");
 
-// Mock Chrome API
-global.chrome = {
-  runtime: {
-    onInstalled: {
-      addListener: vi.fn(),
-    },
-  },
-  sidePanel: {
-    setOptions: vi.fn(),
-    open: vi.fn(),
-  },
-  action: {
-    onClicked: {
-      addListener: vi.fn(),
-    },
-  },
-  storage: {
-    onChanged: {
-      addListener: vi.fn(),
-    },
-  },
-};
-
 describe("Background Service", () => {
   beforeEach(() => {
     vi.clearAllMocks();

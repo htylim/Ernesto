@@ -42,6 +42,11 @@ vitest.setup.js         # Vitest global setup file.
 
 # Naming Conventions
 
+- **Classes:** `PascalCase` (e.g., `ErnestoApp`, `UIStateManager`).
+- **Functions/Variables:** `camelCase` (e.g., `getApiKey`, `extractArticleContent`).
+- **Constants:** `UPPER_SNAKE_CASE` (e.g., `LOADING_MESSAGES`).
+- **Types:** `PascalCase` for TypeScript types (if present).
+- **Exports:** Named exports for utilities and classes.
 - **Files & Folders:**
   - `camelCase` for JavaScript files (e.g., `getSummary.js`, `colorThemeManager.js`).
   - `kebab-case` for HTML files (e.g., `index.html`).
@@ -49,16 +54,6 @@ vitest.setup.js         # Vitest global setup file.
   - Test files mirror source structure and use `.test.js` suffix. Example:
     - this src file: `src/common/crypto/cryptoUtils.js`
     - gets this est file: `tests/unit/common/crypto/crytoUtils.test.js`
-- **Classes:**
-  - `PascalCase` (e.g., `ErnestoApp`, `UIStateManager`).
-- **Functions/Variables:**
-  - `camelCase` (e.g., `getApiKey`, `extractArticleContent`).
-- **Constants:**
-  - `UPPER_SNAKE_CASE` (e.g., `LOADING_MESSAGES`).
-- **Types:**
-  - `PascalCase` for TypeScript types (if present).
-- **Exports:**
-  - Prefer named exports for utilities and classes.
 
 
 # Testing Conventions
@@ -71,11 +66,13 @@ vitest.setup.js         # Vitest global setup file.
   - Test files use `.test.js` suffix.
   - Test suites and cases use descriptive names.
 - **Setup:**
-  - Global mocks and polyfills in `vitest.setup.js`.
+  - Global mocks and polyfills for browser APIs (like `chrome`) should be defined in `vitest.setup.js`.
 - **Practices:**
   - Each new feature or logic change must include or update a corresponding test.
   - Run `npm test` after each step/change to ensure all tests pass.
   - Remove unused code (do not comment out).
   - Use mocks for browser and crypto APIs as needed.
+  - ⚠️ **Prefer global mocks from `vitest.setup.js`. Avoid redefining global objects (e.g., `global.chrome`) directly in individual test files, as this can override the comprehensive global setup and lead to hard-to-debug errors. If a test requires specific behavior from a mocked function, use `vi.spyOn` or `vi.fn().mockImplementationOnce()` on the globally mocked object for that test case.**
+  - ⚠️ **When working with existing test files, check for local redefinitions of global mocks (e.g., a local `global.chrome = ...`). If found, consider refactoring to remove the local mock and rely on the global setup in `vitest.setup.js`, ensuring the global mock covers the necessary functionality.**
 - **Coverage:**
   - Cover encryption, caching, API calls, UI state, and error handling.

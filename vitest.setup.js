@@ -8,7 +8,43 @@ import { vi } from "vitest"; // Import vi
 global.chrome = {
   runtime: {
     id: "test-extension-id",
+    onInstalled: {
+      addListener: vi.fn(),
+    },
+    getURL: vi.fn(path => `chrome-extension://test-extension-id/${path}`)
   },
+  contextMenus: {
+    create: vi.fn(),
+    onClicked: {
+      addListener: vi.fn(),
+    },
+  },
+  action: {
+    onClicked: {
+      addListener: vi.fn(),
+    },
+  },
+  storage: {
+    local: {
+      get: vi.fn().mockResolvedValue({}), // Default to empty object
+      set: vi.fn().mockResolvedValue(undefined),
+      remove: vi.fn().mockResolvedValue(undefined),
+      clear: vi.fn().mockResolvedValue(undefined),
+    },
+    onChanged: {
+      addListener: vi.fn(),
+    },
+  },
+  sidePanel: {
+    setOptions: vi.fn(),
+    open: vi.fn(),
+  },
+  tabs: { // Mock basic tabs API as it might be used indirectly or in future
+    query: vi.fn().mockResolvedValue([]),
+    create: vi.fn().mockResolvedValue({ id: 123 }),
+    update: vi.fn().mockResolvedValue({ id: 123 }),
+    sendMessage: vi.fn().mockResolvedValue(undefined)
+  }
 };
 
 // Mock specific methods of Web Crypto API (crypto.subtle) using vi.stubGlobal
