@@ -72,12 +72,12 @@ chrome.storage.onChanged.addListener((changes) => {
 // Handle context menu click
 chrome.contextMenus.onClicked.addListener((info, tab) => {
   if (info.menuItemId === "openAndSummarize") {
-    console.log("Hello World (context menu clicked)");
-    // In a future step, we will open the link in a new tab and summarize.
-    // For now, we just log to the console.
     if (info.linkUrl) {
-      // console.log("Link clicked:", info.linkUrl);
-      // chrome.tabs.create({ url: info.linkUrl, active: true });
+      // Always open in a new tab in the background (not active)
+      chrome.tabs.create({ url: info.linkUrl, active: false });
+      
+      // Placeholder for summarization logic to be added later
+      console.log("Link opened in new tab. Summarization to be implemented.");
     }
   }
 });

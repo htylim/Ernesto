@@ -69,3 +69,63 @@ describe("Background Service", () => {
     expect(chrome.sidePanel.open).toHaveBeenCalledWith({ tabId: 123 });
   });
 });
+
+// New describe block for Context Menu Handling
+describe('Background Script Context Menu Handling', () => {
+  let contextMenuCallback;
+
+  beforeEach(async () => {
+    vi.resetModules(); // Reset modules to ensure background script is re-evaluated
+    vi.clearAllMocks(); // Clear all mocks before each test
+
+    // Dynamically import the module to allow mocks to be set up first
+    // and to re-run its top-level code (like addListener calls) for each test.
+    await import("../../../src/background/index.js");
+
+    // Capture the callback registered by the background script for contextMenus.onClicked
+    if (chrome.contextMenus.onClicked.addListener.mock.calls.length > 0) {
+      contextMenuCallback = chrome.contextMenus.onClicked.addListener.mock.calls[chrome.contextMenus.onClicked.addListener.mock.calls.length - 1][0];
+    } else {
+      // This path should ideally not be hit if the background script always adds the listener.
+      throw new Error("chrome.contextMenus.onClicked.addListener was not called by the background script. Ensure mocks are correctly reset and the script runs.");
+    }
+  });
+
+  it('should open link in a new tab when menuItemId is openAndSummarize and linkUrl is present', () => {
+    const mockInfo = {
+      menuItemId: 'openAndSummarize',
+      linkUrl: 'https://example.com/link'
+    };
+    const mockTab = { id: 1, url: 'https://example.com/current' };
+
+    contextMenuCallback(mockInfo, mockTab);
+
+    expect(chrome.tabs.create).toHaveBeenCalledWith({ url: 'https://example.com/link', active: false });
+    expect(chrome.tabs.update).not.toHaveBeenCalled();
+  });
+
+  it('should do nothing if menuItemId is not openAndSummarize', () => {
+    const mockInfo = {
+      menuItemId: 'otherMenuId',
+      linkUrl: 'https://example.com/link'
+    };
+    const mockTab = { id: 1, url: 'https://example.com/current' };
+
+    contextMenuCallback(mockInfo, mockTab);
+
+    expect(chrome.tabs.create).not.toHaveBeenCalled();
+    expect(chrome.tabs.update).not.toHaveBeenCalled();
+  });
+
+  it('should do nothing if linkUrl is missing', () => {
+    const mockInfo = {
+      menuItemId: 'openAndSummarize'
+    };
+    const mockTab = { id: 1, url: 'https://example.com/current' };
+
+    contextMenuCallback(mockInfo, mockTab);
+
+    expect(chrome.tabs.create).not.toHaveBeenCalled();
+    expect(chrome.tabs.update).not.toHaveBeenCalled();
+  });
+});
