@@ -1,406 +1,320 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { ErnestoSidePanel } from "../../../src/core/ernestoSidePanel";
-import { UIStateManager } from "../../../src/sidepanel/uiStateManager";
-import { AudioController } from "../../../src/common/ui/audioController";
-import { TabStateManager } from "../../../src/common/managers/tabStateManager";
-import { getSummary } from "../../../src/common/api/getSummary";
-import { getSpeechifyAudio } from "../../../src/common/api/getSpeechifyAudio";
-import { getResponse } from "../../../src/common/api/getResponse";
-import { getCachedSummary } from "../../../src/common/cache/summariesCache";
-import { getCachedPrompts } from "../../../src/common/cache/promptsCache";
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { ErnestoApp } from '../../../src/core/ernestoApp.js';
+import { clearExpiredCache } from '../../../src/common/cache/summariesCache.js';
+import { clearExpiredAudioCache } from '../../../src/common/cache/speechifyCache.js';
+import { clearExpiredPromptsCache } from '../../../src/common/cache/promptsCache.js';
 
-// Mock dependencies
-vi.mock("../../../src/common/ui/audioController");
-vi.mock("../../../src/common/managers/tabStateManager");
-vi.mock("../../../src/common/api/getSummary");
-vi.mock("../../../src/common/api/getSpeechifyAudio");
-vi.mock("../../../src/common/cache/summariesCache");
-vi.mock("../../../src/common/cache/speechifyCache");
-vi.mock("../../../src/common/cache/promptsCache");
-vi.mock("../../../src/common/api/getResponse");
-vi.mock("../../../src/core/contentExtractor");
-vi.mock("../../../src/common/managers/apiKeyManager", () => ({
-  getApiKey: vi.fn().mockResolvedValue("test-api-key"),
+// Mock the chrome API
+vi.mock('chrome', () => ({
+  sidePanel: {
+    setOptions: vi.fn(),
+    open: vi.fn()
+  },
+  contextMenus: {
+    create: vi.fn(),
+    onClicked: {
+      addListener: vi.fn()
+    }
+  },
+  runtime: {
+    onInstalled: {
+      addListener: vi.fn()
+    }
+  },
+  action: {
+    onClicked: {
+      addListener: vi.fn()
+    }
+  },
+  storage: {
+    onChanged: {
+      addListener: vi.fn()
+    }
+  },
+  tabs: {
+    create: vi.fn()
+  }
+}), { virtual: true });
+
+// Mock cache modules
+vi.mock('../../../src/common/cache/summariesCache.js', () => ({
+  clearExpiredCache: vi.fn().mockResolvedValue()
+}));
+vi.mock('../../../src/common/cache/speechifyCache.js', () => ({
+  clearExpiredAudioCache: vi.fn().mockResolvedValue()
+}));
+vi.mock('../../../src/common/cache/promptsCache.js', () => ({
+  clearExpiredPromptsCache: vi.fn().mockResolvedValue()
 }));
 
-// Mock UIStateManager
-vi.mock("../../../src/sidepanel/uiStateManager", () => {
-  const UIStateManager = vi.fn();
-  UIStateManager.prototype.getControlButtons = vi.fn().mockReturnValue({
-    summarizeBtn: { addEventListener: vi.fn() },
-    speechifyBtn: { addEventListener: vi.fn() },
-    openOptionsBtn: { addEventListener: vi.fn() },
-    closeBtn: { addEventListener: vi.fn() },
-  });
-  UIStateManager.prototype.getPromptElements = vi.fn().mockReturnValue({
-    promptInput: { addEventListener: vi.fn() },
-    submitPromptBtn: { addEventListener: vi.fn() },
-  });
-  UIStateManager.prototype.showTabUnavailable = vi.fn();
-  UIStateManager.prototype.showTabContent = vi.fn();
-  UIStateManager.prototype.resetUI = vi.fn();
-  UIStateManager.prototype.showLoading = vi.fn();
-  UIStateManager.prototype.hideLoading = vi.fn();
-  UIStateManager.prototype.showError = vi.fn();
-  UIStateManager.prototype.showSummary = vi.fn();
-  UIStateManager.prototype.hideSummary = vi.fn();
-  UIStateManager.prototype.getSummaryText = vi.fn();
-  UIStateManager.prototype.clearPromptInput = vi.fn();
-  UIStateManager.prototype.addPromptResponse = vi.fn();
-  UIStateManager.prototype.clearPromptResponses = vi.fn();
-  UIStateManager.prototype.updateButtonStates = vi.fn();
-  UIStateManager.prototype.setSummaryText = vi.fn();
-  UIStateManager.prototype.getPromptText = vi.fn();
-  UIStateManager.prototype.isSummaryVisible = vi.fn().mockReturnValue(true);
-  return { UIStateManager };
-});
-
-describe("ErnestoSidePanel", () => {
-  let ernestoSidePanel;
-
+describe('ErnestoApp', () => {
+  let app;
+  let originalConsoleLog;
+  let originalConsoleError;
+  let consoleLogSpy;
+  let consoleErrorSpy;
+  
   beforeEach(() => {
+    // Save original console methods
+    originalConsoleLog = console.log;
+    originalConsoleError = console.error;
+    
+    // Replace with spies
+    consoleLogSpy = vi.fn();
+    consoleErrorSpy = vi.fn();
+    console.log = consoleLogSpy;
+    console.error = consoleErrorSpy;
+    
+    // Create app instance for each test
+    app = new ErnestoApp();
+    
     // Reset all mocks
     vi.clearAllMocks();
-
-    // Mock chrome API
-    global.chrome = {
-      tabs: {
-        query: vi
-          .fn()
-          .mockResolvedValue([{ id: 1, url: "https://example.com" }]),
-        onActivated: { addListener: vi.fn() },
-        onUpdated: { addListener: vi.fn() },
-        sendMessage: vi.fn().mockResolvedValue({
-          content: "test content",
-          metadata: { title: "Test" },
-        }),
-      },
-      runtime: {
-        openOptionsPage: vi.fn(),
-      },
-      scripting: {
-        executeScript: vi.fn(),
-      },
-      storage: {
-        local: {
-          get: vi.fn().mockResolvedValue({}),
-          set: vi.fn().mockResolvedValue({}),
-        },
-      },
-    };
-
-    // Mock document
-    document.getElementById = vi.fn().mockImplementation(() => ({
-      addEventListener: vi.fn(),
-      classList: {
-        add: vi.fn(),
-        remove: vi.fn(),
-        contains: vi.fn(),
-      },
-    }));
-    document.querySelector = vi.fn().mockImplementation(() => ({
-      addEventListener: vi.fn(),
-      classList: {
-        add: vi.fn(),
-        remove: vi.fn(),
-      },
-    }));
-
-    // Mock window.close
-    global.window = {
-      close: vi.fn(),
-    };
-
-    // Create instance
-    ernestoSidePanel = new ErnestoSidePanel();
   });
-
-  it("should initialize with correct dependencies", () => {
-    expect(ernestoSidePanel).toBeDefined();
-    expect(UIStateManager).toHaveBeenCalled();
-    expect(AudioController).toHaveBeenCalled();
-    expect(TabStateManager).toHaveBeenCalled();
+  
+  afterEach(() => {
+    // Stop the interval if it's running
+    if (app.cleanupInterval) {
+      clearInterval(app.cleanupInterval);
+      app.cleanupInterval = null;
+    }
+    
+    // Restore console methods
+    console.log = originalConsoleLog;
+    console.error = originalConsoleError;
   });
-
-  it("should handle tab change with valid tab", async () => {
-    const mockTab = { id: 1, url: "https://example.com", title: "Test" };
-    global.chrome.tabs.query.mockResolvedValueOnce([mockTab]);
-    TabStateManager.prototype.getTabState.mockResolvedValueOnce({
-      url: mockTab.url,
+  
+  describe('initialization', () => {
+    it('should initialize with correct default values', () => {
+      expect(app.CACHE_CLEANUP_INTERVAL).toBe(3600000); // 1 hour in ms
+      expect(app.cleanupInterval).toBeNull();
     });
-
-    await ernestoSidePanel.handleTabChange();
-
-    expect(UIStateManager.prototype.showTabContent).toHaveBeenCalledWith(
-      mockTab
-    );
-  });
-
-  it("should handle tab change with invalid tab", async () => {
-    global.chrome.tabs.query.mockResolvedValueOnce([]);
-
-    await ernestoSidePanel.handleTabChange();
-
-    expect(UIStateManager.prototype.showTabUnavailable).toHaveBeenCalled();
-  });
-
-  it("should restore cached state on tab change", async () => {
-    const mockTab = { id: 1, url: "https://example.com", title: "Test" };
-    const mockSummary = "Test summary";
-    const mockConversation = {
-      conversation: [
-        { role: "user", content: "test question" },
-        { role: "assistant", content: "test answer" },
-      ],
-    };
-
-    global.chrome.tabs.query.mockResolvedValueOnce([mockTab]);
-    TabStateManager.prototype.getTabState.mockResolvedValueOnce({
-      url: mockTab.url,
-    });
-    getCachedSummary.mockResolvedValueOnce(mockSummary);
-    getCachedPrompts.mockResolvedValueOnce(mockConversation);
-
-    await ernestoSidePanel.restoreTabState(mockTab.id);
-
-    expect(UIStateManager.prototype.showSummary).toHaveBeenCalledWith(
-      mockSummary
-    );
-    expect(UIStateManager.prototype.addPromptResponse).toHaveBeenCalledWith({
-      prompt: "test question",
-      response: "test answer",
+    
+    it('should perform initialization tasks when init() is called', async () => {
+      // Spy on methods
+      const clearCachesSpy = vi.spyOn(app, 'clearAllExpiredCaches').mockResolvedValue();
+      const startIntervalSpy = vi.spyOn(app, 'startCacheCleanupInterval').mockImplementation(() => {});
+      const setupListenersSpy = vi.spyOn(app, 'setupEventListeners').mockImplementation(() => {});
+      
+      // Call init
+      await app.init();
+      
+      // Verify methods were called
+      expect(clearCachesSpy).toHaveBeenCalledTimes(1);
+      expect(startIntervalSpy).toHaveBeenCalledTimes(1);
+      expect(setupListenersSpy).toHaveBeenCalledTimes(1);
+      expect(consoleLogSpy).toHaveBeenCalledWith('Ernesto extension initialized');
     });
   });
-
-  it("should handle summarize action", async () => {
-    const mockTab = { id: 1, url: "https://example.com" };
-    global.chrome.tabs.query.mockResolvedValueOnce([mockTab]);
-    TabStateManager.prototype.getTabState.mockResolvedValueOnce({
-      url: mockTab.url,
+  
+  describe('cache management', () => {
+    it('should clear all expired caches', async () => {
+      await app.clearAllExpiredCaches();
+      
+      expect(clearExpiredCache).toHaveBeenCalledTimes(1);
+      expect(clearExpiredAudioCache).toHaveBeenCalledTimes(1);
+      expect(clearExpiredPromptsCache).toHaveBeenCalledTimes(1);
     });
-
-    await ernestoSidePanel.summarize();
-
-    expect(UIStateManager.prototype.showLoading).toHaveBeenCalled();
-    expect(UIStateManager.prototype.hideLoading).toHaveBeenCalled();
-  });
-
-  it("should handle summarize error", async () => {
-    const mockTab = { id: 1, url: "https://example.com" };
-    const error = new Error("Test error");
-    global.chrome.tabs.query.mockResolvedValueOnce([mockTab]);
-    TabStateManager.prototype.getTabState.mockResolvedValueOnce({
-      url: mockTab.url,
+    
+    it('should handle cache clearing errors', async () => {
+      const error = new Error('Cache error');
+      clearExpiredCache.mockRejectedValueOnce(error);
+      
+      await app.clearAllExpiredCaches();
+      
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        'Error clearing expired caches:',
+        error
+      );
     });
-    global.chrome.tabs.sendMessage.mockRejectedValueOnce(error);
-
-    await ernestoSidePanel.summarize();
-
-    expect(UIStateManager.prototype.showError).toHaveBeenCalledWith(
-      "Could not get page content"
-    );
-  });
-
-  it("should handle speechify action", async () => {
-    const mockTab = { id: 1, url: "https://example.com" };
-    global.chrome.tabs.query.mockResolvedValueOnce([mockTab]);
-    TabStateManager.prototype.getTabState.mockResolvedValueOnce({
-      url: mockTab.url,
+    
+    it('should start cache cleanup interval', () => {
+      vi.spyOn(global, 'setInterval').mockReturnValue(123);
+      
+      app.startCacheCleanupInterval();
+      
+      expect(app.cleanupInterval).toBe(123);
+      expect(setInterval).toHaveBeenCalledWith(
+        expect.any(Function),
+        app.CACHE_CLEANUP_INTERVAL
+      );
     });
-    UIStateManager.prototype.getSummaryText.mockReturnValue("test summary");
-    UIStateManager.prototype.isSummaryVisible.mockReturnValue(false);
-
-    await ernestoSidePanel.speechify();
-
-    expect(UIStateManager.prototype.showLoading).toHaveBeenCalled();
-    expect(UIStateManager.prototype.hideLoading).toHaveBeenCalled();
-  });
-
-  it("should handle speechify error", async () => {
-    const mockTab = { id: 1, url: "https://example.com" };
-    const error = new Error("Test error");
-    global.chrome.tabs.query.mockResolvedValueOnce([mockTab]);
-    TabStateManager.prototype.getTabState.mockResolvedValueOnce({
-      url: mockTab.url,
+    
+    it('should clear existing interval when starting a new one', () => {
+      const clearIntervalSpy = vi.spyOn(global, 'clearInterval');
+      vi.spyOn(global, 'setInterval').mockReturnValue(123);
+      
+      // Set an existing interval
+      app.cleanupInterval = 456;
+      
+      app.startCacheCleanupInterval();
+      
+      expect(clearIntervalSpy).toHaveBeenCalledWith(456);
+      expect(app.cleanupInterval).toBe(123);
     });
-    UIStateManager.prototype.getSummaryText.mockReturnValue("test summary");
-    UIStateManager.prototype.isSummaryVisible.mockReturnValue(false);
-    global.chrome.tabs.sendMessage.mockRejectedValueOnce(error);
-
-    await ernestoSidePanel.speechify();
-
-    expect(UIStateManager.prototype.showError).toHaveBeenCalledWith(
-      "Could not get page content"
-    );
-  });
-
-  it("should handle prompt action", async () => {
-    const mockTab = { id: 1, url: "https://example.com" };
-    global.chrome.tabs.query.mockResolvedValueOnce([mockTab]);
-    TabStateManager.prototype.getTabState.mockResolvedValueOnce({
-      url: mockTab.url,
+    
+    it('should stop cache cleanup interval', () => {
+      const clearIntervalSpy = vi.spyOn(global, 'clearInterval');
+      
+      // Set an existing interval
+      app.cleanupInterval = 789;
+      
+      app.stopCacheCleanupInterval();
+      
+      expect(clearIntervalSpy).toHaveBeenCalledWith(789);
+      expect(app.cleanupInterval).toBeNull();
     });
-    UIStateManager.prototype.getPromptText.mockReturnValue("test prompt");
-    getResponse.mockResolvedValueOnce({
-      assistantMessage: "test response",
-      assistantMessageId: "test-id",
-    });
-
-    await ernestoSidePanel.prompt();
-
-    expect(UIStateManager.prototype.showLoading).toHaveBeenCalled();
-    expect(UIStateManager.prototype.hideLoading).toHaveBeenCalled();
-    expect(UIStateManager.prototype.addPromptResponse).toHaveBeenCalledWith({
-      prompt: "test prompt",
-      response: "test response",
+    
+    it('should not call clearInterval if no interval is set', () => {
+      const clearIntervalSpy = vi.spyOn(global, 'clearInterval');
+      
+      app.cleanupInterval = null;
+      
+      app.stopCacheCleanupInterval();
+      
+      expect(clearIntervalSpy).not.toHaveBeenCalled();
     });
   });
-
-  it("should handle prompt error", async () => {
-    const mockTab = { id: 1, url: "https://example.com" };
-    const error = new Error("Test error");
-    global.chrome.tabs.query.mockResolvedValueOnce([mockTab]);
-    TabStateManager.prototype.getTabState.mockResolvedValueOnce({
-      url: mockTab.url,
+  
+  describe('extension setup', () => {
+    it('should configure side panel', () => {
+      app.configureSidePanel();
+      
+      expect(chrome.sidePanel.setOptions).toHaveBeenCalledWith({
+        enabled: true,
+        path: "src/sidepanel/index.html",
+        tabId: null,
+      });
     });
-    UIStateManager.prototype.getPromptText.mockReturnValue("test prompt");
-    getResponse.mockRejectedValueOnce(error);
-
-    await ernestoSidePanel.prompt();
-
-    expect(UIStateManager.prototype.showError).toHaveBeenCalledWith(
-      error.message
-    );
-  });
-
-  it("should setup event listeners for control buttons", () => {
-    const { summarizeBtn, speechifyBtn, openOptionsBtn, closeBtn } =
-      ernestoSidePanel.uiManager.getControlButtons();
-    const { promptInput, submitPromptBtn } =
-      ernestoSidePanel.uiManager.getPromptElements();
-
-    expect(summarizeBtn.addEventListener).toHaveBeenCalledWith(
-      "click",
-      expect.any(Function)
-    );
-    expect(speechifyBtn.addEventListener).toHaveBeenCalledWith(
-      "click",
-      expect.any(Function)
-    );
-    expect(openOptionsBtn.addEventListener).toHaveBeenCalledWith(
-      "click",
-      expect.any(Function)
-    );
-    expect(closeBtn.addEventListener).toHaveBeenCalledWith(
-      "click",
-      expect.any(Function)
-    );
-    expect(submitPromptBtn.addEventListener).toHaveBeenCalledWith(
-      "click",
-      expect.any(Function)
-    );
-    expect(promptInput.addEventListener).toHaveBeenCalledWith(
-      "keypress",
-      expect.any(Function)
-    );
-  });
-
-  it("should call summarize when summarize button is clicked", async () => {
-    const { summarizeBtn } = ernestoSidePanel.uiManager.getControlButtons();
-    const clickHandler = summarizeBtn.addEventListener.mock.calls[0][1];
-
-    await clickHandler();
-
-    expect(UIStateManager.prototype.showLoading).toHaveBeenCalled();
-    expect(UIStateManager.prototype.hideLoading).toHaveBeenCalled();
-  });
-
-  it("should call speechify when speechify button is clicked", async () => {
-    const { speechifyBtn } = ernestoSidePanel.uiManager.getControlButtons();
-    const clickHandler = speechifyBtn.addEventListener.mock.calls[0][1];
-
-    // Mock required dependencies
-    const mockTab = { id: 1, url: "https://example.com" };
-    global.chrome.tabs.query.mockResolvedValueOnce([mockTab]);
-    TabStateManager.prototype.getTabState.mockResolvedValueOnce({
-      url: mockTab.url,
+    
+    it('should configure context menu', () => {
+      app.configureContextMenu();
+      
+      expect(chrome.contextMenus.create).toHaveBeenCalledWith({
+        id: "openAndSummarize",
+        title: "Open && Summarize",
+        contexts: ["link"]
+      });
     });
-    UIStateManager.prototype.getSummaryText.mockReturnValue("test summary");
-    UIStateManager.prototype.isSummaryVisible.mockReturnValue(true);
-    getSpeechifyAudio.mockResolvedValue(new Blob());
-
-    await clickHandler();
-
-    expect(UIStateManager.prototype.showLoading).toHaveBeenCalled();
-    expect(UIStateManager.prototype.hideLoading).toHaveBeenCalled();
-  });
-
-  it("should call prompt when submit button is clicked", async () => {
-    const { submitPromptBtn } = ernestoSidePanel.uiManager.getPromptElements();
-    const clickHandler = submitPromptBtn.addEventListener.mock.calls[0][1];
-
-    // Mock required dependencies
-    const mockTab = { id: 1, url: "https://example.com" };
-    global.chrome.tabs.query.mockResolvedValueOnce([mockTab]);
-    TabStateManager.prototype.getTabState.mockResolvedValueOnce({
-      url: mockTab.url,
+    
+    it('should perform extension setup on install/update', () => {
+      const configureSidePanelSpy = vi.spyOn(app, 'configureSidePanel').mockImplementation(() => {});
+      const configureContextMenuSpy = vi.spyOn(app, 'configureContextMenu').mockImplementation(() => {});
+      const details = { reason: 'install' };
+      
+      app.setupExtension(details);
+      
+      expect(configureSidePanelSpy).toHaveBeenCalledTimes(1);
+      expect(configureContextMenuSpy).toHaveBeenCalledTimes(1);
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        'Ernesto extension installed/updated. Performing setup.',
+        details
+      );
     });
-    UIStateManager.prototype.getPromptText.mockReturnValue("test prompt");
-    getResponse.mockResolvedValue({
-      assistantMessage: "test response",
-      assistantMessageId: "test-id",
-    });
-
-    await clickHandler();
-
-    expect(UIStateManager.prototype.showLoading).toHaveBeenCalled();
-    expect(UIStateManager.prototype.hideLoading).toHaveBeenCalled();
   });
-
-  it("should call prompt when enter key is pressed in prompt input", async () => {
-    const { promptInput } = ernestoSidePanel.uiManager.getPromptElements();
-    const keypressHandler = promptInput.addEventListener.mock.calls[0][1];
-
-    // Mock required dependencies
-    const mockTab = { id: 1, url: "https://example.com" };
-    global.chrome.tabs.query.mockResolvedValueOnce([mockTab]);
-    TabStateManager.prototype.getTabState.mockResolvedValueOnce({
-      url: mockTab.url,
+  
+  describe('event listeners', () => {
+    it('should set up all event listeners', () => {
+      app.setupEventListeners();
+      
+      expect(chrome.runtime.onInstalled.addListener).toHaveBeenCalledTimes(1);
+      expect(chrome.action.onClicked.addListener).toHaveBeenCalledTimes(1);
+      expect(chrome.storage.onChanged.addListener).toHaveBeenCalledTimes(1);
+      expect(chrome.contextMenus.onClicked.addListener).toHaveBeenCalledTimes(1);
     });
-    UIStateManager.prototype.getPromptText.mockReturnValue("test prompt");
-    getResponse.mockResolvedValue({
-      assistantMessage: "test response",
-      assistantMessageId: "test-id",
+    
+    it('should handle action click correctly', () => {
+      const tab = { id: 123 };
+      
+      app.handleActionClick(tab);
+      
+      expect(chrome.sidePanel.open).toHaveBeenCalledWith({ tabId: 123 });
     });
-
-    // Mock API key
-    global.chrome.storage.local.get.mockResolvedValueOnce({
-      apiKey: "test-api-key",
+    
+    it('should handle API key storage changes', () => {
+      const changes = {
+        openaiApiKey: {
+          newValue: 'test-key'
+        }
+      };
+      
+      app.handleStorageChange(changes);
+      
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        'API Key changed:',
+        '✓ Key set'
+      );
     });
-
-    // Spy on prompt method
-    const promptSpy = vi.spyOn(ernestoSidePanel, "prompt");
-
-    await keypressHandler({ key: "Enter", preventDefault: vi.fn() });
-
-    expect(promptSpy).toHaveBeenCalled();
+    
+    it('should handle API key removal', () => {
+      const changes = {
+        openaiApiKey: {
+          newValue: null
+        }
+      };
+      
+      app.handleStorageChange(changes);
+      
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        'API Key changed:',
+        '✗ Key cleared'
+      );
+    });
+    
+    it('should ignore non-API key storage changes', () => {
+      const changes = {
+        someOtherSetting: {
+          newValue: 'value'
+        }
+      };
+      
+      app.handleStorageChange(changes);
+      
+      expect(consoleLogSpy).not.toHaveBeenCalled();
+    });
+    
+    it('should handle openAndSummarize context menu click', () => {
+      const info = {
+        menuItemId: 'openAndSummarize',
+        linkUrl: 'https://example.com'
+      };
+      const tab = { id: 456 };
+      
+      app.handleContextMenuClick(info, tab);
+      
+      expect(chrome.tabs.create).toHaveBeenCalledWith({
+        url: 'https://example.com',
+        active: false
+      });
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        'Link opened in new tab. Summarization to be implemented.'
+      );
+    });
+    
+    it('should ignore context menu clicks with no linkUrl', () => {
+      const info = {
+        menuItemId: 'openAndSummarize',
+        linkUrl: null
+      };
+      const tab = { id: 456 };
+      
+      app.handleContextMenuClick(info, tab);
+      
+      expect(chrome.tabs.create).not.toHaveBeenCalled();
+      expect(consoleLogSpy).not.toHaveBeenCalled();
+    });
+    
+    it('should ignore non-openAndSummarize context menu clicks', () => {
+      const info = {
+        menuItemId: 'someOtherAction',
+        linkUrl: 'https://example.com'
+      };
+      const tab = { id: 456 };
+      
+      app.handleContextMenuClick(info, tab);
+      
+      expect(chrome.tabs.create).not.toHaveBeenCalled();
+      expect(consoleLogSpy).not.toHaveBeenCalled();
+    });
   });
-
-  it("should open options page when options button is clicked", () => {
-    const { openOptionsBtn } = ernestoSidePanel.uiManager.getControlButtons();
-    const clickHandler = openOptionsBtn.addEventListener.mock.calls[0][1];
-
-    clickHandler();
-
-    expect(chrome.runtime.openOptionsPage).toHaveBeenCalled();
-  });
-
-  it("should close window when close button is clicked", () => {
-    const { closeBtn } = ernestoSidePanel.uiManager.getControlButtons();
-    const clickHandler = closeBtn.addEventListener.mock.calls[0][1];
-
-    clickHandler();
-
-    expect(window.close).toHaveBeenCalled();
-  });
-});
+}); 

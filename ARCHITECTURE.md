@@ -29,7 +29,8 @@ The extension has (at least) 3 different execution contexts executing all the ti
 
 - **The extension's own execution context** (`src/background/index.js`)
   - Starts and stops with the browser starts and stops.
-  - Is the extension's "main()", does extension initialization and kicks the ball rolling.
+  - Is the extension's "main()", initializes the ErnestoApp class which manages the extension lifecycle.
+  - Delegates all functionality to ErnestoApp instance.
 
 - **The extension's content script context** (`src/content/index.js`)
   - It is injected into the user's own tabs
@@ -46,6 +47,19 @@ Each context is independent of each other. Communication between them is async a
 
 - `chrome.runtime.sendMessage`, `chrome.runtime.onMessage` for background and side panel communication, and
 -  `chrome.tabs.sendMessage`, `chrome.tabs.onMessage` for background and content script.
+
+## Core Components
+
+- **ErnestoApp** (`src/core/ernestoApp.js`): 
+  - Central class that manages the extension's core functionality.
+  - Responsible for cache management (clearing expired caches periodically).
+  - Handles extension setup (sidepanel configuration, context menu creation).
+  - Sets up and manages event listeners (extension install, icon click, storage changes, context menu).
+  - Acts as the orchestrator for the extension's background processes.
+
+- **ErnestoSidePanel** (`src/core/ernestoSidePanel.js`):
+  - Manages the side panel UI and functionality.
+  - Handles user interactions, prompts, and display of results.
 
 # Tech Stack
 
@@ -99,3 +113,39 @@ Each context is independent of each other. Communication between them is async a
   - ⚠️ **When working with existing test files, check for local redefinitions of global mocks (e.g., a local `global.chrome = ...`). If found, consider refactoring to remove the local mock and rely on the global setup in `vitest.setup.js`, ensuring the global mock covers the necessary functionality.**
 - **Coverage:**
   - Cover encryption, caching, API calls, UI state, and error handling.
+
+# Documentation Conventions
+
+- **JSDoc Style:**
+  - Example:
+  ```js
+  /**
+   * Processes and validates user input
+   * @param {string} input - The user input to process
+   * @param {Object} options - Processing options
+   * @param {boolean} options.sanitize - Whether to sanitize the input
+   * @returns {Promise<string>} The processed input
+   */
+  async function processInput(input, options) {
+    // Implementation
+  }
+  ```
+  - Place the description directly in the comment block, not in a `@description` tag
+  - Class description appears above the class declaration
+  - Method descriptions are concise statements of purpose
+  - Don't use `@method`, `@class`, or `@constructor` tags (they're inferred)
+  - List parameters with `@param` and include their types and descriptions
+  - Return types specified with `@returns` including the type and description
+  - Always document public methods, properties, and class types
+
+- **Code Comments:**
+  - Use `//` for single-line comments explaining complex logic
+  - Prefer self-documenting code over extensive comments
+  - Group related code with section comment headers
+  - Explain the "why" not just the "what" in comments
+
+- **README and Documentation Files:**
+  - Use Markdown formatting consistently
+  - Include code examples for key functionality
+  - Structure with clear headings and sections
+  - Keep documentation updated as the codebase evolves
