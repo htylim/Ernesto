@@ -38,14 +38,18 @@ export class ErnestoApp {
   }
 
   /**
-   * Configure sidepanel and context menu on extension install/update
+   * Configure context menu on extension install/update
    * @param {Object} details - Installation details
    * @returns {void}
    */
   setupExtension(details) {
     console.log('Ernesto extension installed/updated. Performing setup.', details);
-    this.configureSidePanel();
-    this.configureContextMenu();
+
+    chrome.contextMenus.create({
+      id: "openAndSummarize",
+      title: "Open && Summarize",
+      contexts: ["link"]
+    });    
   }
 
   /**
@@ -93,30 +97,6 @@ export class ErnestoApp {
   }
 
   /**
-   * Configures the side panel for the extension
-   * @returns {void}
-   */
-  configureSidePanel() {
-    chrome.sidePanel.setOptions({
-      enabled: true,
-      path: "src/sidepanel/index.html",
-      tabId: null,
-    });
-  }
-
-  /**
-   * Configures the context menu actions for the extension
-   * @returns {void}
-   */
-  configureContextMenu() {
-    chrome.contextMenus.create({
-      id: "openAndSummarize",
-      title: "Open && Summarize",
-      contexts: ["link"]
-    });
-  }
-
-  /**
    * Set up all Chrome extension event listeners
    * @returns {void}
    */
@@ -140,6 +120,13 @@ export class ErnestoApp {
    * @returns {void}
    */
   handleActionClick(tab) {
+    // this will open our sidepanel on the specific tab. 
+    // other tabs will not share or have this sidepanel
+    chrome.sidePanel.setOptions({
+      enabled: true,
+      path: "src/sidepanel/index.html",
+      tabId: tab.id,
+    });
     chrome.sidePanel.open({ tabId: tab.id });
   }
 
