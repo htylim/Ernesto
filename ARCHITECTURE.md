@@ -6,7 +6,7 @@ src/
   ├── common/api/       # functions for calling APIs used in the extension 
   ├── common/cache/     # Storage caches for the extension use of chrome.storage.local
   ├── common/crypto/    # crypto utilities for sensitive data like API keys
-  ├── common/managers/  # various managers (apiKeyManager, colorThemeManager and tabStateManager)
+  ├── common/managers/  # various managers (apiKeyManager, colorThemeManager)
   ├── common/ui/        # UI element controllers (audio controller)
   ├── content/          # Content script injected into pages (used to extract basic HTML and metadata from the visited page)
   ├── core/             # Extension main components 
