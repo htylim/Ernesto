@@ -158,13 +158,13 @@ export class UIStateManager {
 
   /**
    * Shows tab content
-   * @param {Object} tab - Tab object containing title
+   * @param {string} title - Tab title to display
    */
-  showTabContent(tab) {
+  showTabContent(title) {
     this.showElement(this.elements.tabContent);
     this.hideElement(this.elements.tabUnavailable);
     this.showElement(this.elements.promptContainer);
-    this.elements.pageTitle.textContent = tab?.title || "Current Page";
+    this.elements.pageTitle.textContent = title || "Current Page";
   }
 
   /**

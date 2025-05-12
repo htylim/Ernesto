@@ -6,7 +6,6 @@ import {
 import { getSpeechifyAudio } from "../common/api/getSpeechifyAudio.js";
 import { getCachedAudio, cacheAudio } from "../common/cache/speechifyCache.js";
 import { getApiKey } from "../common/managers/apiKeyManager.js";
-import { TabStateManager } from "../common/managers/tabStateManager.js";
 import { UIStateManager } from "../sidepanel/uiStateManager.js";
 import { AudioController } from "../common/ui/audioController.js";
 import {
@@ -28,7 +27,13 @@ export class ErnestoSidePanel {
   constructor() {
     this.uiManager = new UIStateManager();
     this.audioController = new AudioController(this.uiManager);
-    this.tabStateManager = new TabStateManager();
+    
+    // Tab state properties
+    this.url = null;
+    this.title = null;
+    this.isLoading = false;
+    this.loadingMessage = "";
+    
     this.setupEventListeners();
     this.initializePanel();
   }
@@ -64,7 +69,6 @@ export class ErnestoSidePanel {
 
     // Listen for tab changes
     if (chrome.tabs) {
-      chrome.tabs.onActivated.addListener(() => this.handleTabChange());
       chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
         if (changeInfo.status === "complete") {
           this.handleTabChange();
@@ -78,15 +82,9 @@ export class ErnestoSidePanel {
   }
 
   async handleTabChange() {
+    // extract from the tab its new url and title and update our own state
     const currentTab = await this.getCurrentTab();
     if (!currentTab) {
-      this.uiManager.showTabUnavailable();
-      this.audioController.cleanup();
-      return;
-    }
-
-    const tabState = await this.tabStateManager.getTabState(currentTab.id);
-    if (!tabState) {
       this.uiManager.showTabUnavailable();
       this.audioController.cleanup();
       return;
@@ -99,25 +97,26 @@ export class ErnestoSidePanel {
         return;
       }
 
-      if (tabState.url !== currentTab.url) {
-        await this.tabStateManager.updateTabState(currentTab.id, {
-          url: currentTab.url,
-          title: currentTab.title,
-        });
+      if (this.url !== currentTab.url) {
+        this.url = currentTab.url;
+        this.title = currentTab.title;
+        this.isLoading = false;
+        this.loadingMessage = "";
       }
 
-      this.uiManager.showTabContent(currentTab);
-      this.restoreTabState(currentTab.id);
+      this.refreshTab();
     } catch (error) {
       console.error("Error handling tab change:", error);
       this.uiManager.showTabUnavailable();
     }
   }
 
-  async restoreTabState(tabId) {
-    const tabState = await this.tabStateManager.getTabState(tabId);
-    if (!tabState || !tabState.url) return;
+  async refreshTab() {
+    // set sidepanel's in "show tab content" mode
+    this.uiManager.showTabContent(this.title);
 
+    // and proceed to load any content that we may have (or not) in cache into the sidepanel UI
+    if (!this.url) return;
     try {
       // Clear existing content first
       this.uiManager.setSummaryText("", true);
@@ -128,13 +127,13 @@ export class ErnestoSidePanel {
       await loadAndApplyColorTheme();
 
       // Load cached summary if available
-      const cachedSummary = await getCachedSummary(tabState.url);
+      const cachedSummary = await getCachedSummary(this.url);
       if (cachedSummary) {
         this.uiManager.showSummary(cachedSummary);
       }
 
       // Load cached prompts if available
-      const conversationHistory = await getCachedPrompts(tabState.url);
+      const conversationHistory = await getCachedPrompts(this.url);
 
       if (conversationHistory && conversationHistory.conversation) {
         const conversation = conversationHistory.conversation;
@@ -235,12 +234,7 @@ export class ErnestoSidePanel {
       return null;
     }
 
-    const tabState = await this.tabStateManager.getTabState(currentTab.id);
-    if (!tabState || !tabState.url) {
-      return null;
-    }
-
-    return tabState?.url;
+    return this.url;
   }
 
   async summarize() {
@@ -256,32 +250,27 @@ export class ErnestoSidePanel {
       return;
     }
 
-    const tabState = await this.tabStateManager.getTabState(currentTab.id);
-    if (!tabState || !tabState.url) {
+    if (!this.url) {
       this.uiManager.showTabUnavailable();
       return;
     }
 
     try {
-      const url = tabState.url;
+      const url = this.url;
       console.log("Generating summary for:", url);
 
       this.uiManager.showLoading(LOADING_MESSAGES.SUMMARY);
       this.uiManager.hideSummary();
 
-      await this.tabStateManager.updateTabState(currentTab.id, {
-        isLoading: true,
-        loadingMessage: LOADING_MESSAGES.SUMMARY,
-      });
+      this.isLoading = true;
+      this.loadingMessage = LOADING_MESSAGES.SUMMARY;
 
       const apiKey = await this.getApiKey();
       const summary = await getSummary(url, apiKey, pageContent);
 
       await cacheSummary(url, summary);
 
-      await this.tabStateManager.updateTabState(currentTab.id, {
-        isLoading: false,
-      });
+      this.isLoading = false;
 
       // the user might navigated away from `url` since we initiated the request.
       // don't update the UI if we are not at `url` anymore
@@ -295,9 +284,7 @@ export class ErnestoSidePanel {
       console.error("Summarization error:", error);
       this.uiManager.showError(error.message);
 
-      await this.tabStateManager.updateTabState(currentTab.id, {
-        isLoading: false,
-      });
+      this.isLoading = false;
 
       return false;
     } finally {
@@ -312,8 +299,7 @@ export class ErnestoSidePanel {
       return;
     }
 
-    const tabState = this.tabStateManager.getTabState(currentTab.id);
-    if (!tabState) {
+    if (!this.url) {
       this.uiManager.showTabUnavailable();
       return;
     }
@@ -324,7 +310,7 @@ export class ErnestoSidePanel {
         if (!success) return;
       }
 
-      const url = tabState.url;
+      const url = this.url;
 
       const cachedAudioData = await getCachedAudio(url);
       if (cachedAudioData) {
@@ -335,10 +321,8 @@ export class ErnestoSidePanel {
 
       this.uiManager.showLoading(LOADING_MESSAGES.AUDIO);
 
-      await this.tabStateManager.updateTabState(currentTab.id, {
-        isLoading: true,
-        loadingMessage: LOADING_MESSAGES.AUDIO,
-      });
+      this.isLoading = true;
+      this.loadingMessage = LOADING_MESSAGES.AUDIO;
 
       const apiKey = await this.getApiKey();
       const summaryText = this.uiManager.getSummaryText();
@@ -351,18 +335,14 @@ export class ErnestoSidePanel {
 
       this.audioController.setupAudio(audioBlob, true);
 
-      await this.tabStateManager.updateTabState(currentTab.id, {
-        isLoading: false,
-      });
+      this.isLoading = false;
 
       return true;
     } catch (error) {
       console.error("Speechify error:", error);
       this.uiManager.showError(error.message);
 
-      await this.tabStateManager.updateTabState(currentTab.id, {
-        isLoading: false,
-      });
+      this.isLoading = false;
 
       return false;
     } finally {
@@ -377,8 +357,7 @@ export class ErnestoSidePanel {
       return;
     }
 
-    const tabState = await this.tabStateManager.getTabState(currentTab.id);
-    if (!tabState || !tabState.url) {
+    if (!this.url) {
       this.uiManager.showTabUnavailable();
       return;
     }
@@ -390,7 +369,7 @@ export class ErnestoSidePanel {
     }
 
     try {
-      const url = tabState.url;
+      const url = this.url;
       console.log("Processing prompt for:", url);
 
       // Clear the input field
@@ -399,10 +378,8 @@ export class ErnestoSidePanel {
       this.uiManager.showLoading(LOADING_MESSAGES.PROMPT);
       this.uiManager.updateButtonStates(); // Disable buttons during loading
 
-      await this.tabStateManager.updateTabState(currentTab.id, {
-        isLoading: true,
-        loadingMessage: LOADING_MESSAGES.PROMPT,
-      });
+      this.isLoading = true;
+      this.loadingMessage = LOADING_MESSAGES.PROMPT;
 
       // Get existing conversation history or create new
       let conversationHistory = (await getCachedPrompts(url)) || {
@@ -437,18 +414,14 @@ export class ErnestoSidePanel {
       // Add to UI
       this.uiManager.addPromptResponse(promptItem);
 
-      await this.tabStateManager.updateTabState(currentTab.id, {
-        isLoading: false,
-      });
+      this.isLoading = false;
 
       return true;
     } catch (error) {
       console.error("Prompt error:", error);
       this.uiManager.showError(error.message);
 
-      await this.tabStateManager.updateTabState(currentTab.id, {
-        isLoading: false,
-      });
+      this.isLoading = false;
 
       return false;
     } finally {

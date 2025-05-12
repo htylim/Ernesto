@@ -139,12 +139,12 @@ describe("UIStateManager", () => {
 
   describe("showTabContent", () => {
     it("should show tab content with title", () => {
-      const tab = { title: "Test Title" };
-      uiStateManager.showTabContent(tab);
+      const title = "Test Title";
+      uiStateManager.showTabContent(title);
 
       expect(mockElements.tabContent.classList.remove).toHaveBeenCalled();
       expect(mockElements.tabUnavailable.classList.add).toHaveBeenCalled();
-      expect(mockElements.pageTitle.textContent).toBe(tab.title);
+      expect(mockElements.pageTitle.textContent).toBe(title);
     });
   });
 

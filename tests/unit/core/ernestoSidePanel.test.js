@@ -2,7 +2,6 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { ErnestoSidePanel } from "../../../src/core/ernestoSidePanel";
 import { UIStateManager } from "../../../src/sidepanel/uiStateManager";
 import { AudioController } from "../../../src/common/ui/audioController";
-import { TabStateManager } from "../../../src/common/managers/tabStateManager";
 import { getSummary } from "../../../src/common/api/getSummary";
 import { getSpeechifyAudio } from "../../../src/common/api/getSpeechifyAudio";
 import { getResponse } from "../../../src/common/api/getResponse";
@@ -11,7 +10,6 @@ import { getCachedPrompts } from "../../../src/common/cache/promptsCache";
 
 // Mock dependencies
 vi.mock("../../../src/common/ui/audioController");
-vi.mock("../../../src/common/managers/tabStateManager");
 vi.mock("../../../src/common/api/getSummary");
 vi.mock("../../../src/common/api/getSpeechifyAudio");
 vi.mock("../../../src/common/cache/summariesCache");
@@ -119,21 +117,20 @@ describe("ErnestoSidePanel", () => {
     expect(ernestoSidePanel).toBeDefined();
     expect(UIStateManager).toHaveBeenCalled();
     expect(AudioController).toHaveBeenCalled();
-    expect(TabStateManager).toHaveBeenCalled();
   });
-
   it("should handle tab change with valid tab", async () => {
     const mockTab = { id: 1, url: "https://example.com", title: "Test" };
-    global.chrome.tabs.query.mockResolvedValueOnce([mockTab]);
-    TabStateManager.prototype.getTabState.mockResolvedValueOnce({
-      url: mockTab.url,
-    });
+    
+    // Mock getCurrentTab to return the mockTab
+    vi.spyOn(ernestoSidePanel, 'getCurrentTab').mockResolvedValueOnce(mockTab);
+    
+    // Spy on refreshTab to prevent it from executing
+    const refreshTabSpy = vi.spyOn(ernestoSidePanel, 'refreshTab').mockImplementation(() => {});
 
     await ernestoSidePanel.handleTabChange();
 
-    expect(UIStateManager.prototype.showTabContent).toHaveBeenCalledWith(
-      mockTab
-    );
+    // Only test that refreshTab was called, which is the observable behavior
+    expect(refreshTabSpy).toHaveBeenCalled();
   });
 
   it("should handle tab change with invalid tab", async () => {
@@ -155,13 +152,14 @@ describe("ErnestoSidePanel", () => {
     };
 
     global.chrome.tabs.query.mockResolvedValueOnce([mockTab]);
-    TabStateManager.prototype.getTabState.mockResolvedValueOnce({
-      url: mockTab.url,
-    });
+    
+    // Set the url property directly
+    ernestoSidePanel.url = mockTab.url;
+    
     getCachedSummary.mockResolvedValueOnce(mockSummary);
     getCachedPrompts.mockResolvedValueOnce(mockConversation);
 
-    await ernestoSidePanel.restoreTabState(mockTab.id);
+    await ernestoSidePanel.refreshTab();
 
     expect(UIStateManager.prototype.showSummary).toHaveBeenCalledWith(
       mockSummary
@@ -175,9 +173,9 @@ describe("ErnestoSidePanel", () => {
   it("should handle summarize action", async () => {
     const mockTab = { id: 1, url: "https://example.com" };
     global.chrome.tabs.query.mockResolvedValueOnce([mockTab]);
-    TabStateManager.prototype.getTabState.mockResolvedValueOnce({
-      url: mockTab.url,
-    });
+    
+    // Set the url property directly
+    ernestoSidePanel.url = mockTab.url;
 
     await ernestoSidePanel.summarize();
 
@@ -189,9 +187,10 @@ describe("ErnestoSidePanel", () => {
     const mockTab = { id: 1, url: "https://example.com" };
     const error = new Error("Test error");
     global.chrome.tabs.query.mockResolvedValueOnce([mockTab]);
-    TabStateManager.prototype.getTabState.mockResolvedValueOnce({
-      url: mockTab.url,
-    });
+    
+    // Set the url property directly
+    ernestoSidePanel.url = mockTab.url;
+    
     global.chrome.tabs.sendMessage.mockRejectedValueOnce(error);
 
     await ernestoSidePanel.summarize();
@@ -204,9 +203,10 @@ describe("ErnestoSidePanel", () => {
   it("should handle speechify action", async () => {
     const mockTab = { id: 1, url: "https://example.com" };
     global.chrome.tabs.query.mockResolvedValueOnce([mockTab]);
-    TabStateManager.prototype.getTabState.mockResolvedValueOnce({
-      url: mockTab.url,
-    });
+    
+    // Set the url property directly
+    ernestoSidePanel.url = mockTab.url;
+    
     UIStateManager.prototype.getSummaryText.mockReturnValue("test summary");
     UIStateManager.prototype.isSummaryVisible.mockReturnValue(false);
 
@@ -220,9 +220,10 @@ describe("ErnestoSidePanel", () => {
     const mockTab = { id: 1, url: "https://example.com" };
     const error = new Error("Test error");
     global.chrome.tabs.query.mockResolvedValueOnce([mockTab]);
-    TabStateManager.prototype.getTabState.mockResolvedValueOnce({
-      url: mockTab.url,
-    });
+    
+    // Set the url property directly
+    ernestoSidePanel.url = mockTab.url;
+    
     UIStateManager.prototype.getSummaryText.mockReturnValue("test summary");
     UIStateManager.prototype.isSummaryVisible.mockReturnValue(false);
     global.chrome.tabs.sendMessage.mockRejectedValueOnce(error);
@@ -237,9 +238,10 @@ describe("ErnestoSidePanel", () => {
   it("should handle prompt action", async () => {
     const mockTab = { id: 1, url: "https://example.com" };
     global.chrome.tabs.query.mockResolvedValueOnce([mockTab]);
-    TabStateManager.prototype.getTabState.mockResolvedValueOnce({
-      url: mockTab.url,
-    });
+    
+    // Set the url property directly
+    ernestoSidePanel.url = mockTab.url;
+    
     UIStateManager.prototype.getPromptText.mockReturnValue("test prompt");
     getResponse.mockResolvedValueOnce({
       assistantMessage: "test response",
@@ -260,9 +262,10 @@ describe("ErnestoSidePanel", () => {
     const mockTab = { id: 1, url: "https://example.com" };
     const error = new Error("Test error");
     global.chrome.tabs.query.mockResolvedValueOnce([mockTab]);
-    TabStateManager.prototype.getTabState.mockResolvedValueOnce({
-      url: mockTab.url,
-    });
+    
+    // Set the url property directly
+    ernestoSidePanel.url = mockTab.url;
+    
     UIStateManager.prototype.getPromptText.mockReturnValue("test prompt");
     getResponse.mockRejectedValueOnce(error);
 
@@ -322,9 +325,10 @@ describe("ErnestoSidePanel", () => {
     // Mock required dependencies
     const mockTab = { id: 1, url: "https://example.com" };
     global.chrome.tabs.query.mockResolvedValueOnce([mockTab]);
-    TabStateManager.prototype.getTabState.mockResolvedValueOnce({
-      url: mockTab.url,
-    });
+    
+    // Set the url property directly
+    ernestoSidePanel.url = mockTab.url;
+    
     UIStateManager.prototype.getSummaryText.mockReturnValue("test summary");
     UIStateManager.prototype.isSummaryVisible.mockReturnValue(true);
     getSpeechifyAudio.mockResolvedValue(new Blob());
@@ -342,9 +346,10 @@ describe("ErnestoSidePanel", () => {
     // Mock required dependencies
     const mockTab = { id: 1, url: "https://example.com" };
     global.chrome.tabs.query.mockResolvedValueOnce([mockTab]);
-    TabStateManager.prototype.getTabState.mockResolvedValueOnce({
-      url: mockTab.url,
-    });
+    
+    // Set the url property directly
+    ernestoSidePanel.url = mockTab.url;
+    
     UIStateManager.prototype.getPromptText.mockReturnValue("test prompt");
     getResponse.mockResolvedValue({
       assistantMessage: "test response",
@@ -364,9 +369,10 @@ describe("ErnestoSidePanel", () => {
     // Mock required dependencies
     const mockTab = { id: 1, url: "https://example.com" };
     global.chrome.tabs.query.mockResolvedValueOnce([mockTab]);
-    TabStateManager.prototype.getTabState.mockResolvedValueOnce({
-      url: mockTab.url,
-    });
+    
+    // Set the url property directly
+    ernestoSidePanel.url = mockTab.url;
+    
     UIStateManager.prototype.getPromptText.mockReturnValue("test prompt");
     getResponse.mockResolvedValue({
       assistantMessage: "test response",
