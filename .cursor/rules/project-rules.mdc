@@ -3,7 +3,7 @@ description:
 globs: 
 alwaysApply: true
 ---
-- Every time you choose to apply a rule explicitly state the rule(s) in the conversation. Abbreviate the rule description to a single word or phrase. ie: [rule:test writing]
+- Write this first thing in your response so I know that you read this set of rules: [📢 project-rules.mdc read]"
 
 ## Project Context
 
