@@ -177,39 +177,33 @@ describe('ErnestoApp', () => {
   });
   
   describe('extension setup', () => {
-    it('should configure side panel', () => {
-      app.configureSidePanel();
+    it('should configure context menu on extension install', () => {
+      const details = { reason: 'install' };
       
-      expect(chrome.sidePanel.setOptions).toHaveBeenCalledWith({
-        enabled: true,
-        path: "src/sidepanel/index.html",
-        tabId: null,
-      });
-    });
-    
-    it('should configure context menu', () => {
-      app.configureContextMenu();
+      app.setupExtension(details);
       
       expect(chrome.contextMenus.create).toHaveBeenCalledWith({
         id: "openAndSummarize",
         title: "Open && Summarize",
         contexts: ["link"]
       });
-    });
-    
-    it('should perform extension setup on install/update', () => {
-      const configureSidePanelSpy = vi.spyOn(app, 'configureSidePanel').mockImplementation(() => {});
-      const configureContextMenuSpy = vi.spyOn(app, 'configureContextMenu').mockImplementation(() => {});
-      const details = { reason: 'install' };
-      
-      app.setupExtension(details);
-      
-      expect(configureSidePanelSpy).toHaveBeenCalledTimes(1);
-      expect(configureContextMenuSpy).toHaveBeenCalledTimes(1);
       expect(consoleLogSpy).toHaveBeenCalledWith(
         'Ernesto extension installed/updated. Performing setup.',
         details
       );
+    });
+    
+    it('should set up tab-specific sidepanel when extension icon is clicked', () => {
+      const tab = { id: 123 };
+      
+      app.handleActionClick(tab);
+      
+      expect(chrome.sidePanel.setOptions).toHaveBeenCalledWith({
+        enabled: true,
+        path: "src/sidepanel/index.html",
+        tabId: 123,
+      });
+      expect(chrome.sidePanel.open).toHaveBeenCalledWith({ tabId: 123 });
     });
   });
   
@@ -221,14 +215,6 @@ describe('ErnestoApp', () => {
       expect(chrome.action.onClicked.addListener).toHaveBeenCalledTimes(1);
       expect(chrome.storage.onChanged.addListener).toHaveBeenCalledTimes(1);
       expect(chrome.contextMenus.onClicked.addListener).toHaveBeenCalledTimes(1);
-    });
-    
-    it('should handle action click correctly', () => {
-      const tab = { id: 123 };
-      
-      app.handleActionClick(tab);
-      
-      expect(chrome.sidePanel.open).toHaveBeenCalledWith({ tabId: 123 });
     });
     
     it('should handle API key storage changes', () => {

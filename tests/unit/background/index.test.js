@@ -42,7 +42,7 @@ describe("Background Service", () => {
     expect(clearExpiredPromptsCache).toHaveBeenCalled();
   });
 
-  it("should configure sidepanel on extension install", async () => {
+  it("should configure context menus on extension install", async () => {
     await import("../../../src/background/index.js");
 
     // Simulate extension install
@@ -50,10 +50,10 @@ describe("Background Service", () => {
       chrome.runtime.onInstalled.addListener.mock.calls[0][0];
     await onInstalledCallback({ reason: "install" });
 
-    expect(chrome.sidePanel.setOptions).toHaveBeenCalledWith({
-      enabled: true,
-      path: "src/sidepanel/index.html",
-      tabId: null,
+    expect(chrome.contextMenus.create).toHaveBeenCalledWith({
+      id: "openAndSummarize",
+      title: "Open && Summarize",
+      contexts: ["link"]
     });
   });
 
@@ -66,6 +66,11 @@ describe("Background Service", () => {
     const mockTab = { id: 123 };
     onClickedCallback(mockTab);
 
+    expect(chrome.sidePanel.setOptions).toHaveBeenCalledWith({
+      enabled: true,
+      path: "src/sidepanel/index.html",
+      tabId: 123,
+    });
     expect(chrome.sidePanel.open).toHaveBeenCalledWith({ tabId: 123 });
   });
 });
