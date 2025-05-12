@@ -23,6 +23,29 @@ vitest.config.js        # itest configuration file.
 vitest.setup.js         # Vitest global setup file.
 ```
 
+# Project Architecture
+
+The extension has (at least) 3 different execution contexts executing all the time:
+
+- **The extension's own execution context** (`src/background/index.js`)
+  - Starts and stops with the browser starts and stops.
+  - Is the extension's "main()", does extension initialization and kicks the ball rolling.
+
+- **The extension's content script context** (`src/content/index.js`)
+  - It is injected into the user's own tabs
+  - Has access to the tab's DOM
+  - Used for extracting page content and metadata
+
+- **The extension's side panel execution context** (`src/sidepanel/index.js`)
+  - The extension has a side panel that is opened when the user activates the extension button. 
+  - The side panel has its own DOM, JavaScript context and life cycle. 
+  - (Its like a new opened tab/page but showed as a sidepanel within the browser)
+  - note: the sidepanel is set up during the extension initialization in the background script. 
+
+Each context is independent of each other. Communication between them is async and with the functions: 
+
+- `chrome.runtime.sendMessage`, `chrome.runtime.onMessage` for background and side panel communication, and
+-  `chrome.tabs.sendMessage`, `chrome.tabs.onMessage` for background and content script.
 
 # Tech Stack
 
@@ -42,7 +65,7 @@ vitest.setup.js         # Vitest global setup file.
 
 # Naming Conventions
 
-- **Classes:** `PascalCase` (e.g., `ErnestoApp`, `UIStateManager`).
+- **Classes:** `PascalCase` (e.g., `ErnestoSidePanel`, `UIStateManager`).
 - **Functions/Variables:** `camelCase` (e.g., `getApiKey`, `extractArticleContent`).
 - **Constants:** `UPPER_SNAKE_CASE` (e.g., `LOADING_MESSAGES`).
 - **Types:** `PascalCase` for TypeScript types (if present).

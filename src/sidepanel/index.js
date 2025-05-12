@@ -1,4 +1,4 @@
-import { ErnestoApp } from "../core/ernestoApp.js";
+import { ErnestoSidePanel } from "../core/ernestoSidePanel.js";
 import {
   getColorTheme,
   applyColorTheme,
@@ -59,7 +59,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     setupColorThemeListener();
 
     // Then initialize the application
-    new ErnestoApp();
+    new ErnestoSidePanel();
   } catch (error) {
     console.error("Error initializing side panel:", error);
   }

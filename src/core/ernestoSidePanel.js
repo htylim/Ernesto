@@ -24,7 +24,7 @@ const LOADING_MESSAGES = {
   EXTRACTION: "Extracting article content...",
 };
 
-export class ErnestoApp {
+export class ErnestoSidePanel {
   constructor() {
     this.uiManager = new UIStateManager();
     this.audioController = new AudioController(this.uiManager);
