@@ -16,6 +16,9 @@ import { getResponse } from "../common/api/getResponse.js";
 import { extractArticleContent } from "./contentExtractor.js";
 import { loadAndApplyColorTheme } from "../sidepanel/index.js";
 
+/**
+ * Messages displayed during various loading states
+ */
 const LOADING_MESSAGES = {
   SUMMARY: "Generating Summary...",
   AUDIO: "Generating Audio...",
@@ -23,12 +26,30 @@ const LOADING_MESSAGES = {
   EXTRACTION: "Extracting article content...",
 };
 
+/**
+ * Manages the side panel functionality for a specific browser tab
+ * 
+ * Responsible for handling all tab-specific operations including:
+ * - Summarizing web page content
+ * - Converting summaries to audio (text-to-speech)
+ * - Processing user prompts and displaying AI responses
+ * - Caching results for better performance
+ * - Managing UI state and loading indicators
+ * 
+ * Each ErnestoSidePanel instance is tied to a specific browser tab (identified
+ * by tabId) and maintains its own state, preventing cross-contamination between
+ * different tabs.
+ */
 export class ErnestoSidePanel {
+  /**
+   * Creates a new ErnestoSidePanel instance for a specific browser tab
+   */
   constructor() {
     this.uiManager = new UIStateManager();
     this.audioController = new AudioController(this.uiManager);
     
     // Tab state properties
+    this.tabId = null; // Will be initialized in initializePanel
     this.url = null;
     this.title = null;
     this.isLoading = false;
@@ -38,6 +59,9 @@ export class ErnestoSidePanel {
     this.initializePanel();
   }
 
+  /**
+   * Sets up all event listeners for user interactions and tab changes
+   */
   setupEventListeners() {
     const { summarizeBtn, speechifyBtn, openOptionsBtn, closeBtn } =
       this.uiManager.getControlButtons();
@@ -70,17 +94,42 @@ export class ErnestoSidePanel {
     // Listen for tab changes
     if (chrome.tabs) {
       chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
-        if (changeInfo.status === "complete") {
+        // Only process updates for our own tab
+        if (tabId === this.tabId && changeInfo.status === "complete") {
           this.handleTabChange();
         }
       });
     }
   }
 
+  /**
+   * Initializes the side panel by identifying the current tab and setting up initial state
+   * @returns {Promise<void>}
+   */
   async initializePanel() {
+    // Get the tabId from the active tab at initialization time
+    try {
+      const [tab] = await chrome.tabs.query({
+        active: true,
+        currentWindow: true,
+      });
+      
+      if (tab) {
+        this.tabId = tab.id;
+        console.log(`ErnestoSidePanel initialized for tab ${this.tabId}`);
+      }
+    } catch (error) {
+      console.error("Error initializing panel:", error);
+    }
+    
     await this.handleTabChange();
   }
 
+  /**
+   * Handles changes to the tab (URL changes, navigation events)
+   * Updates internal state and refreshes the UI accordingly
+   * @returns {Promise<void>}
+   */
   async handleTabChange() {
     // extract from the tab its new url and title and update our own state
     const currentTab = await this.getCurrentTab();
@@ -111,6 +160,11 @@ export class ErnestoSidePanel {
     }
   }
 
+  /**
+   * Refreshes the side panel UI with the current tab's content
+   * Loads cached summaries and conversation history for the current URL
+   * @returns {Promise<void>}
+   */
   async refreshTab() {
     // set sidepanel's in "show tab content" mode
     this.uiManager.showTabContent(this.title);
@@ -161,24 +215,43 @@ export class ErnestoSidePanel {
     }
   }
 
+  /**
+   * Gets the current tab information based on the stored tabId
+   * @returns {Promise<chrome.tabs.Tab|null>} The tab object or null if not found
+   */
   async getCurrentTab() {
     try {
-      const [tab] = await chrome.tabs.query({
-        active: true,
-        currentWindow: true,
-      });
-
-      return tab;
+      // If we have a tabId, query for that specific tab
+      if (this.tabId) {
+        const tab = await chrome.tabs.get(this.tabId);
+        return tab;
+      } else {
+        // Fallback to querying for the active tab (should only happen before tabId is set)
+        const [tab] = await chrome.tabs.query({
+          active: true,
+          currentWindow: true,
+        });
+        return tab;
+      }
     } catch (error) {
       console.error("Error getting current tab:", error);
       return null;
     }
   }
 
+  /**
+   * Gets the API key for accessing external services
+   * @returns {Promise<string>} The API key
+   */
   async getApiKey() {
     return await getApiKey();
   }
 
+  /**
+   * Retrieves the page content from the current tab
+   * Injects content script if necessary and processes the content
+   * @returns {Promise<string|null>} JSON string of processed content or null if retrieval failed
+   */
   async getPageContent() {
     const currentTab = await this.getCurrentTab();
     if (!currentTab) return null;
@@ -228,6 +301,10 @@ export class ErnestoSidePanel {
     }
   }
 
+  /**
+   * Gets the URL of the current tab
+   * @returns {Promise<string|null>} The current tab URL or null
+   */
   async getCurrentTabUrl() {
     const currentTab = await this.getCurrentTab();
     if (!currentTab) {
@@ -237,6 +314,10 @@ export class ErnestoSidePanel {
     return this.url;
   }
 
+  /**
+   * Generates a summary of the current page content using AI
+   * @returns {Promise<boolean>} True if summary was successfully generated, false otherwise
+   */
   async summarize() {
     const pageContent = await this.getPageContent();
     if (!pageContent) {
@@ -292,6 +373,11 @@ export class ErnestoSidePanel {
     }
   }
 
+  /**
+   * Converts the current summary to audio using speech synthesis
+   * If no summary exists, it first generates one
+   * @returns {Promise<boolean>} True if audio was successfully generated, false otherwise
+   */
   async speechify() {
     const currentTab = await this.getCurrentTab();
     if (!currentTab) {
@@ -350,6 +436,11 @@ export class ErnestoSidePanel {
     }
   }
 
+  /**
+   * Processes a user prompt/question about the current page
+   * Sends the prompt to an AI service and displays the response
+   * @returns {Promise<boolean>} True if the prompt was successfully processed, false otherwise
+   */
   async prompt() {
     const currentTab = await this.getCurrentTab();
     if (!currentTab) {

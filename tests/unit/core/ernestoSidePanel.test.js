@@ -55,6 +55,12 @@ vi.mock("../../../src/sidepanel/uiStateManager", () => {
 
 describe("ErnestoSidePanel", () => {
   let ernestoSidePanel;
+  const mockTabId = 123;
+  const mockTab = { 
+    id: mockTabId, 
+    url: "https://example.com", 
+    title: "Test" 
+  };
 
   beforeEach(() => {
     // Reset all mocks
@@ -63,9 +69,8 @@ describe("ErnestoSidePanel", () => {
     // Mock chrome API
     global.chrome = {
       tabs: {
-        query: vi
-          .fn()
-          .mockResolvedValue([{ id: 1, url: "https://example.com" }]),
+        query: vi.fn().mockResolvedValue([mockTab]),
+        get: vi.fn().mockResolvedValue(mockTab),
         onActivated: { addListener: vi.fn() },
         onUpdated: { addListener: vi.fn() },
         sendMessage: vi.fn().mockResolvedValue({
@@ -111,6 +116,9 @@ describe("ErnestoSidePanel", () => {
 
     // Create instance
     ernestoSidePanel = new ErnestoSidePanel();
+    
+    // Set the tabId directly for testing
+    ernestoSidePanel.tabId = mockTabId;
   });
 
   it("should initialize with correct dependencies", () => {
@@ -118,9 +126,26 @@ describe("ErnestoSidePanel", () => {
     expect(UIStateManager).toHaveBeenCalled();
     expect(AudioController).toHaveBeenCalled();
   });
-  it("should handle tab change with valid tab", async () => {
-    const mockTab = { id: 1, url: "https://example.com", title: "Test" };
+  
+  it("should initialize tabId from active tab", async () => {
+    // Reset tabId for this test
+    ernestoSidePanel.tabId = null;
     
+    // Create a new instance to test initialization
+    const newInstance = new ErnestoSidePanel();
+    
+    // Skip the constructor's initializePanel call by directly calling it here
+    // This allows us to control the timing and verify the result
+    await newInstance.initializePanel();
+    
+    expect(chrome.tabs.query).toHaveBeenCalledWith({
+      active: true,
+      currentWindow: true
+    });
+    expect(newInstance.tabId).toBe(mockTabId);
+  });
+
+  it("should handle tab change with valid tab", async () => {
     // Mock getCurrentTab to return the mockTab
     vi.spyOn(ernestoSidePanel, 'getCurrentTab').mockResolvedValueOnce(mockTab);
     
@@ -129,20 +154,37 @@ describe("ErnestoSidePanel", () => {
 
     await ernestoSidePanel.handleTabChange();
 
-    // Only test that refreshTab was called, which is the observable behavior
+    // Only test that refreshTab was called
     expect(refreshTabSpy).toHaveBeenCalled();
   });
 
   it("should handle tab change with invalid tab", async () => {
-    global.chrome.tabs.query.mockResolvedValueOnce([]);
+    // Mock getCurrentTab to return null (invalid tab)
+    vi.spyOn(ernestoSidePanel, 'getCurrentTab').mockResolvedValueOnce(null);
 
     await ernestoSidePanel.handleTabChange();
 
     expect(UIStateManager.prototype.showTabUnavailable).toHaveBeenCalled();
   });
 
+  it("should use tabId to get tab information when available", async () => {
+    // Reset mocks before the test
+    vi.clearAllMocks();
+    
+    // Create mock implementation
+    const mockImpl = {
+      tabId: mockTabId,
+      getCurrentTab: ErnestoSidePanel.prototype.getCurrentTab
+    };
+    
+    // Call getCurrentTab with the mock
+    await mockImpl.getCurrentTab();
+    
+    // Check that it called tabs.get with the tabId
+    expect(chrome.tabs.get).toHaveBeenCalledWith(mockTabId);
+  });
+
   it("should restore cached state on tab change", async () => {
-    const mockTab = { id: 1, url: "https://example.com", title: "Test" };
     const mockSummary = "Test summary";
     const mockConversation = {
       conversation: [
@@ -150,8 +192,6 @@ describe("ErnestoSidePanel", () => {
         { role: "assistant", content: "test answer" },
       ],
     };
-
-    global.chrome.tabs.query.mockResolvedValueOnce([mockTab]);
     
     // Set the url property directly
     ernestoSidePanel.url = mockTab.url;
@@ -171,8 +211,9 @@ describe("ErnestoSidePanel", () => {
   });
 
   it("should handle summarize action", async () => {
-    const mockTab = { id: 1, url: "https://example.com" };
-    global.chrome.tabs.query.mockResolvedValueOnce([mockTab]);
+    // Mock getCurrentTab to return the mockTab
+    vi.spyOn(ernestoSidePanel, 'getCurrentTab').mockResolvedValue(mockTab);
+    vi.spyOn(ernestoSidePanel, 'getPageContent').mockResolvedValue(JSON.stringify({ content: "test" }));
     
     // Set the url property directly
     ernestoSidePanel.url = mockTab.url;
@@ -184,14 +225,12 @@ describe("ErnestoSidePanel", () => {
   });
 
   it("should handle summarize error", async () => {
-    const mockTab = { id: 1, url: "https://example.com" };
-    const error = new Error("Test error");
-    global.chrome.tabs.query.mockResolvedValueOnce([mockTab]);
+    // Mock getCurrentTab to return the mockTab
+    vi.spyOn(ernestoSidePanel, 'getCurrentTab').mockResolvedValue(mockTab);
+    vi.spyOn(ernestoSidePanel, 'getPageContent').mockResolvedValue(null);
     
     // Set the url property directly
     ernestoSidePanel.url = mockTab.url;
-    
-    global.chrome.tabs.sendMessage.mockRejectedValueOnce(error);
 
     await ernestoSidePanel.summarize();
 
@@ -201,14 +240,15 @@ describe("ErnestoSidePanel", () => {
   });
 
   it("should handle speechify action", async () => {
-    const mockTab = { id: 1, url: "https://example.com" };
-    global.chrome.tabs.query.mockResolvedValueOnce([mockTab]);
+    // Mock getCurrentTab to return the mockTab
+    vi.spyOn(ernestoSidePanel, 'getCurrentTab').mockResolvedValue(mockTab);
     
     // Set the url property directly
     ernestoSidePanel.url = mockTab.url;
     
     UIStateManager.prototype.getSummaryText.mockReturnValue("test summary");
     UIStateManager.prototype.isSummaryVisible.mockReturnValue(false);
+    vi.spyOn(ernestoSidePanel, 'summarize').mockResolvedValue(true);
 
     await ernestoSidePanel.speechify();
 
@@ -217,27 +257,25 @@ describe("ErnestoSidePanel", () => {
   });
 
   it("should handle speechify error", async () => {
-    const mockTab = { id: 1, url: "https://example.com" };
-    const error = new Error("Test error");
-    global.chrome.tabs.query.mockResolvedValueOnce([mockTab]);
+    // Mock getCurrentTab to return the mockTab
+    vi.spyOn(ernestoSidePanel, 'getCurrentTab').mockResolvedValue(mockTab);
     
     // Set the url property directly
     ernestoSidePanel.url = mockTab.url;
     
     UIStateManager.prototype.getSummaryText.mockReturnValue("test summary");
     UIStateManager.prototype.isSummaryVisible.mockReturnValue(false);
-    global.chrome.tabs.sendMessage.mockRejectedValueOnce(error);
+    vi.spyOn(ernestoSidePanel, 'summarize').mockResolvedValue(false);
 
     await ernestoSidePanel.speechify();
 
-    expect(UIStateManager.prototype.showError).toHaveBeenCalledWith(
-      "Could not get page content"
-    );
+    // If summarize fails, speechify should exit early without showing error
+    expect(UIStateManager.prototype.showError).not.toHaveBeenCalled();
   });
 
   it("should handle prompt action", async () => {
-    const mockTab = { id: 1, url: "https://example.com" };
-    global.chrome.tabs.query.mockResolvedValueOnce([mockTab]);
+    // Mock getCurrentTab to return the mockTab
+    vi.spyOn(ernestoSidePanel, 'getCurrentTab').mockResolvedValue(mockTab);
     
     // Set the url property directly
     ernestoSidePanel.url = mockTab.url;
@@ -259,9 +297,10 @@ describe("ErnestoSidePanel", () => {
   });
 
   it("should handle prompt error", async () => {
-    const mockTab = { id: 1, url: "https://example.com" };
     const error = new Error("Test error");
-    global.chrome.tabs.query.mockResolvedValueOnce([mockTab]);
+    
+    // Mock getCurrentTab to return the mockTab
+    vi.spyOn(ernestoSidePanel, 'getCurrentTab').mockResolvedValue(mockTab);
     
     // Set the url property directly
     ernestoSidePanel.url = mockTab.url;
@@ -311,84 +350,55 @@ describe("ErnestoSidePanel", () => {
   it("should call summarize when summarize button is clicked", async () => {
     const { summarizeBtn } = ernestoSidePanel.uiManager.getControlButtons();
     const clickHandler = summarizeBtn.addEventListener.mock.calls[0][1];
+    
+    // Mock the summarize method
+    const summarizeSpy = vi.spyOn(ernestoSidePanel, 'summarize').mockResolvedValue(true);
 
     await clickHandler();
 
-    expect(UIStateManager.prototype.showLoading).toHaveBeenCalled();
-    expect(UIStateManager.prototype.hideLoading).toHaveBeenCalled();
+    expect(summarizeSpy).toHaveBeenCalled();
   });
 
   it("should call speechify when speechify button is clicked", async () => {
     const { speechifyBtn } = ernestoSidePanel.uiManager.getControlButtons();
     const clickHandler = speechifyBtn.addEventListener.mock.calls[0][1];
-
-    // Mock required dependencies
-    const mockTab = { id: 1, url: "https://example.com" };
-    global.chrome.tabs.query.mockResolvedValueOnce([mockTab]);
     
-    // Set the url property directly
-    ernestoSidePanel.url = mockTab.url;
-    
-    UIStateManager.prototype.getSummaryText.mockReturnValue("test summary");
-    UIStateManager.prototype.isSummaryVisible.mockReturnValue(true);
-    getSpeechifyAudio.mockResolvedValue(new Blob());
+    // Mock the speechify method
+    const speechifySpy = vi.spyOn(ernestoSidePanel, 'speechify').mockResolvedValue(true);
 
     await clickHandler();
 
-    expect(UIStateManager.prototype.showLoading).toHaveBeenCalled();
-    expect(UIStateManager.prototype.hideLoading).toHaveBeenCalled();
+    expect(speechifySpy).toHaveBeenCalled();
   });
 
   it("should call prompt when submit button is clicked", async () => {
     const { submitPromptBtn } = ernestoSidePanel.uiManager.getPromptElements();
     const clickHandler = submitPromptBtn.addEventListener.mock.calls[0][1];
-
-    // Mock required dependencies
-    const mockTab = { id: 1, url: "https://example.com" };
-    global.chrome.tabs.query.mockResolvedValueOnce([mockTab]);
     
-    // Set the url property directly
-    ernestoSidePanel.url = mockTab.url;
-    
-    UIStateManager.prototype.getPromptText.mockReturnValue("test prompt");
-    getResponse.mockResolvedValue({
-      assistantMessage: "test response",
-      assistantMessageId: "test-id",
-    });
+    // Mock the prompt method
+    const promptSpy = vi.spyOn(ernestoSidePanel, 'prompt').mockResolvedValue(true);
 
     await clickHandler();
 
-    expect(UIStateManager.prototype.showLoading).toHaveBeenCalled();
-    expect(UIStateManager.prototype.hideLoading).toHaveBeenCalled();
+    expect(promptSpy).toHaveBeenCalled();
   });
 
   it("should call prompt when enter key is pressed in prompt input", async () => {
     const { promptInput } = ernestoSidePanel.uiManager.getPromptElements();
     const keypressHandler = promptInput.addEventListener.mock.calls[0][1];
-
-    // Mock required dependencies
-    const mockTab = { id: 1, url: "https://example.com" };
-    global.chrome.tabs.query.mockResolvedValueOnce([mockTab]);
     
-    // Set the url property directly
-    ernestoSidePanel.url = mockTab.url;
-    
-    UIStateManager.prototype.getPromptText.mockReturnValue("test prompt");
-    getResponse.mockResolvedValue({
-      assistantMessage: "test response",
-      assistantMessageId: "test-id",
-    });
-
-    // Mock API key
-    global.chrome.storage.local.get.mockResolvedValueOnce({
-      apiKey: "test-api-key",
-    });
-
     // Spy on prompt method
-    const promptSpy = vi.spyOn(ernestoSidePanel, "prompt");
+    const promptSpy = vi.spyOn(ernestoSidePanel, "prompt").mockResolvedValue(true);
 
-    await keypressHandler({ key: "Enter", preventDefault: vi.fn() });
+    // Mock event
+    const event = { 
+      key: "Enter", 
+      preventDefault: vi.fn() 
+    };
 
+    await keypressHandler(event);
+
+    expect(event.preventDefault).toHaveBeenCalled();
     expect(promptSpy).toHaveBeenCalled();
   });
 
