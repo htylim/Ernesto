@@ -115,19 +115,27 @@ export class ErnestoApp {
   }
 
   /**
+   * Open the sidepanel for a specific tab
+   * @param {number} tabId - ID of the tab to open the sidepanel for
+   * @returns {void}
+   */
+  openSidepanel(tabId) {
+    chrome.sidePanel.setOptions({
+      enabled: true,
+      path: "src/sidepanel/index.html",
+      tabId: tabId,
+    });
+    chrome.sidePanel.open({ tabId: tabId });
+  }
+
+  /**
    * Handle click on the extension icon
    * @param {Object} tab - Current tab information
    * @returns {void}
    */
   handleActionClick(tab) {
-    // this will open our sidepanel on the specific tab. 
-    // other tabs will not share or have this sidepanel
-    chrome.sidePanel.setOptions({
-      enabled: true,
-      path: "src/sidepanel/index.html",
-      tabId: tab.id,
-    });
-    chrome.sidePanel.open({ tabId: tab.id });
+    // Open sidepanel on the current tab
+    this.openSidepanel(tab.id);
   }
 
   /**
@@ -153,11 +161,12 @@ export class ErnestoApp {
   handleContextMenuClick(info, tab) {
     if (info.menuItemId === "openAndSummarize") {
       if (info.linkUrl) {
-        // Always open in a new tab in the background (not active)
-        chrome.tabs.create({ url: info.linkUrl, active: false });
-        
-        // Placeholder for summarization logic to be added later
-        console.log("Link opened in new tab. Summarization to be implemented.");
+        // Open in a new tab in the background
+        chrome.tabs.create({ url: info.linkUrl, active: false }, (newTab) => {
+          // Open the sidepanel in the newly created tab
+          this.openSidepanel(newTab.id);
+          console.log("Link opened in new tab with sidepanel opened for summarization.");
+        });
       }
     }
   }

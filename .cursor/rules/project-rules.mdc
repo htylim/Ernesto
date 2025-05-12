@@ -3,12 +3,9 @@ description:
 globs: 
 alwaysApply: true
 ---
-- Write this first thing in your response so I know that you read this set of rules: [📢 project-rules.mdc read]"
-
-## Project Context
-
-- Read **thoroughly** [README.md](mdc:README.md) and [ARCHITECTURE.md](mdc:ARCHITECTURE.md)
-- This is your memory of past decisions and changes. Keep both documents updated.
+- Write this first thing in your response so I know that you read this set of rules: [📢 project-rules.mdc read]
+- Read **thoroughly** @README.md and @ARCHITECTURE.md. It is your memory of past changes. Keep both documents updated.
+- Run `npm test` always if you changed code.
 
 ## Prompt solving rules
 

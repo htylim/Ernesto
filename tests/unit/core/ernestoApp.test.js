@@ -268,12 +268,12 @@ describe('ErnestoApp', () => {
       
       app.handleContextMenuClick(info, tab);
       
-      expect(chrome.tabs.create).toHaveBeenCalledWith({
-        url: 'https://example.com',
-        active: false
-      });
-      expect(consoleLogSpy).toHaveBeenCalledWith(
-        'Link opened in new tab. Summarization to be implemented.'
+      expect(chrome.tabs.create).toHaveBeenCalledWith(
+        {
+          url: 'https://example.com',
+          active: false
+        },
+        expect.any(Function)
       );
     });
     
@@ -301,6 +301,22 @@ describe('ErnestoApp', () => {
       
       expect(chrome.tabs.create).not.toHaveBeenCalled();
       expect(consoleLogSpy).not.toHaveBeenCalled();
+    });
+  });
+
+  // Add a new test block for the openSidepanel method
+  describe('sidepanel management', () => {
+    it('should open sidepanel for a specific tab', () => {
+      const tabId = 789;
+      
+      app.openSidepanel(tabId);
+      
+      expect(chrome.sidePanel.setOptions).toHaveBeenCalledWith({
+        enabled: true,
+        path: "src/sidepanel/index.html",
+        tabId: tabId,
+      });
+      expect(chrome.sidePanel.open).toHaveBeenCalledWith({ tabId: tabId });
     });
   });
 }); 

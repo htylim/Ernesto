@@ -105,7 +105,10 @@ describe('Background Script Context Menu Handling', () => {
 
     contextMenuCallback(mockInfo, mockTab);
 
-    expect(chrome.tabs.create).toHaveBeenCalledWith({ url: 'https://example.com/link', active: false });
+    expect(chrome.tabs.create).toHaveBeenCalledWith(
+      { url: 'https://example.com/link', active: false },
+      expect.any(Function)
+    );
     expect(chrome.tabs.update).not.toHaveBeenCalled();
   });
 
