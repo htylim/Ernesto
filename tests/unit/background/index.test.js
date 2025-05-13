@@ -68,7 +68,7 @@ describe("Background Service", () => {
 
     expect(chrome.sidePanel.setOptions).toHaveBeenCalledWith({
       enabled: true,
-      path: "src/sidepanel/index.html?tabId=123",
+      path: "src/sidepanel/index.html?tabId=123&summarize=false",
       tabId: 123,
     });
     expect(chrome.sidePanel.open).toHaveBeenCalledWith({ tabId: 123 });
@@ -102,6 +102,12 @@ describe('Background Script Context Menu Handling', () => {
       linkUrl: 'https://example.com/link'
     };
     const mockTab = { id: 1, url: 'https://example.com/current' };
+    const mockNewTab = { id: 456 };
+
+    // Mock the create callback function
+    chrome.tabs.create.mockImplementation((options, callback) => {
+      callback(mockNewTab);
+    });
 
     contextMenuCallback(mockInfo, mockTab);
 
@@ -109,6 +115,15 @@ describe('Background Script Context Menu Handling', () => {
       { url: 'https://example.com/link', active: false },
       expect.any(Function)
     );
+    
+    // Verify the sidepanel is opened with summarize=true
+    expect(chrome.sidePanel.setOptions).toHaveBeenCalledWith({
+      enabled: true,
+      path: "src/sidepanel/index.html?tabId=456&summarize=true",
+      tabId: 456,
+    });
+    expect(chrome.sidePanel.open).toHaveBeenCalledWith({ tabId: 456 });
+    
     expect(chrome.tabs.update).not.toHaveBeenCalled();
   });
 

@@ -54,6 +54,7 @@ export class ErnestoSidePanel {
     this.title = null;
     this.isLoading = false;
     this.loadingMessage = "";
+    this.summarizeOnOpenFlag = false; // Whether to automatically summarize on open
     
     this.setupEventListeners();
     this.initializePanel();
@@ -111,6 +112,7 @@ export class ErnestoSidePanel {
       // Get the tabId from the URL query parameter
       const urlParams = new URLSearchParams(window.location.search);
       const tabId = urlParams.get('tabId');
+      const summarize = urlParams.get('summarize');
       
       if (tabId) {
         this.tabId = parseInt(tabId, 10);
@@ -118,11 +120,52 @@ export class ErnestoSidePanel {
       } else {
         console.error("No tabId provided in URL parameters for ErnestoSidePanel");
       }
+      
+      await this.summarizeOnOpen(summarize)
+
     } catch (error) {
       console.error("Error initializing panel:", error);
     }
     
     await this.handleTabChange();
+  }
+
+  /**
+   * Handles the auto-summarize feature when opening a page
+   * @param {string} summarize - String 'true' or 'false' indicating whether to auto-summarize
+   * @returns {Promise<void>}
+   */
+  async summarizeOnOpen(summarize) {
+    // Set the flag to the action that we need to take. 
+    this.summarizeOnOpenFlag = summarize === 'true';
+
+    if (!this.summarizeOnOpenFlag)
+      return;  // nothing to do
+
+    
+    console.log("Triggering summarize-on-open for the current tab");
+
+    // check first if the tab has completed loading, if it did we will issue the 
+    // summarize() right now. If not, we will wait until that happens
+    const currentTab = await this.getCurrentTab(this.tabId);
+    if (currentTab.status === "complete") {
+      this.summarizeOnOpenFlag = false;  // we can turn this flag off now
+      this.summarize();
+    }
+    else {
+      // Create a named listener function so we can remove it later
+      const onTabUpdated = (tabId, changeInfo) => {
+        if (tabId === this.tabId && changeInfo.status === "complete") {
+          // Remove the listener to prevent it from being called again
+          chrome.tabs.onUpdated.removeListener(onTabUpdated);
+          this.summarizeOnOpenFlag = false;  // we can turn this off now
+          this.summarize();
+        }
+      };
+      
+      // Add the listener
+      chrome.tabs.onUpdated.addListener(onTabUpdated);
+    }
   }
 
   /**
@@ -153,7 +196,7 @@ export class ErnestoSidePanel {
         this.loadingMessage = "";
       }
 
-      this.refreshTab();
+      await this.refreshTab();
     } catch (error) {
       console.error("Error handling tab change:", error);
       this.uiManager.showTabUnavailable();

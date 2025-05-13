@@ -441,4 +441,72 @@ describe("ErnestoSidePanel", () => {
 
     expect(window.close).toHaveBeenCalled();
   });
+
+  // Add tests for the summarizeOnOpen functionality
+  it('should parse the summarize parameter from URL correctly', async () => {
+    // Reset tabId for this test
+    ernestoSidePanel.tabId = null;
+    
+    // Mock URL parameter with summarize=true
+    global.window.location.search = "?tabId=123&summarize=true";
+    
+    // Create a new instance to test initialization
+    const newInstance = new ErnestoSidePanel();
+    
+    // Skip the constructor's initializePanel call by directly calling it here
+    await newInstance.initializePanel();
+    
+    // Verify summarizeOnOpenFlag was set correctly
+    expect(newInstance.summarizeOnOpenFlag).toBe(true);
+  });
+  
+  it('should auto-summarize when summarizeOnOpenFlag is true and page is complete', async () => {
+    // Set up a completed tab
+    const completedTab = {
+      id: 123,
+      status: 'complete',
+      url: 'https://example.com',
+      title: 'Example Page'
+    };
+    
+    // Mock getCurrentTab to return the completed tab
+    vi.spyOn(ernestoSidePanel, 'getCurrentTab').mockResolvedValue(completedTab);
+    
+    // Create spy on summarize method
+    const summarizeSpy = vi.spyOn(ernestoSidePanel, 'summarize').mockResolvedValue(true);
+    
+    // Call the summarizeOnOpen method directly with true
+    await ernestoSidePanel.summarizeOnOpen('true');
+    
+    // Verify summarize was called and flag was reset
+    expect(summarizeSpy).toHaveBeenCalled();
+    expect(ernestoSidePanel.summarizeOnOpenFlag).toBe(false);
+  });
+  
+  it('should set up listener when summarizeOnOpenFlag is true but page is not complete', async () => {
+    // Set up a loading tab
+    const loadingTab = {
+      id: 123,
+      status: 'loading',
+      url: 'https://example.com',
+      title: 'Example Page'
+    };
+    
+    // Mock getCurrentTab to return the loading tab
+    vi.spyOn(ernestoSidePanel, 'getCurrentTab').mockResolvedValue(loadingTab);
+    
+    // Create spy on summarize method
+    const summarizeSpy = vi.spyOn(ernestoSidePanel, 'summarize').mockResolvedValue(true);
+    
+    // Spy on chrome.tabs.onUpdated.addListener
+    const addListenerSpy = vi.spyOn(chrome.tabs.onUpdated, 'addListener');
+    
+    // Call the summarizeOnOpen method directly with true
+    await ernestoSidePanel.summarizeOnOpen('true');
+    
+    // Verify that the listener was added but summarize wasn't called yet
+    expect(addListenerSpy).toHaveBeenCalled();
+    expect(summarizeSpy).not.toHaveBeenCalled();
+    expect(ernestoSidePanel.summarizeOnOpenFlag).toBe(true);
+  });
 });

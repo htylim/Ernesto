@@ -117,12 +117,13 @@ export class ErnestoApp {
   /**
    * Open the sidepanel for a specific tab
    * @param {number} tabId - ID of the tab to open the sidepanel for
+   * @param {boolean} [summarize=false] - Whether to automatically summarize the page on open
    * @returns {void}
    */
-  openSidePanel(tabId) {
+  openSidePanel(tabId, summarize = false) {
     chrome.sidePanel.setOptions({
       enabled: true,
-      path: "src/sidepanel/index.html?tabId=" + tabId,
+      path: "src/sidepanel/index.html?tabId=" + tabId + "&summarize=" + summarize,
       tabId: tabId,
     });
     chrome.sidePanel.open({ tabId: tabId });
@@ -163,8 +164,8 @@ export class ErnestoApp {
       if (info.linkUrl) {
         // Open in a new tab in the background
         chrome.tabs.create({ url: info.linkUrl, active: false }, (newTab) => {
-          // Open the sidepanel in the newly created tab
-          this.openSidePanel(newTab.id);
+          // Open the sidepanel in the newly created tab with summarize=true
+          this.openSidePanel(newTab.id, true);
           console.log("Link opened in new tab with sidepanel opened for summarization.");
         });
       }

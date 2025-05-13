@@ -3,18 +3,28 @@ description:
 globs: 
 alwaysApply: true
 ---
-- MANDATORY: Write this first thing in your response so I know that you read this set of rules: [📢 project-rules.mdc read]
+The following rules are all MANDATORY do not skip any:
 
-- MANDATORY: Read **thoroughly** @README.md and @ARCHITECTURE.md. It is your memory of past changes. Keep both documents updated.
+- [IMPORTANT] Before you start read **thoroughly** @README.md and @ARCHITECTURE.md. Contains important instructions + information about the project.
 
-- MANDATORY: Always run `npm test` when code is changed.
+- [IMPORTANT] If code changed update @README.md and @ARCHITECTURE.md
 
-- MANDATORY: Use Manifest V3
+- [IMPORTANT] If code changed run `npm test`
 
-- MANDATORY: Follow security best practices
+- Write this first thing in your response so I know that you read this set of rules: [📢 project-rules.mdc read]
 
-- MANDATORY: Optimize performance
+- Use Manifest V3
 
-- MANDATORY: Handle errors gracefully
+- Follow security best practices
 
-- MANDATORY: Focus on user experience
+- Optimize performance
+
+- Handle errors gracefully
+
+- Focus on user experience
+
+- [IMPORTANT] At the end of your turn run a self-check list: 
+  - Did I read all the documentation: [Yes/No]
+  - Did I run all tests: [Yes/No]
+  - Did I adhere to the coding guidelines: [Yes/No]
+  - Did I skip any rules: [Yes/No] 

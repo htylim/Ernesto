@@ -200,7 +200,7 @@ describe('ErnestoApp', () => {
       
       expect(chrome.sidePanel.setOptions).toHaveBeenCalledWith({
         enabled: true,
-        path: "src/sidepanel/index.html?tabId=123",
+        path: "src/sidepanel/index.html?tabId=123&summarize=false",
         tabId: 123,
       });
       expect(chrome.sidePanel.open).toHaveBeenCalledWith({ tabId: 123 });
@@ -313,7 +313,20 @@ describe('ErnestoApp', () => {
       
       expect(chrome.sidePanel.setOptions).toHaveBeenCalledWith({
         enabled: true,
-        path: "src/sidepanel/index.html?tabId=789",
+        path: "src/sidepanel/index.html?tabId=789&summarize=false",
+        tabId: tabId,
+      });
+      expect(chrome.sidePanel.open).toHaveBeenCalledWith({ tabId: tabId });
+    });
+
+    it('should open sidepanel with summarize flag set to true', () => {
+      const tabId = 789;
+      
+      app.openSidePanel(tabId, true);
+      
+      expect(chrome.sidePanel.setOptions).toHaveBeenCalledWith({
+        enabled: true,
+        path: "src/sidepanel/index.html?tabId=789&summarize=true",
         tabId: tabId,
       });
       expect(chrome.sidePanel.open).toHaveBeenCalledWith({ tabId: tabId });
