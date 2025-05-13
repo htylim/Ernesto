@@ -68,7 +68,7 @@ describe("Background Service", () => {
 
     expect(chrome.sidePanel.setOptions).toHaveBeenCalledWith({
       enabled: true,
-      path: "src/sidepanel/index.html",
+      path: "src/sidepanel/index.html?tabId=123",
       tabId: 123,
     });
     expect(chrome.sidePanel.open).toHaveBeenCalledWith({ tabId: 123 });

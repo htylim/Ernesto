@@ -3,39 +3,18 @@ description:
 globs: 
 alwaysApply: true
 ---
-- Write this first thing in your response so I know that you read this set of rules: [📢 project-rules.mdc read]
-- Read **thoroughly** @README.md and @ARCHITECTURE.md. It is your memory of past changes. Keep both documents updated.
-- Run `npm test` always if you changed code.
+- MANDATORY: Write this first thing in your response so I know that you read this set of rules: [📢 project-rules.mdc read]
 
-## Prompt solving rules
+- MANDATORY: Read **thoroughly** @README.md and @ARCHITECTURE.md. It is your memory of past changes. Keep both documents updated.
 
-- Plan your approach first writing it into a `TASKS.md` file
-- Break down large steps into smaller steps
-- Completed steps mark with ✅
-- Use a format like this:
+- MANDATORY: Always run `npm test` when code is changed.
 
-```
-# <short sentence description of the prompt>
-<larger description of the complex task that is needed to do>
-- [ ] step X
-    - ✅ sub-step X-a
-    - [ ] sub-step X-b
-- [ ] step Y
-- [ ] step Z
-```
-- Each step should include the implementation of a test to covers its logic, or be already covered by an already existing test.
-- Run `npm test` at the end of each step to ensure the step was implemented correctly. Keep working on the step if not.
+- MANDATORY: Use Manifest V3
 
-# Test rules
+- MANDATORY: Follow security best practices
 
-- Use Vitest
-- Follow this structure:
-  For a file like `src/common/crypto/cryptoUtils.js` we will use a test file named like this `tests/unit/common/crypto/crytoUtils.test.js`
+- MANDATORY: Optimize performance
 
-# Chrome Extension Specifics
+- MANDATORY: Handle errors gracefully
 
-- Use Manifest V3
-- Follow security best practices
-- Optimize performance
-- Handle errors gracefully
-- Focus on user experience
+- MANDATORY: Focus on user experience

@@ -119,10 +119,10 @@ export class ErnestoApp {
    * @param {number} tabId - ID of the tab to open the sidepanel for
    * @returns {void}
    */
-  openSidepanel(tabId) {
+  openSidePanel(tabId) {
     chrome.sidePanel.setOptions({
       enabled: true,
-      path: "src/sidepanel/index.html",
+      path: "src/sidepanel/index.html?tabId=" + tabId,
       tabId: tabId,
     });
     chrome.sidePanel.open({ tabId: tabId });
@@ -135,7 +135,7 @@ export class ErnestoApp {
    */
   handleActionClick(tab) {
     // Open sidepanel on the current tab
-    this.openSidepanel(tab.id);
+    this.openSidePanel(tab.id);
   }
 
   /**
@@ -164,7 +164,7 @@ export class ErnestoApp {
         // Open in a new tab in the background
         chrome.tabs.create({ url: info.linkUrl, active: false }, (newTab) => {
           // Open the sidepanel in the newly created tab
-          this.openSidepanel(newTab.id);
+          this.openSidePanel(newTab.id);
           console.log("Link opened in new tab with sidepanel opened for summarization.");
         });
       }

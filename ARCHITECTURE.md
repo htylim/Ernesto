@@ -2,7 +2,7 @@
 
 ```
 src/
-  ├── background/       # Service worker managing extension lifecycle events, side panel setup, background tasks, and theme migrations.
+  ├── background/       # Service worker managing extension lifecycle events, side panel setup, background tasks.
   ├── common/api/       # functions for calling APIs used in the extension 
   ├── common/cache/     # Storage caches for the extension use of chrome.storage.local
   ├── common/crypto/    # crypto utilities for sensitive data like API keys
@@ -54,12 +54,12 @@ Each context is independent of each other. Communication between them is async a
   - Central class that manages the extension's core functionality.
   - Responsible for cache management (clearing expired caches periodically).
   - Handles extension setup (sidepanel configuration, context menu creation).
-  - Sets up and manages event listeners (extension install, icon click, storage changes, context menu).
+  - Sets up and manages extension-wide event listeners (extension install, extension activation button click, storage changes, context menu).
   - Acts as the orchestrator for the extension's background processes.
 
 - **ErnestoSidePanel** (`src/core/ernestoSidePanel.js`):
-  - Manages the side panel UI and functionality.
-  - Handles user interactions, prompts, and display of results.
+  - Manages side panel UI and functionality.
+  - Handles user interactions and display of sidepanel content (summaries, prompts, audios, etc).
 
 # Tech Stack
 
@@ -93,7 +93,7 @@ Each context is independent of each other. Communication between them is async a
     - gets this est file: `tests/unit/common/crypto/crytoUtils.test.js`
 
 
-# Testing Conventions
+# Testing
 
 - **Framework:** [Vitest](https://vitest.dev/) (with jsdom environment)
 - **Test File Location:**
@@ -104,10 +104,9 @@ Each context is independent of each other. Communication between them is async a
   - Test suites and cases use descriptive names.
 - **Setup:**
   - Global mocks and polyfills for browser APIs (like `chrome`) should be defined in `vitest.setup.js`.
-- **Practices:**
+- **Mandatory Practices:**
   - Each new feature or logic change must include or update a corresponding test.
   - Run `npm test` after each step/change to ensure all tests pass.
-  - Remove unused code (do not comment out).
   - Use mocks for browser and crypto APIs as needed.
   - ⚠️ **Prefer global mocks from `vitest.setup.js`. Avoid redefining global objects (e.g., `global.chrome`) directly in individual test files, as this can override the comprehensive global setup and lead to hard-to-debug errors. If a test requires specific behavior from a mocked function, use `vi.spyOn` or `vi.fn().mockImplementationOnce()` on the globally mocked object for that test case.**
   - ⚠️ **When working with existing test files, check for local redefinitions of global mocks (e.g., a local `global.chrome = ...`). If found, consider refactoring to remove the local mock and rely on the global setup in `vitest.setup.js`, ensuring the global mock covers the necessary functionality.**

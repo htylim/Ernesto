@@ -112,6 +112,9 @@ describe("ErnestoSidePanel", () => {
     // Mock window.close
     global.window = {
       close: vi.fn(),
+      location: {
+        search: "?tabId=123"
+      }
     };
 
     // Create instance
@@ -127,9 +130,12 @@ describe("ErnestoSidePanel", () => {
     expect(AudioController).toHaveBeenCalled();
   });
   
-  it("should initialize tabId from active tab", async () => {
+  it("should initialize tabId from URL parameter", async () => {
     // Reset tabId for this test
     ernestoSidePanel.tabId = null;
+    
+    // Mock URL parameter
+    global.window.location.search = "?tabId=123";
     
     // Create a new instance to test initialization
     const newInstance = new ErnestoSidePanel();
@@ -138,11 +144,27 @@ describe("ErnestoSidePanel", () => {
     // This allows us to control the timing and verify the result
     await newInstance.initializePanel();
     
-    expect(chrome.tabs.query).toHaveBeenCalledWith({
-      active: true,
-      currentWindow: true
-    });
-    expect(newInstance.tabId).toBe(mockTabId);
+    expect(newInstance.tabId).toBe(123);
+  });
+
+  it("should log error when no tabId is provided in URL", async () => {
+    // Reset tabId for this test
+    ernestoSidePanel.tabId = null;
+    
+    // Mock empty URL parameter
+    global.window.location.search = "";
+    
+    // Create a new instance to test initialization
+    const newInstance = new ErnestoSidePanel();
+    
+    // Spy on console.error
+    const consoleErrorSpy = vi.spyOn(console, 'error');
+    
+    // Skip the constructor's initializePanel call by directly calling it here
+    await newInstance.initializePanel();
+    
+    // Verify error was logged
+    expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining("No tabId provided in URL parameters"));
   });
 
   it("should handle tab change with valid tab", async () => {

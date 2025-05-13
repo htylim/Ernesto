@@ -107,16 +107,16 @@ export class ErnestoSidePanel {
    * @returns {Promise<void>}
    */
   async initializePanel() {
-    // Get the tabId from the active tab at initialization time
     try {
-      const [tab] = await chrome.tabs.query({
-        active: true,
-        currentWindow: true,
-      });
+      // Get the tabId from the URL query parameter
+      const urlParams = new URLSearchParams(window.location.search);
+      const tabId = urlParams.get('tabId');
       
-      if (tab) {
-        this.tabId = tab.id;
-        console.log(`ErnestoSidePanel initialized for tab ${this.tabId}`);
+      if (tabId) {
+        this.tabId = parseInt(tabId, 10);
+        console.log(`ErnestoSidePanel initialized for tab ${this.tabId} from URL parameter`);
+      } else {
+        console.error("No tabId provided in URL parameters for ErnestoSidePanel");
       }
     } catch (error) {
       console.error("Error initializing panel:", error);

@@ -200,7 +200,7 @@ describe('ErnestoApp', () => {
       
       expect(chrome.sidePanel.setOptions).toHaveBeenCalledWith({
         enabled: true,
-        path: "src/sidepanel/index.html",
+        path: "src/sidepanel/index.html?tabId=123",
         tabId: 123,
       });
       expect(chrome.sidePanel.open).toHaveBeenCalledWith({ tabId: 123 });
@@ -304,16 +304,16 @@ describe('ErnestoApp', () => {
     });
   });
 
-  // Add a new test block for the openSidepanel method
+  // Add a new test block for the openSidePanel method
   describe('sidepanel management', () => {
     it('should open sidepanel for a specific tab', () => {
       const tabId = 789;
       
-      app.openSidepanel(tabId);
+      app.openSidePanel(tabId);
       
       expect(chrome.sidePanel.setOptions).toHaveBeenCalledWith({
         enabled: true,
-        path: "src/sidepanel/index.html",
+        path: "src/sidepanel/index.html?tabId=789",
         tabId: tabId,
       });
       expect(chrome.sidePanel.open).toHaveBeenCalledWith({ tabId: tabId });
