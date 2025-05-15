@@ -19,12 +19,12 @@ The API server provides backend services for the Ernesto platform, handling:
 
 ## API Endpoints
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/articles` | GET | Retrieve articles with optional filtering |
-| `/api/topics` | GET | Get topics ranked by coverage |
-| `/api/articles/:id` | GET | Get article details and content |
-| `/api/auth` | POST | User authentication |
+| Endpoint            | Method | Description 
+|---------------------|--------|-------------------------------------------
+| `/api/articles`     | GET    | Retrieve articles with optional filtering 
+| `/api/topics`       | GET    | Get topics ranked by coverage 
+| `/api/articles/:id` | GET    | Get article details and content 
+| `/api/auth`         | POST   | User authentication 
 
 ## Development Setup
 
