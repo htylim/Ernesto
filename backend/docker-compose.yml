@@ -10,8 +10,20 @@ services:
       - ./api/.env
     depends_on:
       - db
-    command: flask run --host=0.0.0.0 --port=8080
 
+  api-dev:
+    build: ./api
+    ports:
+      - "8081:8081"
+    volumes:
+      # mount monorepo's root folder (we need access to the .git folder)
+      - ..:/ernesto:cached
+    env_file:
+      - ./api/.env
+    depends_on:
+      - db
+    # Overrides default command so things don't shut down after the process ends.
+    command: sleep infinity
   db:
     image: postgres:14
     volumes:
