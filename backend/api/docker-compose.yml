@@ -1,25 +1,25 @@
 name: ernesto
 services:
   api:
-    build: ./api
+    build: .
     ports:
       - "8080:8080"
     volumes:
-      - ./api:/api
+      - .:/api
     env_file:
-      - ./api/.env
+      - .env
     depends_on:
       - db
 
   api-dev:
-    build: ./api
+    build: .
     ports:
       - "8081:8081"
     volumes:
       # mount monorepo's root folder (we need access to the .git folder)
-      - ..:/ernesto:cached
+      - ../..:/ernesto:cached
     env_file:
-      - ./api/.env
+      - .env
     depends_on:
       - db
     # Overrides default command so things don't shut down after the process ends.
