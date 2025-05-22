@@ -117,6 +117,19 @@ The Chrome extension will guide the user through the following primary flow:
 8.  (Future) User requests a full summary for a topic, extension calls `/api/topics/{topic_id}/summary`.
 </context>
 
+# Project Setup and Development Environment
+
+A placeholder project for the Ernesto API has already been created. The development environment is set up as a **DEV Container**, with the project's root located at `/ernesto/backend/api` inside the container. The repository includes a `devcontainer` configuration, `docker-compose`, and `Dockerfile` to facilitate consistent local development and deployment.
+
+Some initial scaffolding exists in the `api/` directory (such as `requirements.txt` and some Python files). However, this is **not a template to be strictly followed**—we are free to reorganize, refactor, or replace any part of the structure to better suit the needs of the project and to align with best practices.
+
+**Development Guidelines:**
+- We are encouraged to make any modifications deemed necessary to improve the codebase, architecture, or workflow.
+- All development should follow modern coding and web development best practices, with particular attention to Flask and SQLAlchemy conventions for their respective parts of the codebase.
+- As implementation progresses, we should create unit tests to verify all new functionality and changes.
+- The goal is to maintain a clean, maintainable, and well-tested codebase that adheres to industry standards.
+- We must proactively remove unused code and files, avoiding the accumulation of "dead" code that is no longer in use.
+
 <PRD>
 # Technical Architecture
 

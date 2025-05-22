@@ -22,8 +22,8 @@ services:
       - .env
     depends_on:
       - db
-    # Overrides default command so things don't shut down after the process ends.
-    command: sleep infinity
+    # Install dev requirements and start an interactive shell
+    command: /bin/bash -c "pip install -r requirements.dev.txt && (exec bash || sleep infinity)"
   db:
     image: postgres:14
     volumes:
