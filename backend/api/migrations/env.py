@@ -6,7 +6,7 @@ from alembic import context
 from sqlalchemy import engine_from_config, pool
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-from app import db
+from app import create_app, db
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -23,8 +23,6 @@ if config.config_file_name is not None:
 # target_metadata = mymodel.Base.metadata
 # ---
 # Ensure Flask app context is pushed so Flask-SQLAlchemy models are registered with metadata
-from app import create_app
-
 app = create_app()
 app.app_context().push()
 # ---

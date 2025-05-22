@@ -1,17 +1,20 @@
 from functools import wraps
+
 from flask import jsonify, request
+
 from .models import ApiClient
 
 
 def require_api_key(f):
     """Decorator to require API key for routes.
-    
+
     Args:
         f (function): The view function to decorate.
-        
+
     Returns:
         function: The decorated function.
     """
+
     @wraps(f)
     def decorated_function(*args, **kwargs):
         api_key = request.headers.get("X-API-Key")
@@ -25,4 +28,4 @@ def require_api_key(f):
 
         return f(*args, **kwargs)
 
-    return decorated_function 
+    return decorated_function
