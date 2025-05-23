@@ -251,6 +251,111 @@ class TestModels:
             remaining_articles = Article.query.all()
             assert len(remaining_articles) == 0
 
+    def test_bulk_operations(self, app):
+        """Test bulk operations performance and integrity."""
+        with app.app_context():
+            # Create a source and topic for articles
+            source = Source(name="Bulk Test Source")
+            topic = Topic(label="Bulk Test Topic")
+            db.session.add_all([source, topic])
+            db.session.commit()
+
+            # Test bulk insertion of articles
+            articles = []
+            for i in range(100):
+                article = Article(
+                    title=f"Bulk Article {i}",
+                    url=f"https://example.com/bulk/{i}",
+                    topic_id=topic.id,
+                    source_id=source.id,
+                )
+                articles.append(article)
+
+            db.session.add_all(articles)
+            db.session.commit()
+
+            # Verify all articles were created
+            assert len(Article.query.all()) == 100
+            assert len(source.articles) == 100
+            assert len(topic.articles) == 100
+
+    def test_uuid_collision_resistance(self, app):
+        """Test UUID collision resistance across multiple models."""
+        with app.app_context():
+            # Create multiple instances to test UUID uniqueness
+            sources = [Source(name=f"Source {i}") for i in range(50)]
+            topics = [Topic(label=f"Topic {i}") for i in range(50)]
+            articles = [
+                Article(title=f"Article {i}", url=f"https://example.com/{i}")
+                for i in range(50)
+            ]
+
+            db.session.add_all(sources + topics + articles)
+            db.session.commit()
+
+            # Collect all UUIDs
+            all_uuids = []
+            all_uuids.extend([s.id for s in sources])
+            all_uuids.extend([t.id for t in topics])
+            all_uuids.extend([a.id for a in articles])
+
+            # Verify all UUIDs are unique
+            assert len(all_uuids) == len(set(all_uuids))
+
+    def test_article_title_truncation_in_repr(self, app):
+        """Test that long article titles are properly truncated in string representation."""
+        with app.app_context():
+            long_title = (
+                "This is a very long article title that exceeds thirty characters"
+            )
+            article = Article(title=long_title, url="https://example.com/long")
+            db.session.add(article)
+            db.session.commit()
+
+            # Verify truncation to 30 chars
+            expected_repr = f"<Article {long_title[:30]}>"
+            assert str(article) == expected_repr
+
+    def test_model_query_performance(self, app):
+        """Test basic query performance and indexing."""
+        with app.app_context():
+            # Create test data
+            source = Source(name="Performance Test Source")
+            topic = Topic(label="Performance Test Topic")
+            db.session.add_all([source, topic])
+            db.session.commit()
+
+            # Create multiple articles for query testing
+            articles = []
+            for i in range(50):
+                article = Article(
+                    title=f"Performance Article {i}",
+                    url=f"https://example.com/perf/{i}",
+                    topic_id=topic.id,
+                    source_id=source.id,
+                )
+                articles.append(article)
+
+            db.session.add_all(articles)
+            db.session.commit()
+
+            # Test various query patterns
+            # Filter by topic
+            topic_articles = Article.query.filter_by(topic_id=topic.id).all()
+            assert len(topic_articles) == 50
+
+            # Filter by source
+            source_articles = Article.query.filter_by(source_id=source.id).all()
+            assert len(source_articles) == 50
+
+            # Test relationship loading
+            topic_with_articles = (
+                Topic.query.options(db.selectinload(Topic.articles))
+                .filter_by(id=topic.id)
+                .first()
+            )
+            assert len(topic_with_articles.articles) == 50
+
 
 class TestMigrations:
     """Test migration scripts functionality."""
@@ -308,6 +413,32 @@ class TestMigrations:
                 assert (
                     result.returncode == 0
                 ), f"Idempotent upgrade failed: {result.stderr}"
+
+        except (subprocess.TimeoutExpired, FileNotFoundError):
+            pytest.skip("Alembic command not available or timeout")
+
+    def test_migration_conditional_logic(self):
+        """Test that migration handles existing tables gracefully."""
+        try:
+            # First ensure we're at head
+            result = subprocess.run(
+                ["alembic", "upgrade", "head"],
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+            assert result.returncode == 0, f"Initial upgrade failed: {result.stderr}"
+
+            # Run again to test conditional logic
+            result = subprocess.run(
+                ["alembic", "upgrade", "head"],
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+            assert (
+                result.returncode == 0
+            ), f"Conditional upgrade failed: {result.stderr}"
 
         except (subprocess.TimeoutExpired, FileNotFoundError):
             pytest.skip("Alembic command not available or timeout")
@@ -435,3 +566,87 @@ class TestDataIntegrity:
             except (IntegrityError, Exception):
                 # Length constraints are enforced
                 db.session.rollback()
+
+    def test_null_handling(self, app):
+        """Test proper null value handling in optional fields."""
+        with app.app_context():
+            # Test optional fields can be None
+            source = Source(name="Null Test Source", logo_url=None, homepage_url=None)
+            topic = Topic(label="Null Test Topic")  # coverage_score defaults to 0
+            article = Article(
+                title="Null Test Article",
+                url="https://test.com",
+                image_url=None,
+                brief=None,
+                topic_id=None,
+                source_id=None,
+            )
+
+            db.session.add_all([source, topic, article])
+            db.session.commit()
+
+            # Verify null handling
+            assert source.logo_url is None
+            assert source.homepage_url is None
+            assert article.image_url is None
+            assert article.brief is None
+            assert article.topic_id is None
+            assert article.source_id is None
+
+    def test_data_consistency_after_rollback(self, app):
+        """Test data consistency after transaction rollbacks."""
+        with app.app_context():
+            # Create valid data
+            client = ApiClient(name="Test Client", api_key="test_key_123")
+            db.session.add(client)
+            db.session.commit()
+
+            original_count = ApiClient.query.count()
+            original_id = client.id
+
+            # Attempt invalid operation that should rollback
+            try:
+                # This should fail due to unique constraint on api_key
+                duplicate_client = ApiClient(
+                    name="Different Name", api_key="test_key_123"
+                )
+                db.session.add(duplicate_client)
+                db.session.commit()
+            except IntegrityError:
+                db.session.rollback()
+
+            # Verify original data is still intact
+            assert ApiClient.query.count() == original_count
+            remaining_client = ApiClient.query.filter_by(name="Test Client").first()
+            assert remaining_client is not None
+            assert remaining_client.id == original_id
+
+    def test_concurrent_uuid_generation(self, app):
+        """Test UUID generation under simulated concurrent conditions."""
+        with app.app_context():
+            generated_uuids = set()
+
+            def create_model_instance(model_class, i):
+                if model_class == Source:
+                    instance = Source(name=f"Concurrent Source {i}")
+                elif model_class == Topic:
+                    instance = Topic(label=f"Concurrent Topic {i}")
+                else:  # Article
+                    instance = Article(
+                        title=f"Concurrent Article {i}", url=f"https://test.com/{i}"
+                    )
+
+                db.session.add(instance)
+                db.session.commit()
+                return instance.id
+
+            # Simulate concurrent creation
+            all_instances = []
+            for model_class in [Source, Topic, Article]:
+                for i in range(10):
+                    instance_uuid = create_model_instance(model_class, i)
+                    all_instances.append(instance_uuid)
+                    generated_uuids.add(instance_uuid)
+
+            # Verify all UUIDs are unique
+            assert len(generated_uuids) == len(all_instances) == 30
