@@ -1,0 +1,138 @@
+---
+description: How to interact with the PostgreSQL database
+globs: 
+alwaysApply: false
+---
+# Database Operations
+
+This rule documents how to interact with the PostgreSQL database for the Ernesto project.
+
+## **Database Connection Configuration**
+
+Based on [docker-compose.yml](mdc:docker-compose.yml), the database connection details are:
+
+- **Host:** `db` (Docker service name)
+- **Port:** `5432` 
+- **User:** `postgres`
+- **Password:** `postgres`
+- **Database:** `ernesto`
+
+## **PostgreSQL Commands (psql)**
+
+### **Basic Connection**
+```bash
+# Connect to PostgreSQL server
+PGPASSWORD=postgres psql -h db -U postgres
+
+# Connect to specific database
+PGPASSWORD=postgres psql -h db -U postgres -d ernesto
+```
+
+### **Execute Single Commands**
+```bash
+# Run SQL command directly
+PGPASSWORD=postgres psql -h db -U postgres -c "COMMAND_HERE"
+
+# Run SQL on specific database
+PGPASSWORD=postgres psql -h db -U postgres -d ernesto -c "COMMAND_HERE"
+```
+
+### **Common Database Operations**
+```bash
+# List all tables
+PGPASSWORD=postgres psql -h db -U postgres -d ernesto -c "\dt"
+
+# Drop database (handle active connections first)
+PGPASSWORD=postgres psql -h db -U postgres -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = 'ernesto' AND pid <> pg_backend_pid();"
+PGPASSWORD=postgres psql -h db -U postgres -c "DROP DATABASE ernesto;"
+
+# Create database
+PGPASSWORD=postgres psql -h db -U postgres -c "CREATE DATABASE ernesto;"
+```
+
+## **Database Migrations**
+
+The project uses **Alembic** for database migrations.
+
+### **Migration Files Structure**
+- Migration config: [alembic.ini](mdc:alembic.ini)
+- Migration scripts: `migrations/versions/`
+- Migration environment: `migrations/env.py`
+
+### **Running Migrations**
+```bash
+# Apply all pending migrations
+alembic upgrade head
+
+# Check current migration status
+alembic current
+
+# Show migration history
+alembic history
+
+# Downgrade one migration
+alembic downgrade -1
+```
+
+### **Creating New Migrations**
+```bash
+# Auto-generate migration from model changes
+alembic revision --autogenerate -m "Description of changes"
+
+# Create empty migration
+alembic revision -m "Description of changes"
+```
+
+## **Database Reset Process**
+
+Complete database reset and schema recreation:
+
+```bash
+# 1. Terminate active connections
+PGPASSWORD=postgres psql -h db -U postgres -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = 'ernesto' AND pid <> pg_backend_pid();"
+
+# 2. Drop existing database
+PGPASSWORD=postgres psql -h db -U postgres -c "DROP DATABASE ernesto;"
+
+# 3. Create fresh database
+PGPASSWORD=postgres psql -h db -U postgres -c "CREATE DATABASE ernesto;"
+
+# 4. Apply all migrations
+alembic upgrade head
+
+# 5. Verify tables created
+PGPASSWORD=postgres psql -h db -U postgres -d ernesto -c "\dt"
+```
+
+## **Expected Schema Tables**
+
+After successful migration, the database should contain:
+- `alembic_version` - Migration tracking
+- `api_clients` - API client management
+- `articles` - Article storage
+- `sources` - Content sources
+- `topics` - Topic categorization
+
+## **Troubleshooting**
+
+### **Connection Issues**
+- Ensure the `db` container is running: `docker-compose ps`
+- Check if database service is healthy: `docker-compose logs db`
+
+### **Migration Issues**
+- Check Alembic config: [alembic.ini](mdc:alembic.ini)
+- Review migration files in `migrations/versions/`
+- Verify database connection in `migrations/env.py`
+
+### **Active Connection Errors**
+If you get "database is being accessed by other users":
+1. First terminate connections using the `pg_terminate_backend` command above
+2. Then proceed with the database operation
+
+## **Best Practices**
+
+- **Always use PGPASSWORD** environment variable to avoid password prompts
+- **Terminate connections** before dropping databases
+- **Verify migrations** with `\dt` after applying
+- **Backup data** before major schema changes
+- **Test migrations** in development before production
