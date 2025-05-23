@@ -52,12 +52,13 @@ PGPASSWORD=postgres psql -h db -U postgres -c "CREATE DATABASE ernesto;"
 
 ## **Database Migrations**
 
-The project uses **Alembic** for database migrations.
+The project uses **Alembic** for database migrations with smart conditional logic.
 
 ### **Migration Files Structure**
 - Migration config: [alembic.ini](mdc:alembic.ini)
 - Migration scripts: `migrations/versions/`
 - Migration environment: `migrations/env.py`
+- Current migration: `migrations/versions/c9b5bd0bd55f_initial_database_schema.py`
 
 ### **Running Migrations**
 ```bash
@@ -72,6 +73,9 @@ alembic history
 
 # Downgrade one migration
 alembic downgrade -1
+
+# Verify migration state (recommended after changes)
+alembic check
 ```
 
 ### **Creating New Migrations**
@@ -81,6 +85,62 @@ alembic revision --autogenerate -m "Description of changes"
 
 # Create empty migration
 alembic revision -m "Description of changes"
+```
+
+### **Migration Features**
+Our migrations include:
+- **Conditional Logic**: Checks for existing tables/indexes before creation
+- **Idempotent Operations**: Can be run multiple times safely
+- **Graceful Handling**: Works with tables created by Flask's `db.create_all()`
+- **Performance Indexes**: Automatic creation of foreign key indexes
+
+## **Database Testing**
+
+### **Test Suite Location**
+- Model and migration tests: [tests/test_models_and_migrations.py](mdc:tests/test_models_and_migrations.py)
+
+### **Running Database Tests**
+```bash
+# Run all database-related tests
+python -m pytest tests/test_models_and_migrations.py -v
+
+# Run specific test categories
+python -m pytest tests/test_models_and_migrations.py::TestModels -v
+python -m pytest tests/test_models_and_migrations.py::TestMigrations -v
+python -m pytest tests/test_models_and_migrations.py::TestDataIntegrity -v
+```
+
+### **Test Coverage**
+The test suite validates:
+- ✅ Model creation and validation
+- ✅ Unique constraints and data integrity
+- ✅ UUID generation and uniqueness
+- ✅ Timestamp defaults and updates
+- ✅ Foreign key relationships
+- ✅ Cascade deletion behavior
+- ✅ Migration upgrade/downgrade cycles
+- ✅ Migration idempotency
+
+## **Migration Verification**
+
+### **Complete Migration Test**
+```bash
+# Test full migration cycle
+alembic downgrade base    # Remove schema
+alembic upgrade head      # Recreate schema
+alembic check            # Verify synchronization
+```
+
+### **Verify Database State**
+```bash
+# Check migration status
+alembic current
+
+# List created tables
+PGPASSWORD=postgres psql -h db -U postgres -d ernesto -c "\dt"
+
+# Verify table relationships
+PGPASSWORD=postgres psql -h db -U postgres -d ernesto -c "\d+ articles"
 ```
 
 ## **Database Reset Process**
@@ -102,16 +162,24 @@ alembic upgrade head
 
 # 5. Verify tables created
 PGPASSWORD=postgres psql -h db -U postgres -d ernesto -c "\dt"
+
+# 6. Run tests to verify integrity
+python -m pytest tests/test_models_and_migrations.py -v
 ```
 
 ## **Expected Schema Tables**
 
 After successful migration, the database should contain:
 - `alembic_version` - Migration tracking
-- `api_clients` - API client management
-- `articles` - Article storage
-- `sources` - Content sources
-- `topics` - Topic categorization
+- `api_clients` - API client management (Integer ID, unique constraints)
+- `sources` - Content sources (UUID primary key, relationships to articles)
+- `topics` - Topic categorization (UUID primary key, timestamps, relationships to articles)
+- `articles` - Article storage (UUID primary key, foreign keys to sources/topics, performance indexes)
+
+### **Table Relationships**
+- `articles.source_id` → `sources.id` (with index)
+- `articles.topic_id` → `topics.id` (with index)
+- Cascade deletion: Deleting source/topic removes related articles
 
 ## **Troubleshooting**
 
@@ -123,16 +191,42 @@ After successful migration, the database should contain:
 - Check Alembic config: [alembic.ini](mdc:alembic.ini)
 - Review migration files in `migrations/versions/`
 - Verify database connection in `migrations/env.py`
+- Run migration tests: `python -m pytest tests/test_models_and_migrations.py::TestMigrations -v`
 
 ### **Active Connection Errors**
 If you get "database is being accessed by other users":
 1. First terminate connections using the `pg_terminate_backend` command above
 2. Then proceed with the database operation
 
+### **Migration State Issues**
+If migrations seem out of sync:
+```bash
+# Reset migration state (use carefully!)
+alembic stamp base    # Mark as no migrations applied
+alembic stamp head    # Mark as all migrations applied
+
+# Verify with conditional migrations
+alembic upgrade head  # Our migrations handle existing tables
+```
+
 ## **Best Practices**
 
 - **Always use PGPASSWORD** environment variable to avoid password prompts
 - **Terminate connections** before dropping databases
-- **Verify migrations** with `\dt` after applying
+- **Verify migrations** with `\dt` and `alembic check` after applying
+- **Run tests** after schema changes: `python -m pytest tests/test_models_and_migrations.py -v`
 - **Backup data** before major schema changes
 - **Test migrations** in development before production
+- **Use conditional migrations** for production safety (already implemented)
+- **Verify foreign key indexes** exist for performance
+
+## **Model Development**
+
+### **Creating New Models**
+When adding new models to [app/models.py](mdc:app/models.py):
+1. Define the model with proper relationships
+2. Generate migration: `alembic revision --autogenerate -m "Add new model"`
+3. Review generated migration for accuracy
+4. Add tests to [tests/test_models_and_migrations.py](mdc:tests/test_models_and_migrations.py)
+5. Run tests: `python -m pytest tests/test_models_and_migrations.py -v`
+6. Apply migration: `alembic upgrade head`
