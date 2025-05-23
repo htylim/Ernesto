@@ -36,6 +36,23 @@ target_metadata = db.Model.metadata
 # Note: UUID columns are supported via sqlalchemy.dialects.postgresql.UUID
 
 
+def get_database_url():
+    """Get database URL using best practices:
+
+    1. First check ALEMBIC_DATABASE_URL (testing override)
+    2. Use Flask app's configuration (same as application)
+    3. This ensures consistency and avoids hardcoded credentials
+    """
+    # Priority 1: Environment override for testing
+    alembic_url = os.getenv("ALEMBIC_DATABASE_URL")
+    if alembic_url:
+        return alembic_url
+
+    # Priority 2: Use Flask app's database configuration
+    # This ensures Alembic uses the exact same configuration as your app
+    return app.config["SQLALCHEMY_DATABASE_URI"]
+
+
 def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode.
 
@@ -48,8 +65,8 @@ def run_migrations_offline() -> None:
     script output.
 
     """
-    # Allow environment variable to override database URL for testing
-    url = os.getenv("ALEMBIC_DATABASE_URL") or config.get_main_option("sqlalchemy.url")
+    # Get database URL using best practices (no hardcoded values)
+    url = get_database_url()
     context.configure(
         url=url,
         target_metadata=target_metadata,
@@ -68,13 +85,12 @@ def run_migrations_online() -> None:
     and associate a connection with the context.
 
     """
-    # Get configuration section and allow environment override
+    # Get configuration section from alembic.ini
     configuration = config.get_section(config.config_ini_section, {})
 
-    # Override database URL if environment variable is set (for testing)
-    alembic_db_url = os.getenv("ALEMBIC_DATABASE_URL")
-    if alembic_db_url:
-        configuration["sqlalchemy.url"] = alembic_db_url
+    # Set database URL from Flask app configuration (best practices)
+    database_url = get_database_url()
+    configuration["sqlalchemy.url"] = database_url
 
     connectable = engine_from_config(
         configuration,
