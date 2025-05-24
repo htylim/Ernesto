@@ -27,9 +27,7 @@ def create_app(test_config=None):
     if test_config is None:
         # Configure the SQLAlchemy connection to PostgreSQL
         # The format is: postgresql://username:password@host:port/database
-        app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv(
-            "DATABASE_URI", "postgresql://postgres:postgres@db:5432/ernesto"
-        )
+        app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URI")
 
         # Disable modification tracking to improve performance
         app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = (
