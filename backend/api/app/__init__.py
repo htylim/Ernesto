@@ -2,6 +2,7 @@ import os
 
 from dotenv import load_dotenv
 from flask import Flask
+from flask_alembic import Alembic
 from flask_sqlalchemy import SQLAlchemy
 
 # Load environment variables from .env file
@@ -9,6 +10,9 @@ load_dotenv()
 
 # Initialize SQLAlchemy instance
 db = SQLAlchemy()
+
+# Initialize Flask-Alembic instance
+alembic = Alembic()
 
 
 def create_app(test_config=None):
@@ -39,6 +43,12 @@ def create_app(test_config=None):
 
     # Initialize the app with the SQLAlchemy extension
     db.init_app(app)
+
+    # Import models to ensure they're registered with SQLAlchemy before Alembic initialization
+    from app import models  # noqa: F401
+
+    # Initialize Flask-Alembic with the app
+    alembic.init_app(app)
 
     # Import models and routes here to avoid circular imports
     from app.routes import register_routes
