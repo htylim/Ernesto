@@ -11,7 +11,9 @@ from sqlalchemy import inspect
 from sqlalchemy.exc import IntegrityError
 
 from app import db
-from app.models import Article, Source, Topic
+from app.models.article import Article
+from app.models.source import Source
+from app.models.topic import Topic
 
 
 class TestArticle:

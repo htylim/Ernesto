@@ -10,7 +10,7 @@ from sqlalchemy import inspect
 from sqlalchemy.exc import IntegrityError
 
 from app import db
-from app.models import Source
+from app.models.source import Source
 
 
 class TestSource:

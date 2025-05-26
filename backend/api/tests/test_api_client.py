@@ -8,7 +8,7 @@ from sqlalchemy import inspect
 from sqlalchemy.exc import IntegrityError
 
 from app import db
-from app.models import ApiClient
+from app.models.api_client import ApiClient
 
 
 class TestApiClient:
