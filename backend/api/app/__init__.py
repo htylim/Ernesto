@@ -56,8 +56,4 @@ def create_app(test_config=None):
     # Register routes
     register_routes(app)
 
-    # Create the database and tables
-    with app.app_context():
-        db.create_all()
-
     return app
