@@ -13,7 +13,7 @@ The API server provides backend services for the Ernesto platform, handling:
 ## Tech Stack
 
 - **Framework**: Flask
-- **ORM**: SQLAlchemy
+- **ORM**: SQLAlchemy with Flask-Alembic for migrations
 - **Database**: PostgreSQL
 - **Authentication**: JWT
 
@@ -37,37 +37,70 @@ The API server provides backend services for the Ernesto platform, handling:
 ### Installation
 
 1. Create and activate a virtual environment:
-   ```
+   ```bash
    python -m venv venv
    source venv/bin/activate  # On Windows: venv\Scripts\activate
    ```
 
 2. Install dependencies:
-   ```
+   ```bash
    pip install -r requirements.txt
    ```
 
 3. Set up environment variables:
-   ```
+   ```bash
    cp .env.example .env
    # Edit .env with your database credentials and API keys
    ```
 
 4. Initialize the database:
-   ```
+   ```bash
    flask db upgrade
    ```
 
 5. Start the development server:
-   ```
+   ```bash
    flask run
    ```
+
+## Database Management
+
+This project uses Flask-Alembic for database migrations. Common commands:
+
+```bash
+# Apply all pending migrations
+flask db upgrade
+
+# Rollback to previous migration
+flask db downgrade
+
+# Generate a new migration after model changes
+flask db revision "Description of changes"
+
+# Check current migration status
+flask db current
+
+# View migration history
+flask db history
+```
+
+For more detailed database operations, see the [database operations guide](.cursor/rules/database.mdc).
 
 ## Testing
 
 Run tests with:
-```
+```bash
 pytest
+```
+
+Run migration tests specifically:
+```bash
+pytest tests/test_migrations.py -v
+```
+
+Run model tests:
+```bash
+pytest tests/models/ -v
 ```
 
 ## Related Components
