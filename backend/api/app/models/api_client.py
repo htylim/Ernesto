@@ -2,7 +2,7 @@
 ApiClient model for storing API clients and their access tokens.
 """
 
-from .. import db
+from app import db
 
 
 class ApiClient(db.Model):

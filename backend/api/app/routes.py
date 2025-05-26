@@ -1,6 +1,6 @@
 from flask import jsonify
 
-from .auth import require_api_key
+from app.auth import require_api_key
 
 
 def register_routes(app):

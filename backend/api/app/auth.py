@@ -2,7 +2,7 @@ from functools import wraps
 
 from flask import jsonify, request
 
-from .models import ApiClient
+from app.models import ApiClient
 
 
 def require_api_key(f):
