@@ -1,20 +1,14 @@
 {
   "meta": {
-    "generatedAt": "2025-05-22T14:57:49.116Z",
-    "tasksAnalyzed": 15,
+    "generatedAt": "2025-05-24T18:28:00.519Z",
+    "tasksAnalyzed": 1,
+    "totalTasks": 15,
+    "analysisCount": 15,
     "thresholdScore": 5,
     "projectName": "Taskmaster",
     "usedResearch": true
   },
   "complexityAnalysis": [
-    {
-      "taskId": 1,
-      "taskTitle": "Setup Database Models and Migrations",
-      "complexityScore": 6,
-      "recommendedSubtasks": 4,
-      "expansionPrompt": "Break down the 'Setup Database Models and Migrations' task into subtasks covering: 1) Creating SQLAlchemy models for Articles, Sources, and Topics, 2) Setting up Alembic configuration, 3) Creating initial migration scripts, and 4) Writing tests for models and migrations.",
-      "reasoning": "This task involves creating multiple database models with relationships, setting up migration tools, and ensuring proper testing. The complexity comes from defining proper relationships between models, setting up UUID fields, and configuring Alembic correctly. While the code is provided, implementation requires understanding of SQLAlchemy, Alembic, and database design principles."
-    },
     {
       "taskId": 2,
       "taskTitle": "Setup Database Connection and Configuration",
@@ -38,14 +32,6 @@
       "recommendedSubtasks": 4,
       "expansionPrompt": "Break down the 'Create Flask Application Structure' task into subtasks covering: 1) Setting up the Flask application factory pattern, 2) Configuring database integration with Flask-SQLAlchemy, 3) Implementing blueprint registration, and 4) Creating the WSGI entry point for production deployment.",
       "reasoning": "This task involves setting up the core application structure using the factory pattern, which requires understanding Flask's application context and configuration system. The developer needs to integrate multiple components (database, migrations, blueprints) correctly. The complexity comes from ensuring proper initialization order and configuration."
-    },
-    {
-      "taskId": 5,
-      "taskTitle": "Implement Authentication Endpoints",
-      "complexityScore": 6,
-      "recommendedSubtasks": 3,
-      "expansionPrompt": "Break down the 'Implement Authentication Endpoints' task into subtasks covering: 1) Creating the token endpoint for OAuth 2.0 Client Credentials flow, 2) Implementing request validation for authentication requests, and 3) Building the authentication middleware for protected routes.",
-      "reasoning": "This task builds on the authentication system to create the actual API endpoints. It requires handling different request formats (JSON and form-encoded), validating inputs, and implementing the OAuth 2.0 flow correctly. The complexity comes from ensuring security and following OAuth standards properly."
     },
     {
       "taskId": 6,
@@ -126,6 +112,22 @@
       "recommendedSubtasks": 4,
       "expansionPrompt": "Break down the 'Prepare for Deployment' task into subtasks covering: 1) Creating a production-ready Dockerfile, 2) Setting up Cloud Build configuration for CI/CD, 3) Configuring Cloud Run deployment, and 4) Documenting the deployment process.",
       "reasoning": "This task involves preparing the application for production deployment on Google Cloud. The complexity comes from configuring Docker correctly, setting up CI/CD pipelines, and ensuring proper environment configuration for production. Deployment configuration requires understanding of cloud services, containerization, and security considerations."
+    },
+    {
+      "taskId": 5,
+      "taskTitle": "Replace Raw Alembic with Flask-Alembic",
+      "complexityScore": 7,
+      "recommendedSubtasks": 3,
+      "expansionPrompt": "Break down the process of replacing raw Alembic configurations with Flask-Alembic into detailed steps, including updating configurations, refactoring code, and modifying tests.",
+      "reasoning": "Integrating Flask-Alembic involves multiple steps: installing the package, configuring it within the Flask application, refactoring existing migration scripts, and updating tests to ensure compatibility. Each step requires careful attention to detail to maintain the integrity of the database schema and application functionality."
+    },
+    {
+      "taskId": 1,
+      "taskTitle": "Setup Database Models and Migrations",
+      "complexityScore": 5,
+      "recommendedSubtasks": 3,
+      "expansionPrompt": "Break down this task with a focus on setup database models and migrations.",
+      "reasoning": "Automatically added due to missing analysis in AI response."
     }
   ]
 }

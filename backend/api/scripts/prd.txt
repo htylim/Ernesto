@@ -141,7 +141,7 @@ Some initial scaffolding exists in the `api/` directory (such as `requirements.t
 5.  **Google Cloud Services (GCS)**: Hosting platform for the API (e.g., Cloud Run preferably, or App Engine) and the worker functions (Lambda).
 
 ## Data Models (Database Schema)
-The database schema will include tables for `Articles`, `Sources`, and `Topics` as detailed in the "Core Features > Entities" section, managed using SQLAlchemy (ORM) and Alembic (migrations). Key relationships:
+The database schema will include tables for `Articles`, `Sources`, and `Topics` as detailed in the "Core Features > Entities" section, managed using SQLAlchemy (ORM) and Flask-Alembic (migrations). Key relationships:
 -   `Articles.topic_id` -> `Topics.id` (Many-to-One)
 -   `Articles.source_id` -> `Sources.id` (Many-to-One)
 The `Topics.coverage_score` will be the count of articles associated with it.
@@ -172,7 +172,7 @@ The `Topics.coverage_score` will be the count of articles associated with it.
 ## MVP (Minimum Viable Product) Requirements
 The goal is to deliver a functional API that allows the Chrome extension to authenticate itself and retrieve topics and articles for a given date range. Each phase will conclude with unit testing of the implemented components.
 1.  **Phase 1: Core Setup & Authentication**
-    *   Finalize DB schema for `Sources`, `Topics`, `Articles` (using SQLAlchemy and Alembic for migrations).
+    *   Finalize DB schema for `Sources`, `Topics`, `Articles` (using SQLAlchemy and Flask-Alembic for migrations).
     *   Implement Client Credentials store/management on the API side.
     *   Implement `/api/auth/token` endpoint with JWT generation for client credentials.
     *   Setup basic protected route middleware checking for JWT.

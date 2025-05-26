@@ -11,6 +11,8 @@ This document provides a detailed reference for interacting with Taskmaster, cov
 
 **Important:** Several MCP tools involve AI processing... The AI-powered tools include `parse_prd`, `analyze_project_complexity`, `update_subtask`, `update_task`, `update`, `expand_all`, `expand_task`, and `add_task`.
 
+**Important:** The project is in a DEV Container but the MCP Server runs on the host system. The project's root in the host system is `/users/hernantylim/dev/Ernesto/backend/api`. On the DEV container is `/ernesto/backend/api`
+
 ---
 
 ## Initialization & Setup

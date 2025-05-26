@@ -3,8 +3,6 @@ Tests for database models and migration scripts.
 This module tests model validation, relationships, constraints, and migration functionality.
 """
 
-import os
-import subprocess
 import uuid
 from datetime import datetime
 
@@ -13,11 +11,6 @@ from sqlalchemy.exc import IntegrityError
 
 from app import create_app, db
 from app.models import ApiClient, Article, Source, Topic
-from tests.utils import (
-    cleanup_test_database,
-    create_test_database,
-    parse_database_url_for_testing,
-)
 
 
 class TestModels:
@@ -361,135 +354,6 @@ class TestModels:
                 .first()
             )
             assert len(topic_with_articles.articles) == 50
-
-
-class TestMigrations:
-    """Test migration scripts functionality.
-
-    IMPORTANT: These tests use an isolated test database to ensure production data safety.
-    The test_database fixture automatically:
-    1. Derives database connection parameters from DATABASE_URI environment variable
-    2. Creates a fresh test database (original_name + '_test' suffix)
-    3. Sets ALEMBIC_DATABASE_URL environment variable for migration isolation
-    4. Runs migration tests in complete isolation
-    5. Cleans up test database and environment variables
-
-    This approach:
-    - Maintains configuration consistency with the application
-    - Prevents any risk to the production database
-    - Adapts to different database configurations automatically
-    - Uses the same credentials and connection settings as the app
-    """
-
-    @pytest.fixture(scope="class")
-    def test_database(self):
-        """Set up and tear down test database for migration tests."""
-        try:
-            # Parse database URL and get connection parameters
-            test_db_url, connection_params = parse_database_url_for_testing()
-
-            # Set environment variable for Alembic to use test database
-            os.environ["ALEMBIC_DATABASE_URL"] = test_db_url
-
-            # Create test database
-            create_test_database(connection_params)
-
-            yield test_db_url
-
-        except ValueError as e:
-            pytest.skip(str(e))
-        except RuntimeError as e:
-            pytest.skip(str(e))
-        finally:
-            # Clean up test database and environment variable
-            if "connection_params" in locals():
-                cleanup_test_database(connection_params)
-
-            if "ALEMBIC_DATABASE_URL" in os.environ:
-                del os.environ["ALEMBIC_DATABASE_URL"]
-
-    def test_migration_upgrade_downgrade(self, test_database):
-        """Test that migrations can be applied and rolled back correctly."""
-        # This test requires a real database connection
-        # Skip if running in CI without database
-        try:
-            # Test migration commands
-            result = subprocess.run(
-                ["alembic", "current"], capture_output=True, text=True, timeout=30
-            )
-            if result.returncode != 0:
-                pytest.skip("Alembic not properly configured")
-
-            # Test downgrade
-            result = subprocess.run(
-                ["alembic", "downgrade", "base"],
-                capture_output=True,
-                text=True,
-                timeout=30,
-            )
-            assert result.returncode == 0, f"Downgrade failed: {result.stderr}"
-
-            # Test upgrade
-            result = subprocess.run(
-                ["alembic", "upgrade", "head"],
-                capture_output=True,
-                text=True,
-                timeout=30,
-            )
-            assert result.returncode == 0, f"Upgrade failed: {result.stderr}"
-
-            # Test check
-            result = subprocess.run(
-                ["alembic", "check"], capture_output=True, text=True, timeout=30
-            )
-            assert result.returncode == 0, f"Check failed: {result.stderr}"
-
-        except (subprocess.TimeoutExpired, FileNotFoundError):
-            pytest.skip("Alembic command not available or timeout")
-
-    def test_migration_idempotency(self, test_database):
-        """Test that migrations are idempotent (can be run multiple times safely)."""
-        try:
-            # Run upgrade twice to test idempotency
-            for _ in range(2):
-                result = subprocess.run(
-                    ["alembic", "upgrade", "head"],
-                    capture_output=True,
-                    text=True,
-                    timeout=30,
-                )
-                assert (
-                    result.returncode == 0
-                ), f"Idempotent upgrade failed: {result.stderr}"
-
-        except (subprocess.TimeoutExpired, FileNotFoundError):
-            pytest.skip("Alembic command not available or timeout")
-
-    def test_migration_conditional_logic(self, test_database):
-        """Test that migration handles existing tables gracefully."""
-        try:
-            # First ensure we're at head
-            result = subprocess.run(
-                ["alembic", "upgrade", "head"],
-                capture_output=True,
-                text=True,
-                timeout=30,
-            )
-            assert result.returncode == 0, f"Initial upgrade failed: {result.stderr}"
-
-            # Run again to test conditional logic
-            result = subprocess.run(
-                ["alembic", "upgrade", "head"],
-                capture_output=True,
-                text=True,
-                timeout=30,
-            )
-            assert (
-                result.returncode == 0
-            ), f"Conditional upgrade failed: {result.stderr}"
-
-        except (subprocess.TimeoutExpired, FileNotFoundError):
-            pytest.skip("Alembic command not available or timeout")
 
 
 class TestDataIntegrity:
