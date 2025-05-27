@@ -50,6 +50,11 @@ def create_app(test_config=None):
     # Initialize Flask-Alembic with the app
     alembic.init_app(app)
 
+    # Configure logging based on environment
+    from app.logging_config import configure_logging
+
+    configure_logging(app)
+
     # Import and register error handlers
     from app.error_handlers import register_error_handlers
 
