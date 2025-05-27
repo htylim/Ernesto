@@ -50,6 +50,11 @@ def create_app(test_config=None):
     # Initialize Flask-Alembic with the app
     alembic.init_app(app)
 
+    # Import and register error handlers
+    from app.error_handlers import register_error_handlers
+
+    register_error_handlers(app)
+
     # Import models and routes here to avoid circular imports
     from app.routes import register_routes
 
