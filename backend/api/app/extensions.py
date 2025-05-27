@@ -6,6 +6,7 @@ following the application factory pattern best practices.
 """
 
 from flask_alembic import Alembic
+from flask_marshmallow import Marshmallow
 from flask_sqlalchemy import SQLAlchemy
 
 # Initialize SQLAlchemy instance
@@ -15,6 +16,10 @@ db = SQLAlchemy()
 # Initialize Flask-Alembic instance
 # This handles database migrations and schema management
 alembic = Alembic()
+
+# Initialize Flask-Marshmallow instance
+# This handles serialization/deserialization of SQLAlchemy models
+ma = Marshmallow()
 
 
 def init_extensions(app):
@@ -29,6 +34,10 @@ def init_extensions(app):
     # Initialize SQLAlchemy with the app
     # This must be done before importing models or initializing Alembic
     db.init_app(app)
+
+    # Initialize Flask-Marshmallow with the app
+    # This must be done after SQLAlchemy initialization
+    ma.init_app(app)
 
     # Import models to ensure they're registered with SQLAlchemy
     # This is done here to avoid circular imports and ensure proper registration
