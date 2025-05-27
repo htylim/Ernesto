@@ -8,7 +8,7 @@ from datetime import datetime
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
-from app import db
+from app.extensions import db
 
 
 class Topic(db.Model):

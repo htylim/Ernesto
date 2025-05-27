@@ -8,11 +8,13 @@ import sys
 
 from dotenv import load_dotenv
 
-from app import ApiClient, app, db
+from app import ApiClient, create_app
+from app.extensions import db
 
 
 def generate_key(client_name):
     """Generate an API key for a client."""
+    app = create_app()
     with app.app_context():
         # Check if client already exists
         existing_client = ApiClient.query.filter_by(name=client_name).first()

@@ -1,5 +1,5 @@
 """
-Tests for Source model.
+Tests for the Source model.
 This module tests Source model validation, constraints, and data integrity.
 """
 
@@ -9,8 +9,8 @@ import pytest
 from sqlalchemy import inspect
 from sqlalchemy.exc import IntegrityError
 
-from app import db
-from app.models.source import Source
+from app.extensions import db
+from app.models.source import Source as SourceModel
 
 
 class TestSource:
@@ -19,7 +19,7 @@ class TestSource:
     def test_source_model(self, app):
         """Test Source model creation and validation."""
         with app.app_context():
-            source = Source(
+            source = SourceModel(
                 name="Test News Source",
                 logo_url="https://example.com/logo.png",
                 homepage_url="https://example.com",
@@ -38,7 +38,7 @@ class TestSource:
         """Test Source model default values and UUID generation."""
         with app.app_context():
             # Test with minimal required fields
-            source = Source(name="Minimal Source")
+            source = SourceModel(name="Minimal Source")
             db.session.add(source)
             db.session.commit()
 
@@ -67,7 +67,7 @@ class TestSource:
             # Test missing required fields
             with pytest.raises((IntegrityError, ValueError)):
                 # Missing name for Source
-                source = Source()
+                source = SourceModel()
                 db.session.add(source)
                 db.session.commit()
 
@@ -78,7 +78,7 @@ class TestSource:
         with app.app_context():
             # Test source name length constraints
             long_name = "a" * 256  # Assuming reasonable length limit
-            source = Source(name=long_name)
+            source = SourceModel(name=long_name)
             db.session.add(source)
 
             # This should work or raise an error depending on database constraints
@@ -95,7 +95,9 @@ class TestSource:
         """Test proper null value handling in Source optional fields."""
         with app.app_context():
             # Test optional fields can be None
-            source = Source(name="Null Test Source", logo_url=None, homepage_url=None)
+            source = SourceModel(
+                name="Null Test Source", logo_url=None, homepage_url=None
+            )
             db.session.add(source)
             db.session.commit()
 
@@ -107,25 +109,25 @@ class TestSource:
         """Test Source data consistency after transaction rollbacks."""
         with app.app_context():
             # Create valid data
-            source = Source(name="Test Source")
+            source = SourceModel(name="Test Source")
             db.session.add(source)
             db.session.commit()
 
-            original_count = Source.query.count()
+            original_count = SourceModel.query.count()
             original_id = source.id
 
             # Attempt invalid operation that should rollback
             try:
                 # This might fail due to constraints
-                invalid_source = Source(name=None)  # Invalid name
+                invalid_source = SourceModel(name=None)  # Invalid name
                 db.session.add(invalid_source)
                 db.session.commit()
             except (IntegrityError, Exception):
                 db.session.rollback()
 
             # Verify original data is still intact
-            assert Source.query.count() == original_count
-            remaining_source = Source.query.filter_by(name="Test Source").first()
+            assert SourceModel.query.count() == original_count
+            remaining_source = SourceModel.query.filter_by(name="Test Source").first()
             assert remaining_source is not None
             assert remaining_source.id == original_id
 
@@ -135,14 +137,14 @@ class TestSource:
             # Test bulk insertion of sources
             sources = []
             for i in range(50):
-                source = Source(name=f"Bulk Source {i}")
+                source = SourceModel(name=f"Bulk Source {i}")
                 sources.append(source)
 
             db.session.add_all(sources)
             db.session.commit()
 
             # Verify all sources were created
-            assert Source.query.count() == 50
+            assert SourceModel.query.count() == 50
 
     def test_source_query_performance(self, app):
         """Test basic query performance for Source."""
@@ -150,7 +152,7 @@ class TestSource:
             # Create test data
             sources = []
             for i in range(50):
-                source = Source(
+                source = SourceModel(
                     name=f"Performance Source {i}",
                     is_enabled=(i % 2 == 0),  # Alternate enabled/disabled
                 )
@@ -161,11 +163,13 @@ class TestSource:
 
             # Test various query patterns
             # Filter by name
-            name_sources = Source.query.filter_by(name="Performance Source 25").all()
+            name_sources = SourceModel.query.filter_by(
+                name="Performance Source 25"
+            ).all()
             assert len(name_sources) == 1
 
             # Filter by is_enabled
-            enabled_sources = Source.query.filter_by(is_enabled=True).all()
+            enabled_sources = SourceModel.query.filter_by(is_enabled=True).all()
             assert len(enabled_sources) == 25
 
     def test_source_foreign_key_constraints(self, app):

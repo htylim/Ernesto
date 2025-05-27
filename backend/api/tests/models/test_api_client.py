@@ -1,5 +1,5 @@
 """
-Tests for ApiClient model.
+Tests for the ApiClient model.
 This module tests ApiClient model validation, constraints, and data integrity.
 """
 
@@ -7,8 +7,8 @@ import pytest
 from sqlalchemy import inspect
 from sqlalchemy.exc import IntegrityError
 
-from app import db
-from app.models.api_client import ApiClient
+from app import ApiClient
+from app.extensions import db
 
 
 class TestApiClient:

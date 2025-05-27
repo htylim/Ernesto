@@ -10,10 +10,8 @@ import pytest
 from sqlalchemy import inspect
 from sqlalchemy.exc import IntegrityError
 
-from app import db
-from app.models.article import Article
-from app.models.source import Source
-from app.models.topic import Topic
+from app import Article, Source, Topic
+from app.extensions import db
 
 
 class TestArticle:

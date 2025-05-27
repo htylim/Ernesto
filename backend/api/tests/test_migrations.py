@@ -5,7 +5,7 @@ This module tests migration operations like upgrade, downgrade, and migration de
 
 from sqlalchemy import inspect
 
-from app import alembic, db
+from app.extensions import alembic, db
 
 
 class TestMigrations:

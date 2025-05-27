@@ -1,0 +1,58 @@
+"""Flask extensions initialization module.
+
+This module centralizes the initialization of all Flask extensions used in the application.
+Extensions are initialized here without being bound to any specific app instance,
+following the application factory pattern best practices.
+"""
+
+from flask_alembic import Alembic
+from flask_sqlalchemy import SQLAlchemy
+
+# Initialize SQLAlchemy instance
+# This creates the extension instance without binding it to any Flask app
+db = SQLAlchemy()
+
+# Initialize Flask-Alembic instance
+# This handles database migrations and schema management
+alembic = Alembic()
+
+
+def init_extensions(app):
+    """Initialize all Flask extensions with the given app instance.
+
+    This function should be called from the application factory to bind
+    all extensions to the Flask app instance.
+
+    Args:
+        app (Flask): The Flask application instance to bind extensions to.
+    """
+    # Initialize SQLAlchemy with the app
+    # This must be done before importing models or initializing Alembic
+    db.init_app(app)
+
+    # Import models to ensure they're registered with SQLAlchemy
+    # This is done here to avoid circular imports and ensure proper registration
+    from app import models  # noqa: F401
+
+    # Initialize Flask-Alembic with the app
+    # This must be done after SQLAlchemy initialization and model imports
+    alembic.init_app(app)
+
+
+def configure_extensions(app):
+    """Configure extensions with app-specific settings.
+
+    This function handles any additional configuration that extensions
+    might need beyond basic initialization.
+
+    Args:
+        app (Flask): The Flask application instance.
+    """
+    # Configure SQLAlchemy settings
+    # These can be overridden by app configuration
+    if not app.config.get("SQLALCHEMY_DATABASE_URI"):
+        app.logger.warning("SQLALCHEMY_DATABASE_URI not configured")
+
+    if not app.config.get("SQLALCHEMY_TRACK_MODIFICATIONS"):
+        # Default to False for better performance
+        app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
