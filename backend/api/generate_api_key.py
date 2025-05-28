@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""
-CLI script for generating API keys for clients.
+"""CLI script for generating API keys for clients.
+
 Usage: python generate_api_key.py <client_name>
 """
 
@@ -12,7 +12,7 @@ from app import ApiClient, create_app
 from app.extensions import db
 
 
-def generate_key(client_name):
+def generate_key(client_name: str) -> int:
     """Generate an API key for a client."""
     app = create_app()
     with app.app_context():
@@ -37,8 +37,8 @@ def generate_key(client_name):
         return 0
 
 
-def main():
-    """Main entry point for the script."""
+def main() -> int:
+    """Generate API key for the specified client."""
     # Load environment variables
     load_dotenv()
 

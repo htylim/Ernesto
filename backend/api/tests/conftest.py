@@ -1,15 +1,14 @@
-"""
-Shared test fixtures for all test modules.
-"""
+"""Shared test fixtures for all test modules."""
 
 import pytest
+from flask import Flask
 
 from app import create_app
 from app.extensions import db
 
 
 @pytest.fixture
-def app():
+def app() -> Flask:
     """Create a test Flask application with in-memory database."""
     test_config = {
         "SQLALCHEMY_DATABASE_URI": "sqlite:///:memory:",
@@ -25,7 +24,7 @@ def app():
 
 
 @pytest.fixture
-def empty_db_app():
+def empty_db_app() -> Flask:
     """Create a test Flask application with empty database for migration testing.
 
     This fixture creates an app with an empty database (no tables created)
