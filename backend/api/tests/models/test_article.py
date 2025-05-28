@@ -1,10 +1,11 @@
-"""
-Tests for Article model.
+"""Tests for Article model.
+
 This module tests Article model validation, constraints, relationships, and data integrity.
 """
 
 import uuid
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 import pytest
 from sqlalchemy import inspect
@@ -13,11 +14,14 @@ from sqlalchemy.exc import IntegrityError
 from app import Article, Source, Topic
 from app.extensions import db
 
+if TYPE_CHECKING:
+    from flask import Flask
+
 
 class TestArticle:
     """Test Article model for validation, constraints, relationships, and data integrity."""
 
-    def test_article_model(self, app):
+    def test_article_model(self, app: "Flask") -> None:
         """Test Article model creation and validation."""
         with app.app_context():
             # Create related objects
@@ -44,7 +48,7 @@ class TestArticle:
             assert isinstance(article.added_at, datetime)
             assert str(article) == "<Article Test Article Title>"
 
-    def test_article_without_relationships(self, app):
+    def test_article_without_relationships(self, app: "Flask") -> None:
         """Test Article model can be created without topic/source relationships and UUID generation."""
         with app.app_context():
             article = Article(
@@ -59,7 +63,7 @@ class TestArticle:
             assert article.source_id is None
             assert isinstance(article.added_at, datetime)
 
-    def test_article_title_truncation_in_repr(self, app):
+    def test_article_title_truncation_in_repr(self, app: "Flask") -> None:
         """Test that long article titles are properly truncated in string representation."""
         with app.app_context():
             long_title = (
@@ -73,7 +77,7 @@ class TestArticle:
             expected_repr = f"<Article {long_title[:30]}>"
             assert str(article) == expected_repr
 
-    def test_article_model_relationships(self, app):
+    def test_article_model_relationships(self, app: "Flask") -> None:
         """Test relationships between Article and other models."""
         with app.app_context():
             # Create related objects
@@ -106,7 +110,7 @@ class TestArticle:
             assert article2.source == source
             assert article2.topic == topic
 
-    def test_article_cascade_deletion(self, app):
+    def test_article_cascade_deletion(self, app: "Flask") -> None:
         """Test cascade deletion behavior for Article relationships."""
         with app.app_context():
             source = Source(name="Test Source")
@@ -131,7 +135,7 @@ class TestArticle:
             remaining_articles = Article.query.all()
             assert len(remaining_articles) == 0
 
-    def test_article_foreign_key_relationships(self, app):
+    def test_article_foreign_key_relationships(self, app: "Flask") -> None:
         """Test that Article foreign key relationships are properly defined."""
         with app.app_context():
             inspector = inspect(db.engine)
@@ -144,7 +148,7 @@ class TestArticle:
             assert "topics" in fk_tables
             assert "sources" in fk_tables
 
-    def test_article_database_schema(self, app):
+    def test_article_database_schema(self, app: "Flask") -> None:
         """Test that Article database schema matches model definition."""
         with app.app_context():
             inspector = inspect(db.engine)
@@ -162,7 +166,7 @@ class TestArticle:
             assert "source_id" in articles_columns
             assert "added_at" in articles_columns
 
-    def test_article_required_fields(self, app):
+    def test_article_required_fields(self, app: "Flask") -> None:
         """Test that required fields are properly enforced for Article."""
         with app.app_context():
             # Test missing required fields
@@ -174,7 +178,7 @@ class TestArticle:
 
             db.session.rollback()
 
-    def test_article_string_length_constraints(self, app):
+    def test_article_string_length_constraints(self, app: "Flask") -> None:
         """Test string length constraints for Article."""
         with app.app_context():
             # Test article title length constraints
@@ -192,7 +196,7 @@ class TestArticle:
                 # Length constraints are enforced
                 db.session.rollback()
 
-    def test_article_null_handling(self, app):
+    def test_article_null_handling(self, app: "Flask") -> None:
         """Test proper null value handling in Article optional fields."""
         with app.app_context():
             # Test optional fields can be None
@@ -213,7 +217,7 @@ class TestArticle:
             assert article.topic_id is None
             assert article.source_id is None
 
-    def test_article_foreign_key_constraints_enforcement(self, app):
+    def test_article_foreign_key_constraints_enforcement(self, app: "Flask") -> None:
         """Test foreign key constraints are properly enforced for Article."""
         with app.app_context():
             # Try to create article with non-existent foreign keys
@@ -238,7 +242,7 @@ class TestArticle:
                 # FK constraints are enforced (PostgreSQL)
                 db.session.rollback()
 
-    def test_article_data_consistency_after_rollback(self, app):
+    def test_article_data_consistency_after_rollback(self, app: "Flask") -> None:
         """Test Article data consistency after transaction rollbacks."""
         with app.app_context():
             # Create valid data
@@ -266,7 +270,7 @@ class TestArticle:
             assert remaining_article is not None
             assert remaining_article.id == original_id
 
-    def test_article_bulk_operations(self, app):
+    def test_article_bulk_operations(self, app: "Flask") -> None:
         """Test bulk operations performance and integrity for Article."""
         with app.app_context():
             # Create a source and topic for articles
@@ -294,7 +298,7 @@ class TestArticle:
             assert len(source.articles) == 100
             assert len(topic.articles) == 100
 
-    def test_article_query_performance(self, app):
+    def test_article_query_performance(self, app: "Flask") -> None:
         """Test basic query performance for Article."""
         with app.app_context():
             # Create test data

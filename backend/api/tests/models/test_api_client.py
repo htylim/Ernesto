@@ -1,7 +1,9 @@
-"""
-Tests for the ApiClient model.
+"""Tests for the ApiClient model.
+
 This module tests ApiClient model validation, constraints, and data integrity.
 """
+
+from typing import TYPE_CHECKING
 
 import pytest
 from sqlalchemy import inspect
@@ -10,11 +12,14 @@ from sqlalchemy.exc import IntegrityError
 from app import ApiClient
 from app.extensions import db
 
+if TYPE_CHECKING:
+    from flask import Flask
+
 
 class TestApiClient:
     """Test ApiClient model for validation, constraints, and data integrity."""
 
-    def test_api_client_model(self, app):
+    def test_api_client_model(self, app: "Flask") -> None:
         """Test ApiClient model creation and validation."""
         with app.app_context():
             # Test valid ApiClient creation
@@ -34,7 +39,7 @@ class TestApiClient:
             # Test string representation
             assert str(client) == "<ApiClient test_client>"
 
-    def test_api_client_defaults(self, app):
+    def test_api_client_defaults(self, app: "Flask") -> None:
         """Test ApiClient model default values."""
         with app.app_context():
             # Test with minimal required fields
@@ -46,7 +51,7 @@ class TestApiClient:
             assert client.is_active is True  # Should default to True
             assert client.created_at is not None  # Should be auto-set
 
-    def test_api_client_unique_constraints(self, app):
+    def test_api_client_unique_constraints(self, app: "Flask") -> None:
         """Test ApiClient unique constraints for name and api_key."""
         with app.app_context():
             # Create first client
@@ -70,7 +75,7 @@ class TestApiClient:
 
             db.session.rollback()
 
-    def test_api_client_database_schema(self, app):
+    def test_api_client_database_schema(self, app: "Flask") -> None:
         """Test that ApiClient database schema matches model definition."""
         with app.app_context():
             inspector = inspect(db.engine)
@@ -85,7 +90,7 @@ class TestApiClient:
             assert "is_active" in api_clients_columns
             assert "created_at" in api_clients_columns
 
-    def test_api_client_id_generation(self, app):
+    def test_api_client_id_generation(self, app: "Flask") -> None:
         """Test that integer IDs are properly generated for ApiClient."""
         with app.app_context():
             client = ApiClient(name="ID Test Client", api_key="test_key")
@@ -96,7 +101,7 @@ class TestApiClient:
             assert client.id is not None
             assert isinstance(client.id, int)  # ApiClient uses integer ID
 
-    def test_api_client_required_fields(self, app):
+    def test_api_client_required_fields(self, app: "Flask") -> None:
         """Test that required fields are properly enforced for ApiClient."""
         with app.app_context():
             # Test missing required fields
@@ -108,7 +113,7 @@ class TestApiClient:
 
             db.session.rollback()
 
-    def test_api_client_string_length_constraints(self, app):
+    def test_api_client_string_length_constraints(self, app: "Flask") -> None:
         """Test string length constraints for ApiClient."""
         with app.app_context():
             # Test API client name length (100 chars max)
@@ -126,7 +131,7 @@ class TestApiClient:
                 # Length constraints are enforced
                 db.session.rollback()
 
-    def test_api_client_null_handling(self, app):
+    def test_api_client_null_handling(self, app: "Flask") -> None:
         """Test proper null value handling in ApiClient optional fields."""
         with app.app_context():
             # Test that required fields cannot be None
@@ -138,7 +143,7 @@ class TestApiClient:
             assert client.name is not None
             assert client.api_key is not None
 
-    def test_api_client_data_consistency_after_rollback(self, app):
+    def test_api_client_data_consistency_after_rollback(self, app: "Flask") -> None:
         """Test ApiClient data consistency after transaction rollbacks."""
         with app.app_context():
             # Create valid data
@@ -166,7 +171,7 @@ class TestApiClient:
             assert remaining_client is not None
             assert remaining_client.id == original_id
 
-    def test_api_client_concurrent_creation(self, app):
+    def test_api_client_concurrent_creation(self, app: "Flask") -> None:
         """Test ApiClient creation under simulated concurrent conditions."""
         with app.app_context():
             generated_ids = set()
@@ -181,7 +186,7 @@ class TestApiClient:
             # Verify all IDs are unique
             assert len(generated_ids) == 10
 
-    def test_api_client_bulk_operations(self, app):
+    def test_api_client_bulk_operations(self, app: "Flask") -> None:
         """Test bulk operations performance and integrity for ApiClient."""
         with app.app_context():
             # Test bulk insertion of clients
@@ -199,7 +204,7 @@ class TestApiClient:
             # Verify all clients were created
             assert ApiClient.query.count() == 50
 
-    def test_api_client_query_performance(self, app):
+    def test_api_client_query_performance(self, app: "Flask") -> None:
         """Test basic query performance for ApiClient."""
         with app.app_context():
             # Create test data
@@ -223,7 +228,7 @@ class TestApiClient:
             active_clients = ApiClient.query.filter_by(is_active=True).all()
             assert len(active_clients) == 50
 
-    def test_api_client_foreign_key_constraints(self, app):
+    def test_api_client_foreign_key_constraints(self, app: "Flask") -> None:
         """Test foreign key constraints for ApiClient (if any)."""
         with app.app_context():
             inspector = inspect(db.engine)
