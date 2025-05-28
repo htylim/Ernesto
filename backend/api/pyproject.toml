@@ -8,6 +8,6 @@ line-length = 88
 target-version = "py39"
 
 [tool.ruff.lint]
-select = ["E", "F", "I"]
+select = ["E", "F", "I", "ANN", "D"]
 ignore = ["E203", "E501"]
 fixable = ["ALL"] 
