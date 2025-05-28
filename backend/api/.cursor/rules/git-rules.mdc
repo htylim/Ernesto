@@ -1,0 +1,24 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Git Safety Rules
+
+## STRICT GIT POLICIES
+- **NEVER run `git commit` commands without explicit user permission**
+- **ALWAYS run `git status` before suggesting any commit operations**
+- **ALWAYS ask user for confirmation before staging or committing files**
+- **MUST show what files will be committed before proceeding**
+
+## Git Workflow
+1. Run `git status` first to show current state
+2. Ask user which files to stage
+3. Show staged changes with `git diff --cached`
+4. Ask for explicit commit message approval
+5. Only then execute commit command
+
+## Forbidden Actions
+- Auto-committing without permission
+- Staging files without showing what's being staged
+- Running git commands that modify repository state without confirmation 

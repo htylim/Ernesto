@@ -1,0 +1,42 @@
+---
+description: 
+globs: *.py
+alwaysApply: false
+---
+## **Code Quality & Formatting**
+- All Python code must be compliant with `black` and `ruff` configurations as defined in `pyproject.toml`
+- Always run `pre-commit` checks before considering work complete
+- Line length: 88 characters (as configured)
+- Target Python 3.9+ syntax
+
+## **Project Structure & Conventions**
+- **Follow existing patterns**: Analyze current code structure before implementing
+- **File organization**: 
+  - Models in `app/models/` directory with individual files per model
+  - Core Flask app logic in root `app/` directory  
+  - Utilities and configurations as separate modules
+- **Naming conventions**: Use existing snake_case patterns for files and functions
+- **Import structure**: Follow current import organization (local imports after standard library)
+
+## **Best Practices**
+- Apply standard Python coding best practices (SOLID principles, DRY, etc.)
+- Include proper type hints (enforced by ruff ANN rules)
+- Add docstrings for modules, classes, and functions (enforced by ruff D rules)
+- Handle exceptions appropriately following project patterns
+- Use existing error handling patterns from `error_handlers.py`
+
+## **Change Management**
+- **Before introducing new patterns**: Ask for approval when deviating from established:
+  - Code structure decisions
+  - Naming conventions  
+  - Design patterns
+  - Dependencies or architectural choices
+- **Maintain consistency**: Match existing code style, patterns, and organization
+- **Incremental improvements**: Suggest improvements but follow current approach unless explicitly asked to refactor
+
+## **Flask-Specific Guidelines**
+- Follow existing Flask app factory pattern in `__init__.py`
+- Use established configuration management from `config.py`
+- Leverage existing extensions setup in `extensions.py`
+- Follow current database model patterns using SQLAlchemy
+- Type annotations for model classes uses SQLAlchemy 2.0 types
