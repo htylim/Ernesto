@@ -1,8 +1,9 @@
-"""
-Tests for database migrations.
+"""Tests for database migrations.
+
 This module tests migration operations like upgrade, downgrade, and migration detection.
 """
 
+from flask import Flask
 from sqlalchemy import inspect
 
 from app.extensions import alembic, db
@@ -11,7 +12,7 @@ from app.extensions import alembic, db
 class TestMigrations:
     """Test database migration operations."""
 
-    def test_migration_upgrade_from_empty_db(self, empty_db_app):
+    def test_migration_upgrade_from_empty_db(self, empty_db_app: Flask) -> None:
         """Test applying migrations from an empty database to head."""
         with empty_db_app.app_context():
             # Verify database starts empty (no tables)
@@ -44,7 +45,7 @@ class TestMigrations:
                 expected_tables
             ), f"Expected {len(expected_tables)} tables, found {len(tables)}: {tables}"
 
-    def test_migration_downgrade_to_base(self, empty_db_app):
+    def test_migration_downgrade_to_base(self, empty_db_app: Flask) -> None:
         """Test rolling back all migrations to base (empty state)."""
         with empty_db_app.app_context():
             # First upgrade to head to have something to downgrade
@@ -70,7 +71,7 @@ class TestMigrations:
             if tables_after_downgrade:
                 assert tables_after_downgrade == ["alembic_version"]
 
-    def test_migration_step_by_step_downgrade(self, empty_db_app):
+    def test_migration_step_by_step_downgrade(self, empty_db_app: Flask) -> None:
         """Test rolling back migrations one step at a time."""
         with empty_db_app.app_context():
             # First upgrade to head
@@ -89,7 +90,7 @@ class TestMigrations:
                 current_after != current_before
             ), "Revision didn't change after downgrade"
 
-    def test_migration_heads_detection(self, empty_db_app):
+    def test_migration_heads_detection(self, empty_db_app: Flask) -> None:
         """Test getting migration heads."""
         with empty_db_app.app_context():
             # Get migration heads
@@ -109,7 +110,7 @@ class TestMigrations:
                     head.revision, str
                 ), f"Head revision {head.revision} should be a string"
 
-    def test_current_revision_tracking(self, empty_db_app):
+    def test_current_revision_tracking(self, empty_db_app: Flask) -> None:
         """Test getting current database revision at different states."""
         with empty_db_app.app_context():
             # Initially, current revision should be empty tuple (no migrations applied)
@@ -134,7 +135,7 @@ class TestMigrations:
                     revision.revision, str
                 ), "Current revision should be a string"
 
-    def test_models_detected_by_alembic(self, empty_db_app):
+    def test_models_detected_by_alembic(self, empty_db_app: Flask) -> None:
         """Test that Flask-Alembic can detect our models in metadata."""
         with empty_db_app.app_context():
             # Get SQLAlchemy metadata
@@ -149,7 +150,7 @@ class TestMigrations:
                     table in table_names
                 ), f"Model table {table} not found in metadata"
 
-    def test_migration_creates_correct_schema(self, empty_db_app):
+    def test_migration_creates_correct_schema(self, empty_db_app: Flask) -> None:
         """Test that migrations create the correct database schema."""
         with empty_db_app.app_context():
             # Apply migrations
@@ -200,7 +201,7 @@ class TestMigrations:
             assert "source_id" in articles_columns
             assert "added_at" in articles_columns
 
-    def test_migration_creates_foreign_keys(self, empty_db_app):
+    def test_migration_creates_foreign_keys(self, empty_db_app: Flask) -> None:
         """Test that migrations create proper foreign key relationships."""
         with empty_db_app.app_context():
             # Apply migrations
@@ -216,7 +217,7 @@ class TestMigrations:
             assert "topics" in fk_tables, "Missing foreign key to topics table"
             assert "sources" in fk_tables, "Missing foreign key to sources table"
 
-    def test_migration_creates_indexes(self, empty_db_app):
+    def test_migration_creates_indexes(self, empty_db_app: Flask) -> None:
         """Test that migrations create proper indexes."""
         with empty_db_app.app_context():
             # Apply migrations
@@ -232,7 +233,7 @@ class TestMigrations:
             assert ["topic_id"] in index_columns, "Missing index on topic_id"
             assert ["source_id"] in index_columns, "Missing index on source_id"
 
-    def test_migration_idempotency(self, empty_db_app):
+    def test_migration_idempotency(self, empty_db_app: Flask) -> None:
         """Test that running migrations multiple times is safe (idempotent)."""
         with empty_db_app.app_context():
             # Apply migrations first time

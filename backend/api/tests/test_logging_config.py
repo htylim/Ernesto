@@ -1,7 +1,13 @@
+"""Tests for logging configuration functionality.
+
+This module tests the logging configuration system including different
+environment configurations, log level parsing, and handler setup.
+"""
+
 import logging
 import os
 import tempfile
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from app import create_app
 from app.logging_config import _get_environment_name, configure_logging
@@ -10,7 +16,7 @@ from app.logging_config import _get_environment_name, configure_logging
 class TestLoggingConfiguration:
     """Test suite for logging configuration functionality."""
 
-    def test_configure_logging_development(self):
+    def test_configure_logging_development(self) -> None:
         """Test logging configuration for development environment."""
         app = create_app(
             {
@@ -33,7 +39,7 @@ class TestLoggingConfiguration:
             assert isinstance(handler, logging.StreamHandler)
             assert handler.level == logging.DEBUG
 
-    def test_configure_logging_testing(self):
+    def test_configure_logging_testing(self) -> None:
         """Test logging configuration for testing environment."""
         app = create_app(
             {
@@ -58,7 +64,9 @@ class TestLoggingConfiguration:
 
     @patch("os.makedirs")
     @patch("os.path.exists")
-    def test_configure_logging_production(self, mock_exists, mock_makedirs):
+    def test_configure_logging_production(
+        self, mock_exists: MagicMock, mock_makedirs: MagicMock
+    ) -> None:
         """Test logging configuration for production environment."""
         mock_exists.return_value = False  # Simulate logs directory doesn't exist
 
@@ -81,7 +89,7 @@ class TestLoggingConfiguration:
             # Verify logs directory creation was attempted
             mock_makedirs.assert_called_once()
 
-    def test_log_level_parsing(self):
+    def test_log_level_parsing(self) -> None:
         """Test that log levels are correctly parsed from configuration."""
         test_cases = [
             ("DEBUG", logging.DEBUG),
@@ -109,7 +117,7 @@ class TestLoggingConfiguration:
                 else:
                     assert app.logger.level == expected_level
 
-    def test_get_environment_name(self):
+    def test_get_environment_name(self) -> None:
         """Test environment name detection."""
         # Test testing environment
         app = create_app(
@@ -144,7 +152,7 @@ class TestLoggingConfiguration:
         with app.app_context():
             assert _get_environment_name(app) == "production"
 
-    def test_handlers_cleared_before_configuration(self):
+    def test_handlers_cleared_before_configuration(self) -> None:
         """Test that existing handlers are cleared before adding new ones."""
         app = create_app(
             {"TESTING": True, "SQLALCHEMY_DATABASE_URI": "sqlite:///:memory:"}
@@ -163,7 +171,7 @@ class TestLoggingConfiguration:
             # The dummy handler should be gone
             assert dummy_handler not in app.logger.handlers
 
-    def test_logging_integration_in_create_app(self):
+    def test_logging_integration_in_create_app(self) -> None:
         """Test that logging is properly integrated in the create_app function."""
         app = create_app({"SQLALCHEMY_DATABASE_URI": "sqlite:///:memory:"})
 
@@ -176,7 +184,7 @@ class TestLoggingConfiguration:
                 app.logger.info("Test message")
                 mock_info.assert_called_once_with("Test message")
 
-    def test_production_file_logging_path(self):
+    def test_production_file_logging_path(self) -> None:
         """Test that production logging creates the correct file path."""
         with tempfile.TemporaryDirectory() as temp_dir:
             app = create_app(
@@ -198,7 +206,7 @@ class TestLoggingConfiguration:
                 # but we can verify the configuration doesn't raise errors
                 assert len(app.logger.handlers) >= 1
 
-    def test_log_message_formatting(self):
+    def test_log_message_formatting(self) -> None:
         """Test that log messages are formatted correctly for different environments."""
         # Test development formatting
         app = create_app(
@@ -231,7 +239,7 @@ class TestLoggingConfiguration:
             assert "test" in formatted
             assert "Test message" in formatted
 
-    def test_production_dual_handlers(self):
+    def test_production_dual_handlers(self) -> None:
         """Test that production environment has both file and console handlers."""
         with patch("os.makedirs"), patch("os.path.exists", return_value=True):
             app = create_app(

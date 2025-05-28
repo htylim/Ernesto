@@ -1,14 +1,15 @@
-"""
-Unit tests for error handlers.
+"""Unit tests for error handlers.
 
 Tests verify that error handlers are properly registered and return
 appropriate JSON responses with correct status codes and logging.
 """
 
 import json
+from typing import NoReturn
 
 import pytest
 from flask import Flask
+from flask.testing import FlaskClient
 
 from app import create_app
 from app.error_handlers import register_error_handlers
@@ -18,7 +19,7 @@ class TestErrorHandlers:
     """Test cases for error handler functionality."""
 
     @pytest.fixture
-    def app(self):
+    def app(self) -> Flask:
         """Create a test Flask application with error handlers."""
         app = create_app(
             {
@@ -30,11 +31,11 @@ class TestErrorHandlers:
         return app
 
     @pytest.fixture
-    def client(self, app):
+    def client(self, app: Flask) -> FlaskClient:
         """Create a test client for the Flask application."""
         return app.test_client()
 
-    def test_404_not_found_handler(self, client):
+    def test_404_not_found_handler(self, client: FlaskClient) -> None:
         """Test that 404 errors return proper JSON response."""
         response = client.get("/nonexistent-route")
 
@@ -46,12 +47,14 @@ class TestErrorHandlers:
         assert data["message"] == "The requested resource could not be found."
         assert data["status_code"] == 404
 
-    def test_405_method_not_allowed_handler(self, app, client):
+    def test_405_method_not_allowed_handler(
+        self, app: Flask, client: FlaskClient
+    ) -> None:
         """Test that 405 errors return proper JSON response."""
 
         # Create a route that only accepts GET requests
         @app.route("/test-route", methods=["GET"])
-        def test_route():
+        def test_route() -> dict[str, str]:
             return {"message": "success"}
 
         # Try to POST to a GET-only route
@@ -65,12 +68,14 @@ class TestErrorHandlers:
         assert "POST method is not allowed" in data["message"]
         assert data["status_code"] == 405
 
-    def test_500_internal_server_error_handler(self, app, client):
+    def test_500_internal_server_error_handler(
+        self, app: Flask, client: FlaskClient
+    ) -> None:
         """Test that 500 errors return proper JSON response."""
 
         # Create a route that raises an exception
         @app.route("/trigger-error")
-        def trigger_error():
+        def trigger_error() -> NoReturn:
             raise Exception("Test exception")
 
         response = client.get("/trigger-error")
@@ -85,13 +90,13 @@ class TestErrorHandlers:
         )
         assert data["status_code"] == 500
 
-    def test_400_bad_request_handler(self, app, client):
+    def test_400_bad_request_handler(self, app: Flask, client: FlaskClient) -> None:
         """Test that 400 errors return proper JSON response."""
         from werkzeug.exceptions import BadRequest
 
         # Create a route that raises a BadRequest exception
         @app.route("/bad-request")
-        def bad_request():
+        def bad_request() -> NoReturn:
             raise BadRequest("Invalid request data")
 
         response = client.get("/bad-request")
@@ -107,13 +112,13 @@ class TestErrorHandlers:
         )
         assert data["status_code"] == 400
 
-    def test_401_unauthorized_handler(self, app, client):
+    def test_401_unauthorized_handler(self, app: Flask, client: FlaskClient) -> None:
         """Test that 401 errors return proper JSON response."""
         from werkzeug.exceptions import Unauthorized
 
         # Create a route that raises an Unauthorized exception
         @app.route("/unauthorized")
-        def unauthorized():
+        def unauthorized() -> NoReturn:
             raise Unauthorized("Authentication required")
 
         response = client.get("/unauthorized")
@@ -126,13 +131,13 @@ class TestErrorHandlers:
         assert data["message"] == "Authentication is required to access this resource."
         assert data["status_code"] == 401
 
-    def test_403_forbidden_handler(self, app, client):
+    def test_403_forbidden_handler(self, app: Flask, client: FlaskClient) -> None:
         """Test that 403 errors return proper JSON response."""
         from werkzeug.exceptions import Forbidden
 
         # Create a route that raises a Forbidden exception
         @app.route("/forbidden")
-        def forbidden():
+        def forbidden() -> NoReturn:
             raise Forbidden("Access denied")
 
         response = client.get("/forbidden")
@@ -145,12 +150,14 @@ class TestErrorHandlers:
         assert data["message"] == "You do not have permission to access this resource."
         assert data["status_code"] == 403
 
-    def test_unexpected_exception_handler(self, app, client):
+    def test_unexpected_exception_handler(
+        self, app: Flask, client: FlaskClient
+    ) -> None:
         """Test that unexpected exceptions are handled properly."""
 
         # Create a route that raises a custom exception
         @app.route("/custom-error")
-        def custom_error():
+        def custom_error() -> NoReturn:
             raise ValueError("Custom error message")
 
         response = client.get("/custom-error")
@@ -165,7 +172,7 @@ class TestErrorHandlers:
         )
         assert data["status_code"] == 500
 
-    def test_error_handlers_registration(self):
+    def test_error_handlers_registration(self) -> None:
         """Test that error handlers can be registered with a Flask app."""
         app = Flask(__name__)
 
@@ -178,7 +185,7 @@ class TestErrorHandlers:
         # Exception handler is registered under None key in the nested dict
         assert Exception in app.error_handler_spec[None][None]
 
-    def test_error_response_structure(self, client):
+    def test_error_response_structure(self, client: FlaskClient) -> None:
         """Test that all error responses have consistent structure."""
         response = client.get("/nonexistent-route")
 
@@ -196,12 +203,14 @@ class TestErrorHandlers:
         assert isinstance(data["message"], str)
         assert isinstance(data["status_code"], int)
 
-    def test_logging_on_errors(self, app, client, caplog):
+    def test_logging_on_errors(
+        self, app: Flask, client: FlaskClient, caplog: pytest.LogCaptureFixture
+    ) -> None:
         """Test that errors are properly logged."""
 
         # Create a route that raises an exception
         @app.route("/log-test")
-        def log_test():
+        def log_test() -> NoReturn:
             raise Exception("Test logging")
 
         with caplog.at_level("ERROR"):
