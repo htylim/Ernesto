@@ -2,12 +2,29 @@
 line-length = 88
 target-version = ['py39']
 include = '\.pyi?$'
+exclude = '''
+/(
+    \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+  | app/migrations
+)/
+'''
 
 [tool.ruff]
 line-length = 88
 target-version = "py39"
+exclude = [
+    "app/migrations/",
+]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "ANN", "D"]
-ignore = ["E203", "E501"]
+ignore = ["E203", "E501", "D203", "D213"]
 fixable = ["ALL"] 

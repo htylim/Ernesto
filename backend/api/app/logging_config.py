@@ -1,14 +1,24 @@
+"""Logging configuration for the Flask application.
+
+This module provides environment-specific logging configuration for development,
+testing, and production environments with appropriate handlers and formatters.
+"""
+
 import logging
 import os
 from logging.handlers import RotatingFileHandler
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from flask import Flask
 
 
-def configure_logging(app):
-    """
-    Configure logging for the Flask application based on the environment.
+def configure_logging(app: "Flask") -> None:
+    """Configure logging for the Flask application based on the environment.
 
     Args:
         app (Flask): The Flask application instance.
+
     """
     # Get the log level from configuration
     log_level_str = app.config.get("LOG_LEVEL", "INFO")
@@ -32,7 +42,7 @@ def configure_logging(app):
     app.logger.info(f"Logging configured for environment: {_get_environment_name(app)}")
 
 
-def _configure_development_logging(app, log_level):
+def _configure_development_logging(app: "Flask", log_level: int) -> None:
     """Configure logging for development environment."""
     # Create console handler with detailed formatting
     console_handler = logging.StreamHandler()
@@ -48,7 +58,7 @@ def _configure_development_logging(app, log_level):
     app.logger.addHandler(console_handler)
 
 
-def _configure_testing_logging(app, log_level):
+def _configure_testing_logging(app: "Flask", log_level: int) -> None:
     """Configure logging for testing environment."""
     # Create console handler with minimal formatting to reduce test noise
     console_handler = logging.StreamHandler()
@@ -61,7 +71,7 @@ def _configure_testing_logging(app, log_level):
     app.logger.addHandler(console_handler)
 
 
-def _configure_production_logging(app, log_level):
+def _configure_production_logging(app: "Flask", log_level: int) -> None:
     """Configure logging for production environment."""
     # Ensure logs directory exists
     logs_dir = os.path.join(os.path.dirname(app.instance_path), "logs")
@@ -97,7 +107,7 @@ def _configure_production_logging(app, log_level):
     app.logger.addHandler(console_handler)
 
 
-def _get_environment_name(app):
+def _get_environment_name(app: "Flask") -> str:
     """Get a human-readable environment name based on app configuration."""
     if app.config.get("TESTING"):
         return "testing"

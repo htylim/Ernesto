@@ -1,4 +1,11 @@
+"""Configuration classes for the Flask application.
+
+This module provides environment-specific configuration classes for development,
+testing, and production environments with appropriate validation.
+"""
+
 import os
+from typing import Optional, Type
 
 from dotenv import load_dotenv
 
@@ -40,7 +47,7 @@ class DevelopmentConfig(BaseConfig):
     SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URI")
 
     @classmethod
-    def validate_config(cls):
+    def validate_config(cls) -> None:
         """Validate that required development settings are configured."""
         database_uri = os.getenv("DATABASE_URI")
         if not database_uri:
@@ -77,7 +84,7 @@ class ProductionConfig(BaseConfig):
     SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URI")
 
     @classmethod
-    def validate_config(cls):
+    def validate_config(cls) -> None:
         """Validate that required production settings are configured."""
         # Check current environment variables directly for validation
         secret_key = os.getenv("SECRET_KEY")
@@ -100,9 +107,8 @@ config_by_name = {
 }
 
 
-def get_config(config_name=None):
-    """
-    Get configuration class based on environment name.
+def get_config(config_name: Optional[str] = None) -> Type[BaseConfig]:
+    """Get configuration class based on environment name.
 
     Args:
         config_name (str): Name of the configuration environment.
@@ -114,6 +120,7 @@ def get_config(config_name=None):
 
     Raises:
         ValueError: If the configuration name is not recognized.
+
     """
     if config_name is None:
         config_name = os.getenv("FLASK_ENV", "development")

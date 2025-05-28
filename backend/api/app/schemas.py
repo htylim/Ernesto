@@ -1,9 +1,10 @@
-"""
-Marshmallow schemas for API serialization/deserialization.
+"""Marshmallow schemas for API serialization/deserialization.
 
 This module contains all the Marshmallow schemas used for converting
 SQLAlchemy model instances to/from JSON for API responses and requests.
 """
+
+from typing import Any, Dict
 
 from marshmallow import fields, post_dump
 from marshmallow_sqlalchemy import SQLAlchemyAutoSchema
@@ -18,6 +19,8 @@ class SourceSchema(SQLAlchemyAutoSchema):
     """Schema for Source model serialization/deserialization."""
 
     class Meta:
+        """Meta configuration for SourceSchema."""
+
         model = Source
         load_instance = True
         sqla_session = db.session
@@ -38,7 +41,7 @@ class SourceSchema(SQLAlchemyAutoSchema):
         "ArticleSchema", many=True, exclude=("source",), dump_only=True
     )
 
-    def get_article_count(self, source):
+    def get_article_count(self, source: Source) -> int:
         """Get the count of articles for this source.
 
         Args:
@@ -46,6 +49,7 @@ class SourceSchema(SQLAlchemyAutoSchema):
 
         Returns:
             int: Number of articles associated with this source.
+
         """
         if hasattr(source, "articles"):
             return len(source.articles)
@@ -56,6 +60,8 @@ class TopicSchema(SQLAlchemyAutoSchema):
     """Schema for Topic model serialization/deserialization."""
 
     class Meta:
+        """Meta configuration for TopicSchema."""
+
         model = Topic
         load_instance = True
         sqla_session = db.session
@@ -79,7 +85,7 @@ class TopicSchema(SQLAlchemyAutoSchema):
         "ArticleSchema", many=True, exclude=("topic",), dump_only=True
     )
 
-    def get_article_count(self, topic):
+    def get_article_count(self, topic: Topic) -> int:
         """Get the count of articles for this topic.
 
         Args:
@@ -87,6 +93,7 @@ class TopicSchema(SQLAlchemyAutoSchema):
 
         Returns:
             int: Number of articles associated with this topic.
+
         """
         if hasattr(topic, "articles"):
             return len(topic.articles)
@@ -97,6 +104,8 @@ class ArticleSchema(SQLAlchemyAutoSchema):
     """Schema for Article model serialization/deserialization."""
 
     class Meta:
+        """Meta configuration for ArticleSchema."""
+
         model = Article
         load_instance = True
         sqla_session = db.session
@@ -119,7 +128,9 @@ class ArticleSchema(SQLAlchemyAutoSchema):
     source = fields.Nested(SourceSchema, exclude=("articles",), dump_only=True)
 
     @post_dump
-    def add_computed_fields(self, data, **kwargs):
+    def add_computed_fields(
+        self, data: Dict[str, Any], **kwargs: object
+    ) -> Dict[str, Any]:
         """Add computed fields after serialization."""
         # Add a computed field for article age in days
         if "added_at" in data and data["added_at"]:

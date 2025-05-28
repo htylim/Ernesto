@@ -1,5 +1,4 @@
-"""
-Models package for the Ernesto API.
+"""Models package for the Ernesto API.
 
 This package contains all database models organized in separate files.
 All models are imported here for backward compatibility and convenience.

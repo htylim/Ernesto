@@ -1,4 +1,11 @@
+"""Flask application factory and configuration module.
+
+This module provides the application factory pattern for creating and configuring
+Flask application instances with all necessary extensions, routes, and error handlers.
+"""
+
 import os
+from typing import TYPE_CHECKING, Dict, Optional
 
 from dotenv import load_dotenv
 from flask import Flask
@@ -9,18 +16,22 @@ from app.models import Article as Article
 from app.models import Source as Source
 from app.models import Topic as Topic
 
+if TYPE_CHECKING:
+    from typing import Any
+
 # Load environment variables from .env file
 load_dotenv()
 
 
-def create_app(test_config=None):
-    """Factory function that creates and configures the Flask application.
+def create_app(test_config: Optional[Dict[str, "Any"]] = None) -> Flask:
+    """Create and configure the Flask application.
 
     Args:
         test_config (dict, optional): Test configuration to override default configs.
 
     Returns:
         Flask: Configured Flask application instance.
+
     """
     # Create the Flask application
     app = Flask(__name__)
@@ -43,12 +54,13 @@ def create_app(test_config=None):
     return app
 
 
-def _configure_app(app, test_config=None):
+def _configure_app(app: Flask, test_config: Optional[Dict[str, "Any"]] = None) -> None:
     """Configure the Flask application with appropriate settings.
 
     Args:
         app (Flask): The Flask application instance.
         test_config (dict, optional): Test configuration to override defaults.
+
     """
     if test_config is None:
         # Load production/development configuration
@@ -61,11 +73,12 @@ def _configure_app(app, test_config=None):
         app.config.from_mapping(test_config)
 
 
-def _init_extensions(app):
+def _init_extensions(app: Flask) -> None:
     """Initialize all Flask extensions with the application.
 
     Args:
         app (Flask): The Flask application instance.
+
     """
     from app.extensions import configure_extensions, init_extensions
 
@@ -76,33 +89,36 @@ def _init_extensions(app):
     init_extensions(app)
 
 
-def _configure_logging(app):
+def _configure_logging(app: Flask) -> None:
     """Configure application logging.
 
     Args:
         app (Flask): The Flask application instance.
+
     """
     from app.logging_config import configure_logging
 
     configure_logging(app)
 
 
-def _register_error_handlers(app):
+def _register_error_handlers(app: Flask) -> None:
     """Register error handlers with the application.
 
     Args:
         app (Flask): The Flask application instance.
+
     """
     from app.error_handlers import register_error_handlers
 
     register_error_handlers(app)
 
 
-def _register_routes(app):
+def _register_routes(app: Flask) -> None:
     """Register application routes.
 
     Args:
         app (Flask): The Flask application instance.
+
     """
     from app.routes import register_routes
 
