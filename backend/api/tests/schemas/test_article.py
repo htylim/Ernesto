@@ -4,6 +4,7 @@ This module tests the ArticleSchema serialization and deserialization
 functionality to ensure proper API response formatting.
 """
 
+import time
 from datetime import datetime, timezone
 from uuid import uuid4
 
@@ -292,3 +293,186 @@ class TestArticleSchema:
             assert isinstance(result, Article)
             assert result.topic_id is None
             assert result.source_id is None
+
+    def test_add_computed_fields_with_invalid_datetime(self, app: Flask) -> None:
+        """Test add_computed_fields method with invalid datetime to cover exception handling."""
+        with app.app_context():
+            schema = ArticleSchema()
+
+            # Test with invalid datetime string that will cause ValueError
+            invalid_data = {
+                "id": str(uuid4()),
+                "title": "Test Article",
+                "url": "https://test.com/test",
+                "added_at": "invalid-datetime-string",
+            }
+
+            # This should handle the exception and set age_days to None
+            result = schema.add_computed_fields(invalid_data)
+            assert "age_days" in result
+            assert result["age_days"] is None
+
+    def test_add_computed_fields_with_attribute_error(self, app: Flask) -> None:
+        """Test add_computed_fields method with data that causes AttributeError."""
+        with app.app_context():
+            schema = ArticleSchema()
+
+            # Test with a non-datetime object that doesn't have replace method
+            data_with_invalid_object = {
+                "id": str(uuid4()),
+                "title": "Test Article",
+                "url": "https://test.com/test",
+                "added_at": 12345,  # Integer instead of datetime
+            }
+
+            # This should handle the AttributeError and set age_days to None
+            result = schema.add_computed_fields(data_with_invalid_object)
+            assert "age_days" in result
+            assert result["age_days"] is None
+
+    def test_circular_reference_prevention_in_nested_relationships(
+        self, app: Flask
+    ) -> None:
+        """Test comprehensive circular reference prevention in nested schemas."""
+        with app.app_context():
+            # Create models with potential circular relationships
+            source = Source(id=uuid4(), name="Circular Test Source", is_enabled=True)
+            topic = Topic(id=uuid4(), label="Circular Test Topic", coverage_score=80)
+
+            article = Article(
+                id=uuid4(),
+                title="Circular Test Article",
+                url="https://test.com/circular",
+                source_id=source.id,
+                topic_id=topic.id,
+                added_at=datetime.now(timezone.utc),
+            )
+
+            # Set up circular relationships
+            article.source = source
+            article.topic = topic
+            source.articles = [article]
+            topic.articles = [article]
+
+            # Test that serialization excludes nested articles to prevent circular refs
+            schema = ArticleSchema()
+            result = schema.dump(article)
+
+            assert "source" in result
+            assert "topic" in result
+
+            # Verify nested objects don't include articles (preventing circular refs)
+            if result["source"]:
+                assert (
+                    "articles" not in result["source"]
+                    or result["source"]["articles"] == []
+                )
+            if result["topic"]:
+                assert (
+                    "articles" not in result["topic"]
+                    or result["topic"]["articles"] == []
+                )
+
+    def test_large_dataset_serialization_performance(self, app: Flask) -> None:
+        """Test serialization performance with large datasets."""
+        with app.app_context():
+            # Create a large number of articles
+            articles = [
+                Article(
+                    id=uuid4(),
+                    title=f"Performance Test Article {i}",
+                    brief=f"Brief for article {i}",
+                    url=f"https://test.com/performance-{i}",
+                    added_at=datetime.now(timezone.utc),
+                )
+                for i in range(100)
+            ]
+
+            schema = ArticleSchema(many=True)
+
+            # Measure serialization time
+            start_time = time.time()
+            result = schema.dump(articles)
+            end_time = time.time()
+
+            # Performance should be reasonable (less than 1 second for 100 items)
+            elapsed_time = end_time - start_time
+            assert (
+                elapsed_time < 1.0
+            ), f"Serialization took {elapsed_time:.2f}s, expected < 1.0s"
+
+            # Verify correct serialization
+            assert isinstance(result, list)
+            assert len(result) == 100
+            assert all("title" in item for item in result)
+
+    def test_complex_nested_object_serialization_performance(self, app: Flask) -> None:
+        """Test performance with deeply nested complex objects."""
+        with app.app_context():
+            # Create complex nested structure
+            sources = [
+                Source(
+                    id=uuid4(),
+                    name=f"Performance Source {i}",
+                    logo_url=f"https://test.com/logo-{i}.png",
+                    homepage_url=f"https://test{i}.com",
+                    is_enabled=True,
+                )
+                for i in range(10)
+            ]
+
+            topics = [
+                Topic(
+                    id=uuid4(),
+                    label=f"Performance Topic {i}",
+                    coverage_score=50 + i,
+                    added_at=datetime.now(timezone.utc),
+                )
+                for i in range(10)
+            ]
+
+            # Create articles with relationships
+            articles = []
+            for i in range(50):
+                source = sources[i % len(sources)]
+                topic = topics[i % len(topics)]
+
+                article = Article(
+                    id=uuid4(),
+                    title=f"Complex Article {i}",
+                    brief=f"Complex brief for article {i}",
+                    url=f"https://test.com/complex-{i}",
+                    image_url=f"https://test.com/image-{i}.jpg",
+                    source_id=source.id,
+                    topic_id=topic.id,
+                    added_at=datetime.now(timezone.utc),
+                )
+                article.source = source
+                article.topic = topic
+                articles.append(article)
+
+            schema = ArticleSchema(many=True)
+
+            # Measure complex serialization time
+            start_time = time.time()
+            result = schema.dump(articles)
+            end_time = time.time()
+
+            # Performance should still be reasonable for complex objects
+            elapsed_time = end_time - start_time
+            assert (
+                elapsed_time < 2.0
+            ), f"Complex serialization took {elapsed_time:.2f}s, expected < 2.0s"
+
+            # Verify complex serialization correctness
+            assert isinstance(result, list)
+            assert len(result) == 50
+
+            # Check that nested relationships are included
+            for item in result:
+                assert "source" in item
+                assert "topic" in item
+                if item["source"]:
+                    assert "name" in item["source"]
+                if item["topic"]:
+                    assert "label" in item["topic"]

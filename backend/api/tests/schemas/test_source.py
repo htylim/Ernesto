@@ -4,6 +4,7 @@ This module tests the SourceSchema serialization and deserialization
 functionality to ensure proper API response formatting.
 """
 
+import time
 from typing import Any, List
 from uuid import uuid4
 
@@ -195,3 +196,75 @@ class TestSourceSchema:
             # Articles field should be present but likely empty since no actual articles
             assert "articles" in result
             assert isinstance(result["articles"], list)
+
+    def test_large_dataset_serialization_performance(self, app: Flask) -> None:
+        """Test serialization performance with large datasets."""
+        with app.app_context():
+            # Create a large number of sources
+            sources = [
+                Source(
+                    id=uuid4(),
+                    name=f"Performance Source {i}",
+                    logo_url=f"https://test.com/logo-{i}.png",
+                    homepage_url=f"https://test{i}.com",
+                    is_enabled=True,
+                )
+                for i in range(100)
+            ]
+
+            schema = SourceSchema(many=True)
+
+            # Measure serialization time
+            start_time = time.time()
+            result = schema.dump(sources)
+            end_time = time.time()
+
+            # Performance should be reasonable (less than 1 second for 100 items)
+            elapsed_time = end_time - start_time
+            assert (
+                elapsed_time < 1.0
+            ), f"Serialization took {elapsed_time:.2f}s, expected < 1.0s"
+
+            # Verify correct serialization
+            assert isinstance(result, list)
+            assert len(result) == 100
+            assert all("name" in item for item in result)
+
+    def test_comprehensive_circular_reference_prevention(self, app: Flask) -> None:
+        """Test comprehensive circular reference prevention in nested articles."""
+        with app.app_context():
+            from app.models.article import Article
+
+            # Create source with potential circular relationship
+            source = Source(
+                id=uuid4(),
+                name="Circular Test Source",
+                is_enabled=True,
+            )
+
+            # Create articles that reference this source
+            articles = [
+                Article(
+                    id=uuid4(),
+                    title=f"Circular Article {i}",
+                    url=f"https://test.com/circular-{i}",
+                    source_id=source.id,
+                )
+                for i in range(3)
+            ]
+
+            # Set up circular relationships
+            for article in articles:
+                article.source = source
+            source.articles = articles
+
+            # Test that serialization handles circular references properly
+            schema = SourceSchema()
+            result = schema.dump(source)
+
+            assert "articles" in result
+            assert isinstance(result["articles"], list)
+
+            # If articles are included, they should not include source to prevent circular refs
+            for article_data in result["articles"]:
+                assert "source" not in article_data or article_data["source"] is None
