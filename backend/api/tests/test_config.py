@@ -5,6 +5,7 @@ TestingConfig, ProductionConfig) and the configuration mapping utilities.
 """
 
 import os
+import warnings
 from unittest.mock import patch
 
 import pytest
@@ -30,6 +31,16 @@ class TestBaseConfig:
         assert BaseConfig.JSON_SORT_KEYS is False
         assert BaseConfig.JSONIFY_PRETTYPRINT_REGULAR is True
         assert BaseConfig.SQLALCHEMY_TRACK_MODIFICATIONS is False
+
+        # Test JWT settings
+        assert BaseConfig.JWT_SECRET_KEY == "jwt-secret-key"
+        assert BaseConfig.JWT_ALGORITHM == "HS256"
+        assert BaseConfig.JWT_ACCESS_TOKEN_EXPIRES.total_seconds() == 3600  # 1 hour
+        assert BaseConfig.JWT_REFRESH_TOKEN_EXPIRES.days == 30  # 30 days
+
+        # Test API metadata
+        assert BaseConfig.API_TITLE == "Ernesto API"
+        assert BaseConfig.API_VERSION == "v1"
 
     def test_base_config_secret_key_default(self) -> None:
         """Test that BaseConfig has a default SECRET_KEY."""
@@ -58,6 +69,27 @@ class TestDevelopmentConfig:
         """Test that development config has a validation method."""
         assert hasattr(DevelopmentConfig, "validate_config")
         assert callable(getattr(DevelopmentConfig, "validate_config"))
+
+    @patch.dict(os.environ, {"DATABASE_URI": "sqlite:///test.db"}, clear=True)
+    def test_development_config_jwt_warning(self) -> None:
+        """Test that development config warns about default JWT secret."""
+        with pytest.warns(
+            UserWarning, match="Using default JWT_SECRET_KEY in development"
+        ):
+            get_config("dev")
+
+    @patch.dict(
+        os.environ,
+        {"DATABASE_URI": "sqlite:///test.db", "JWT_SECRET_KEY": "custom-jwt-secret"},
+        clear=True,
+    )
+    def test_development_config_no_jwt_warning_with_custom_secret(self) -> None:
+        """Test that development config doesn't warn with custom JWT secret."""
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")  # Convert warnings to errors
+            # Should not raise any warning
+            config_class = get_config("dev")
+            assert config_class == DevelopmentConfig
 
 
 class TestTestingConfig:
@@ -92,6 +124,45 @@ class TestProductionConfig:
         assert ProductionConfig.TESTING is False
         assert ProductionConfig.LOG_LEVEL == "ERROR"
 
+    def test_production_config_stricter_jwt_settings(self) -> None:
+        """Test that production has stricter JWT token expiration settings."""
+        assert (
+            ProductionConfig.JWT_ACCESS_TOKEN_EXPIRES.total_seconds() == 1800
+        )  # 30 minutes
+        assert ProductionConfig.JWT_REFRESH_TOKEN_EXPIRES.days == 7  # 7 days
+
+    @patch.dict(
+        os.environ,
+        {
+            "SECRET_KEY": "prod-secret",
+            "DATABASE_URI": "postgresql://prod:secret@db:5432/ernesto_prod",
+            "JWT_SECRET_KEY": "prod-jwt-secret",
+        },
+    )
+    def test_production_config_validation_success(self) -> None:
+        """Test that production config validation passes with all required env vars."""
+        # Should not raise any exception
+        config_class = get_config("prod")
+        assert config_class == ProductionConfig
+
+    @patch.dict(os.environ, {}, clear=True)
+    def test_production_config_validation_missing_all_vars(self) -> None:
+        """Test that production config validation fails with missing env vars."""
+        with pytest.raises(
+            ValueError,
+            match="Missing required environment variables for production: SECRET_KEY, DATABASE_URI, JWT_SECRET_KEY",
+        ):
+            get_config("prod")
+
+    @patch.dict(os.environ, {"SECRET_KEY": "test-secret"}, clear=True)
+    def test_production_config_validation_missing_some_vars(self) -> None:
+        """Test that production config validation fails with some missing env vars."""
+        with pytest.raises(
+            ValueError,
+            match="Missing required environment variables for production: DATABASE_URI, JWT_SECRET_KEY",
+        ):
+            get_config("prod")
+
 
 class TestConfigMapping:
     """Test the configuration mapping and get_config function."""
@@ -113,11 +184,16 @@ class TestConfigMapping:
         """Test getting development configuration."""
         from app.config import DevelopmentConfig as ImportedDevConfig
 
-        config_class = get_config("development")
-        assert config_class == ImportedDevConfig
+        # Mock JWT_SECRET_KEY to avoid warning in tests not specifically testing it
+        with patch.dict(
+            os.environ,
+            {"DATABASE_URI": "sqlite:///test.db", "JWT_SECRET_KEY": "test-jwt-secret"},
+        ):
+            config_class = get_config("development")
+            assert config_class == ImportedDevConfig
 
-        config_class = get_config("dev")
-        assert config_class == ImportedDevConfig
+            config_class = get_config("dev")
+            assert config_class == ImportedDevConfig
 
     def test_get_config_testing(self) -> None:
         """Test getting testing configuration."""
@@ -139,17 +215,23 @@ class TestConfigMapping:
         from app.config import DevelopmentConfig as ImportedDevConfig
         from app.config import TestingConfig as ImportedTestConfig
 
-        config_class = get_config("DEVELOPMENT")
-        assert config_class == ImportedDevConfig
+        # Mock JWT_SECRET_KEY to avoid warning in tests not specifically testing it
+        with patch.dict(
+            os.environ,
+            {"DATABASE_URI": "sqlite:///test.db", "JWT_SECRET_KEY": "test-jwt-secret"},
+        ):
+            config_class = get_config("DEVELOPMENT")
+            assert config_class == ImportedDevConfig
 
-        config_class = get_config("Test")
-        assert config_class == ImportedTestConfig
+            config_class = get_config("Test")
+            assert config_class == ImportedTestConfig
 
     @patch.dict(
         os.environ,
         {
             "SECRET_KEY": "prod-secret",
             "DATABASE_URI": "postgresql://prod:secret@db:5432/ernesto_prod",
+            "JWT_SECRET_KEY": "prod-jwt-secret",
         },
     )
     def test_get_config_production_case_insensitive(self) -> None:

@@ -5,6 +5,7 @@ testing, and production environments with appropriate validation.
 """
 
 import os
+from datetime import timedelta
 from typing import Optional, Type
 
 from dotenv import load_dotenv
@@ -36,6 +37,16 @@ class BaseConfig:
     JSON_SORT_KEYS = False
     JSONIFY_PRETTYPRINT_REGULAR = True
 
+    # JWT settings
+    JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "jwt-secret-key")
+    JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=1)
+    JWT_REFRESH_TOKEN_EXPIRES = timedelta(days=30)
+    JWT_ALGORITHM = "HS256"
+
+    # API metadata
+    API_TITLE = "Ernesto API"
+    API_VERSION = "v1"
+
 
 class DevelopmentConfig(BaseConfig):
     """Development environment configuration."""
@@ -54,6 +65,18 @@ class DevelopmentConfig(BaseConfig):
             raise ValueError(
                 "DATABASE_URI must be set for development environment. "
                 "Please set it in your .env file or environment variables."
+            )
+
+        # Warn if using default JWT secret in development
+        jwt_secret = os.getenv("JWT_SECRET_KEY")
+        if not jwt_secret or jwt_secret == "jwt-secret-key":
+            import warnings
+
+            warnings.warn(
+                "Using default JWT_SECRET_KEY in development. "
+                "Consider setting a custom JWT_SECRET_KEY in your .env file for better security.",
+                UserWarning,
+                stacklevel=2,
             )
 
 
@@ -83,17 +106,31 @@ class ProductionConfig(BaseConfig):
     # Production database must be explicitly set
     SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URI")
 
+    # Stricter JWT settings for production
+    JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
+    JWT_ACCESS_TOKEN_EXPIRES = timedelta(minutes=30)  # Shorter expiration for security
+    JWT_REFRESH_TOKEN_EXPIRES = timedelta(days=7)  # Shorter refresh token expiration
+
     @classmethod
     def validate_config(cls) -> None:
         """Validate that required production settings are configured."""
         # Check current environment variables directly for validation
         secret_key = os.getenv("SECRET_KEY")
         database_uri = os.getenv("DATABASE_URI")
+        jwt_secret_key = os.getenv("JWT_SECRET_KEY")
 
+        missing_vars = []
         if not secret_key:
-            raise ValueError("SECRET_KEY must be set in production environment")
+            missing_vars.append("SECRET_KEY")
         if not database_uri:
-            raise ValueError("DATABASE_URI must be set in production environment")
+            missing_vars.append("DATABASE_URI")
+        if not jwt_secret_key:
+            missing_vars.append("JWT_SECRET_KEY")
+
+        if missing_vars:
+            raise ValueError(
+                f"Missing required environment variables for production: {', '.join(missing_vars)}"
+            )
 
 
 # Configuration mapping for environment-based selection
