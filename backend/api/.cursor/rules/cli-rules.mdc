@@ -1,0 +1,18 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+- Avoid the ! character when writing a shell command. Avoid doing things like this: 
+
+bad:
+```
+python3 -c "from app.schemas import source_schema, topic_schema, article_schema; print('✅ New schema structure working!')"
+```
+
+The ! is a special character in bash which will be interpreted before the command starts. Don't include it or use \! instead.
+
+better:
+```
+python3 -c "from app.schemas import source_schema, topic_schema, article_schema; print('✅ New schema structure working\!')"
+```
