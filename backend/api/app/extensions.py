@@ -8,6 +8,7 @@ following the application factory pattern best practices.
 from typing import TYPE_CHECKING
 
 from flask_alembic import Alembic
+from flask_jwt_extended import JWTManager
 from flask_marshmallow import Marshmallow
 from flask_sqlalchemy import SQLAlchemy
 
@@ -25,6 +26,10 @@ alembic = Alembic()
 # Initialize Flask-Marshmallow instance
 # This handles serialization/deserialization of SQLAlchemy models
 ma = Marshmallow()
+
+# Initialize Flask-JWT-Extended instance
+# This handles JWT token creation, verification, and management
+jwt = JWTManager()
 
 
 def init_extensions(app: "Flask") -> None:
@@ -44,6 +49,10 @@ def init_extensions(app: "Flask") -> None:
     # Initialize Flask-Marshmallow with the app
     # This must be done after SQLAlchemy initialization
     ma.init_app(app)
+
+    # Initialize Flask-JWT-Extended with the app
+    # This must be done after Flask initialization to access configuration
+    jwt.init_app(app)
 
     # Import models to ensure they're registered with SQLAlchemy
     # This is done here to avoid circular imports and ensure proper registration
@@ -72,3 +81,13 @@ def configure_extensions(app: "Flask") -> None:
     if not app.config.get("SQLALCHEMY_TRACK_MODIFICATIONS"):
         # Default to False for better performance
         app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
+    # Configure JWT settings
+    if not app.config.get("JWT_SECRET_KEY"):
+        app.logger.warning(
+            "JWT_SECRET_KEY not configured - JWT functionality may not work properly"
+        )
+
+    # Ensure JWT token location is configured
+    if not app.config.get("JWT_TOKEN_LOCATION"):
+        app.config["JWT_TOKEN_LOCATION"] = ["headers"]

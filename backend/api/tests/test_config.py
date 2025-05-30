@@ -38,6 +38,27 @@ class TestBaseConfig:
         assert BaseConfig.JWT_ACCESS_TOKEN_EXPIRES.total_seconds() == 3600  # 1 hour
         assert BaseConfig.JWT_REFRESH_TOKEN_EXPIRES.days == 30  # 30 days
 
+        # Test enhanced JWT settings
+        assert BaseConfig.JWT_TOKEN_LOCATION == ["headers"]
+        assert BaseConfig.JWT_HEADER_NAME == "Authorization"
+        assert BaseConfig.JWT_HEADER_TYPE == "Bearer"
+        assert BaseConfig.JWT_COOKIE_SECURE is True
+        assert BaseConfig.JWT_COOKIE_CSRF_PROTECT is False
+        assert BaseConfig.JWT_COOKIE_SAMESITE == "Strict"
+        assert BaseConfig.JWT_ERROR_MESSAGE_KEY == "message"
+
+        # Test JWT claims configuration
+        assert BaseConfig.JWT_ENCODE_ISSUER == "ernesto-api"
+        assert BaseConfig.JWT_DECODE_ISSUER == "ernesto-api"
+        assert BaseConfig.JWT_ENCODE_AUDIENCE == "ernesto-chrome-extension"
+        assert BaseConfig.JWT_DECODE_AUDIENCE == "ernesto-chrome-extension"
+
+        # Test JWT security settings
+        assert BaseConfig.JWT_VERIFY_EXPIRATION is True
+        assert BaseConfig.JWT_VERIFY_SUB_CLAIM is True
+        assert BaseConfig.JWT_BLACKLIST_ENABLED is False
+        assert BaseConfig.JWT_BLACKLIST_TOKEN_CHECKS == ["access", "refresh"]
+
         # Test API metadata
         assert BaseConfig.API_TITLE == "Ernesto API"
         assert BaseConfig.API_VERSION == "v1"
@@ -59,6 +80,12 @@ class TestDevelopmentConfig:
         assert DevelopmentConfig.DEBUG is True
         assert DevelopmentConfig.LOG_LEVEL == "DEBUG"
         assert DevelopmentConfig.TESTING is False
+
+        # Test development JWT settings
+        assert DevelopmentConfig.JWT_COOKIE_SECURE is False  # Allow HTTP in dev
+        assert (
+            DevelopmentConfig.JWT_ACCESS_TOKEN_EXPIRES.total_seconds() == 28800
+        )  # 8 hours
 
     def test_development_config_database_uri(self) -> None:
         """Test that development config uses DATABASE_URI from environment."""
@@ -106,6 +133,14 @@ class TestTestingConfig:
         assert TestingConfig.LOG_LEVEL == "DEBUG"
         assert TestingConfig.WTF_CSRF_ENABLED is False
 
+        # Test testing JWT settings
+        assert (
+            TestingConfig.JWT_ACCESS_TOKEN_EXPIRES.total_seconds() == 300
+        )  # 5 minutes
+        assert TestingConfig.JWT_REFRESH_TOKEN_EXPIRES.total_seconds() == 3600  # 1 hour
+        assert TestingConfig.JWT_COOKIE_SECURE is False  # Allow HTTP in testing
+        assert TestingConfig.JWT_BLACKLIST_ENABLED is False  # Disabled for simplicity
+
     def test_testing_config_database_default(self) -> None:
         """Test that testing config uses in-memory SQLite by default."""
         assert TestingConfig.SQLALCHEMY_DATABASE_URI == "sqlite:///:memory:"
@@ -130,6 +165,13 @@ class TestProductionConfig:
             ProductionConfig.JWT_ACCESS_TOKEN_EXPIRES.total_seconds() == 1800
         )  # 30 minutes
         assert ProductionConfig.JWT_REFRESH_TOKEN_EXPIRES.days == 7  # 7 days
+
+        # Test production JWT security settings
+        assert ProductionConfig.JWT_COOKIE_SECURE is True  # Always HTTPS in prod
+        assert ProductionConfig.JWT_VERIFY_EXPIRATION is True  # Strict verification
+        assert ProductionConfig.JWT_VERIFY_SUB_CLAIM is True  # Verify subject claims
+        assert ProductionConfig.JWT_BLACKLIST_ENABLED is True  # Enable blacklisting
+        assert ProductionConfig.JWT_BLACKLIST_TOKEN_CHECKS == ["access", "refresh"]
 
     @patch.dict(
         os.environ,
@@ -240,3 +282,32 @@ class TestConfigMapping:
 
         config_class = get_config("PROD")
         assert config_class == ImportedProdConfig
+
+
+class TestJWTExtensionIntegration:
+    """Test JWT extension integration with configuration."""
+
+    def test_jwt_extension_import(self) -> None:
+        """Test that JWT extension can be imported successfully."""
+        from flask_jwt_extended import JWTManager
+
+        from app.extensions import jwt
+
+        assert isinstance(jwt, JWTManager)
+
+    @patch.dict(
+        os.environ,
+        {"DATABASE_URI": "sqlite:///test.db", "JWT_SECRET_KEY": "test-jwt-secret"},
+    )
+    def test_jwt_configuration_loaded(self) -> None:
+        """Test that JWT configuration is properly loaded from config classes."""
+        from app.config import get_config
+
+        config_class = get_config("dev")
+        config_instance = config_class()
+
+        # Verify that JWT settings are accessible
+        assert hasattr(config_instance, "JWT_SECRET_KEY")
+        assert hasattr(config_instance, "JWT_ACCESS_TOKEN_EXPIRES")
+        assert hasattr(config_instance, "JWT_TOKEN_LOCATION")
+        assert hasattr(config_instance, "JWT_ENCODE_ISSUER")
