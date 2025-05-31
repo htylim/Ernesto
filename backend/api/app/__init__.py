@@ -4,7 +4,6 @@ This module provides the application factory pattern for creating and configurin
 Flask application instances with all necessary extensions, routes, and error handlers.
 """
 
-import os
 from typing import TYPE_CHECKING, Dict, Optional
 
 from dotenv import load_dotenv
@@ -63,14 +62,27 @@ def _configure_app(app: Flask, test_config: Optional[Dict[str, "Any"]] = None) -
 
     """
     if test_config is None:
-        # Load production/development configuration
-        app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URI")
-        app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = (
-            os.getenv("SQLALCHEMY_TRACK_MODIFICATIONS", "False").lower() == "true"
-        )
+        # Load configuration using the proper configuration system
+        from app.config import get_config
+
+        try:
+            # Get the appropriate configuration instance based on environment
+            # This will also run comprehensive validation
+            config_instance = get_config()
+            app.config.from_object(config_instance)
+
+            app.logger.info(
+                f"Loaded configuration: {config_instance.__class__.__name__}"
+            )
+
+        except Exception as e:
+            # Log configuration errors and re-raise
+            app.logger.error(f"Configuration validation failed: {e}")
+            raise
     else:
         # Load the test config if passed in
         app.config.from_mapping(test_config)
+        app.logger.info("Loaded test configuration")
 
 
 def _init_extensions(app: Flask) -> None:

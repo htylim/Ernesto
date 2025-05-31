@@ -58,10 +58,10 @@ class TestApplicationFactory:
     def test_create_app_with_missing_env_vars(self) -> None:
         """Test application creation with missing environment variables."""
         with patch.dict(os.environ, {}, clear=True):
-            # This should raise an error because SQLAlchemy requires a database URI
+            # This should raise an error because configuration validation requires DATABASE_URI
             with pytest.raises(
-                RuntimeError,
-                match="Either 'SQLALCHEMY_DATABASE_URI' or 'SQLALCHEMY_BINDS' must be set",
+                ValueError,
+                match="Missing required configuration fields: SQLALCHEMY_DATABASE_URI",
             ):
                 create_app()
 

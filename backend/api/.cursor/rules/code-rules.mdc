@@ -3,8 +3,12 @@ description:
 globs: 
 alwaysApply: false
 ---
+- Always prefer to follow best practice.
+- Between many major decisions ask the user for which one to follow.
+- If failing to find a fix to a failing test interrupt your work and prompt the user for direction.
+
 ## **Code Quality & Formatting**
-- All Python code must be compliant with `black` and `ruff` configurations as defined in `pyproject.toml`
+- Python code must be compliant with `black` and `ruff` configurations as defined in `pyproject.toml`
 - Always run `pre-commit` checks before considering work complete
 - Line length: 88 characters (as configured)
 - Target Python 3.9+ syntax
@@ -23,7 +27,6 @@ alwaysApply: false
 - Include proper type hints (enforced by ruff ANN rules)
 - Add docstrings for modules, classes, and functions (enforced by ruff D rules)
 - Handle exceptions appropriately following project patterns
-- Use existing error handling patterns from `error_handlers.py`
 
 ## **Change Management**
 - **Before introducing new patterns**: Ask for approval when deviating from established:

@@ -3,8 +3,9 @@ description:
 globs: 
 alwaysApply: true
 ---
-# These rules are important **DO NOT SKIP**:
-- Before you execute any git command read the project's [git-rules.mdc](mdc:.cursor/rules/git-rules.mdc)
-- Before you do any CLI execution of any kind read the project's [cli-rules.mdc](mdc:.cursor/rules/cli-rules.mdc)
-- Before you write (or modify) python source code, or do any type of source code writing, read the project's [code-rules.mdc](mdc:.cursor/rules/code-rules.mdc)
-- Before creating models, migrations, or connecting to the DB in any way, or setting DB related parameters in any project file, read the project's [database-rules.mdc](mdc:.cursor/rules/database-rules.mdc)
+Read [database-rules.mdc](mdc:.cursor/rules/database-rules.mdc) before writing/modifying models or migrations
+Read [database-rules.mdc](mdc:.cursor/rules/database-rules.mdc) before database cli execution
+Read [database-rules.mdc](mdc:.cursor/rules/database-rules.mdc) before interacting with the development/testing or production database
+Read [code-rules.mdc](mdc:.cursor/rules/code-rules.mdc) before writing/modifying source code
+Read [git-rules.mdc](mdc:.cursor/rules/git-rules.mdc) before any git commands
+Read [cli-rules.mdc](mdc:.cursor/rules/cli-rules.mdc) before any CLI execution on bash

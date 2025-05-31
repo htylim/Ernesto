@@ -6,7 +6,7 @@ testing, and production environments with appropriate validation.
 
 import os
 from datetime import timedelta
-from typing import Optional, Type
+from typing import Optional
 
 from dotenv import load_dotenv
 
@@ -17,169 +17,158 @@ load_dotenv()
 class BaseConfig:
     """Base configuration class with common settings for all environments."""
 
-    # Security
-    SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-key-change-in-production")
+    def __init__(self) -> None:
+        """Initialize configuration by reading environment variables at runtime."""
+        # Security
+        self.SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-key-change-in-production")
 
-    # Database
-    SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URI")
-    SQLALCHEMY_TRACK_MODIFICATIONS = (
-        os.getenv("SQLALCHEMY_TRACK_MODIFICATIONS", "False").lower() == "true"
-    )
+        # Database
+        self.SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URI")
+        self.SQLALCHEMY_TRACK_MODIFICATIONS = (
+            os.getenv("SQLALCHEMY_TRACK_MODIFICATIONS", "False").lower() == "true"
+        )
 
-    # General Flask settings
-    DEBUG = False
-    TESTING = False
+        # General Flask settings
+        self.DEBUG = False
+        self.TESTING = False
 
-    # Logging
-    LOG_LEVEL = "INFO"
+        # Logging
+        self.LOG_LEVEL = "INFO"
 
-    # Application settings
-    JSON_SORT_KEYS = False
-    JSONIFY_PRETTYPRINT_REGULAR = True
+        # Application settings
+        self.JSON_SORT_KEYS = False
+        self.JSONIFY_PRETTYPRINT_REGULAR = True
 
-    # JWT settings
-    JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "jwt-secret-key")
-    JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=1)
-    JWT_REFRESH_TOKEN_EXPIRES = timedelta(days=30)
-    JWT_ALGORITHM = "HS256"
+        # JWT settings
+        self.JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "jwt-secret-key")
+        self.JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=1)
+        self.JWT_REFRESH_TOKEN_EXPIRES = timedelta(days=30)
+        self.JWT_ALGORITHM = "HS256"
 
-    # JWT token location and header configuration
-    JWT_TOKEN_LOCATION = ["headers"]  # Only look for tokens in headers by default
-    JWT_HEADER_NAME = "Authorization"
-    JWT_HEADER_TYPE = "Bearer"
+        # JWT token location and header configuration
+        self.JWT_TOKEN_LOCATION = [
+            "headers"
+        ]  # Only look for tokens in headers by default
+        self.JWT_HEADER_NAME = "Authorization"
+        self.JWT_HEADER_TYPE = "Bearer"
 
-    # JWT cookie configuration (disabled by default, can be enabled per environment)
-    JWT_COOKIE_SECURE = True  # Require HTTPS for cookies
-    JWT_COOKIE_CSRF_PROTECT = False  # Disabled since we're using headers by default
-    JWT_COOKIE_SAMESITE = "Strict"
+        # JWT cookie configuration (disabled by default, can be enabled per environment)
+        self.JWT_COOKIE_SECURE = True  # Require HTTPS for cookies
+        self.JWT_COOKIE_CSRF_PROTECT = (
+            False  # Disabled since we're using headers by default
+        )
+        self.JWT_COOKIE_SAMESITE = "Strict"
 
-    # JWT error handling configuration
-    JWT_ERROR_MESSAGE_KEY = "message"  # Consistent error message format
+        # JWT error handling configuration
+        self.JWT_ERROR_MESSAGE_KEY = "message"  # Consistent error message format
 
-    # JWT claims configuration for additional security
-    JWT_ENCODE_ISSUER = "ernesto-api"  # Identify our API as the token issuer
-    JWT_DECODE_ISSUER = "ernesto-api"  # Verify tokens are from our API
-    JWT_ENCODE_AUDIENCE = "ernesto-chrome-extension"  # Target audience
-    JWT_DECODE_AUDIENCE = "ernesto-chrome-extension"  # Verify audience
+        # JWT claims configuration for additional security
+        self.JWT_ENCODE_ISSUER = "ernesto-api"  # Identify our API as the token issuer
+        self.JWT_DECODE_ISSUER = "ernesto-api"  # Verify tokens are from our API
+        self.JWT_ENCODE_AUDIENCE = "ernesto-chrome-extension"  # Target audience
+        self.JWT_DECODE_AUDIENCE = "ernesto-chrome-extension"  # Verify audience
 
-    # JWT additional security settings
-    JWT_VERIFY_EXPIRATION = True  # Always verify token expiration
-    JWT_VERIFY_SUB_CLAIM = True  # Verify subject claim if present
-    JWT_BLACKLIST_ENABLED = False  # Disabled by default (can be enabled if needed)
-    JWT_BLACKLIST_TOKEN_CHECKS = [
-        "access",
-        "refresh",
-    ]  # Which tokens to check against blacklist
+        # JWT additional security settings
+        self.JWT_VERIFY_EXPIRATION = True  # Always verify token expiration
+        self.JWT_VERIFY_SUB_CLAIM = True  # Verify subject claim if present
+        self.JWT_BLACKLIST_ENABLED = (
+            False  # Disabled by default (can be enabled if needed)
+        )
+        self.JWT_BLACKLIST_TOKEN_CHECKS = [
+            "access",
+            "refresh",
+        ]  # Which tokens to check against blacklist
 
-    # API metadata
-    API_TITLE = "Ernesto API"
-    API_VERSION = "v1"
+        # API metadata
+        self.API_TITLE = "Ernesto API"
+        self.API_VERSION = "v1"
 
 
 class DevelopmentConfig(BaseConfig):
     """Development environment configuration."""
 
-    DEBUG = True
-    LOG_LEVEL = "DEBUG"
+    def __init__(self) -> None:
+        """Initialize development configuration."""
+        super().__init__()
 
-    # Use environment DATABASE_URI - no hardcoded fallback
-    SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URI")
+        self.DEBUG = True
+        self.LOG_LEVEL = "DEBUG"
 
-    # Development-specific JWT settings for easier debugging
-    JWT_COOKIE_SECURE = False  # Allow HTTP cookies in development
-    JWT_ACCESS_TOKEN_EXPIRES = timedelta(
-        hours=8
-    )  # Longer tokens for development convenience
+        # Use environment DATABASE_URI - no hardcoded fallback
+        self.SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URI")
 
-    @classmethod
-    def validate_config(cls) -> None:
-        """Validate that required development settings are configured."""
-        database_uri = os.getenv("DATABASE_URI")
-        if not database_uri:
-            raise ValueError(
-                "DATABASE_URI must be set for development environment. "
-                "Please set it in your .env file or environment variables."
-            )
-
-        # Warn if using default JWT secret in development
-        jwt_secret = os.getenv("JWT_SECRET_KEY")
-        if not jwt_secret or jwt_secret == "jwt-secret-key":
-            import warnings
-
-            warnings.warn(
-                "Using default JWT_SECRET_KEY in development. "
-                "Consider setting a custom JWT_SECRET_KEY in your .env file for better security.",
-                UserWarning,
-                stacklevel=2,
-            )
+        # Development-specific JWT settings for easier debugging
+        self.JWT_COOKIE_SECURE = False  # Allow HTTP cookies in development
+        self.JWT_ACCESS_TOKEN_EXPIRES = timedelta(
+            hours=8
+        )  # Longer tokens for development convenience
 
 
 class TestingConfig(BaseConfig):
     """Testing environment configuration."""
 
-    TESTING = True
-    DEBUG = True
-    LOG_LEVEL = "DEBUG"
+    def __init__(self) -> None:
+        """Initialize testing configuration."""
+        super().__init__()
 
-    # Use in-memory SQLite for testing by default
-    SQLALCHEMY_DATABASE_URI = os.getenv("TEST_DATABASE_URI", "sqlite:///:memory:")
+        self.TESTING = True
+        self.DEBUG = True
+        self.LOG_LEVEL = "DEBUG"
 
-    # Disable CSRF protection in testing
-    WTF_CSRF_ENABLED = False
+        # Use in-memory SQLite for testing by default
+        self.SQLALCHEMY_DATABASE_URI = os.getenv(
+            "TEST_DATABASE_URI", "sqlite:///:memory:"
+        )
 
-    # Testing-specific JWT settings for fast test execution
-    JWT_ACCESS_TOKEN_EXPIRES = timedelta(minutes=5)  # Short-lived tokens for testing
-    JWT_REFRESH_TOKEN_EXPIRES = timedelta(hours=1)  # Short refresh tokens for testing
-    JWT_COOKIE_SECURE = False  # Allow HTTP in testing
-    JWT_BLACKLIST_ENABLED = False  # Disable blacklisting in tests for simplicity
+        # Disable CSRF protection in testing
+        self.WTF_CSRF_ENABLED = False
+
+        # Testing-specific JWT settings for fast test execution
+        self.JWT_ACCESS_TOKEN_EXPIRES = timedelta(
+            minutes=5
+        )  # Short-lived tokens for testing
+        self.JWT_REFRESH_TOKEN_EXPIRES = timedelta(
+            hours=1
+        )  # Short refresh tokens for testing
+        self.JWT_COOKIE_SECURE = False  # Allow HTTP in testing
+        self.JWT_BLACKLIST_ENABLED = (
+            False  # Disable blacklisting in tests for simplicity
+        )
 
 
 class ProductionConfig(BaseConfig):
     """Production environment configuration."""
 
-    DEBUG = False
-    LOG_LEVEL = "ERROR"
+    def __init__(self) -> None:
+        """Initialize production configuration."""
+        super().__init__()
 
-    # Ensure SECRET_KEY is set in production
-    SECRET_KEY = os.getenv("SECRET_KEY")
+        self.DEBUG = False
+        self.LOG_LEVEL = "ERROR"
 
-    # Production database must be explicitly set
-    SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URI")
+        # Ensure SECRET_KEY is set in production
+        self.SECRET_KEY = os.getenv("SECRET_KEY")
 
-    # Stricter JWT settings for production
-    JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
-    JWT_ACCESS_TOKEN_EXPIRES = timedelta(minutes=30)  # Shorter expiration for security
-    JWT_REFRESH_TOKEN_EXPIRES = timedelta(days=7)  # Shorter refresh token expiration
+        # Production database must be explicitly set
+        self.SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URI")
 
-    # Enhanced JWT security for production
-    JWT_COOKIE_SECURE = True  # Always require HTTPS in production
-    JWT_VERIFY_EXPIRATION = True  # Strictly verify expiration
-    JWT_VERIFY_SUB_CLAIM = True  # Verify subject claims
+        # Stricter JWT settings for production
+        self.JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
+        self.JWT_ACCESS_TOKEN_EXPIRES = timedelta(
+            minutes=30
+        )  # Shorter expiration for security
+        self.JWT_REFRESH_TOKEN_EXPIRES = timedelta(
+            days=7
+        )  # Shorter refresh token expiration
 
-    # Production-specific JWT validation
-    JWT_BLACKLIST_ENABLED = True  # Enable token blacklisting in production
-    JWT_BLACKLIST_TOKEN_CHECKS = ["access", "refresh"]
+        # Enhanced JWT security for production
+        self.JWT_COOKIE_SECURE = True  # Always require HTTPS in production
+        self.JWT_VERIFY_EXPIRATION = True  # Strictly verify expiration
+        self.JWT_VERIFY_SUB_CLAIM = True  # Verify subject claims
 
-    @classmethod
-    def validate_config(cls) -> None:
-        """Validate that required production settings are configured."""
-        # Check current environment variables directly for validation
-        secret_key = os.getenv("SECRET_KEY")
-        database_uri = os.getenv("DATABASE_URI")
-        jwt_secret_key = os.getenv("JWT_SECRET_KEY")
-
-        missing_vars = []
-        if not secret_key:
-            missing_vars.append("SECRET_KEY")
-        if not database_uri:
-            missing_vars.append("DATABASE_URI")
-        if not jwt_secret_key:
-            missing_vars.append("JWT_SECRET_KEY")
-
-        if missing_vars:
-            raise ValueError(
-                f"Missing required environment variables for production: {', '.join(missing_vars)}"
-            )
+        # Production-specific JWT validation
+        self.JWT_BLACKLIST_ENABLED = True  # Enable token blacklisting in production
+        self.JWT_BLACKLIST_TOKEN_CHECKS = ["access", "refresh"]
 
 
 # Configuration mapping for environment-based selection
@@ -193,8 +182,8 @@ config_by_name = {
 }
 
 
-def get_config(config_name: Optional[str] = None) -> Type[BaseConfig]:
-    """Get configuration class based on environment name.
+def get_config(config_name: Optional[str] = None) -> BaseConfig:
+    """Get configuration instance based on environment name.
 
     Args:
         config_name (str): Name of the configuration environment.
@@ -202,7 +191,7 @@ def get_config(config_name: Optional[str] = None) -> Type[BaseConfig]:
                           Defaults to 'development' if not found.
 
     Returns:
-        class: Configuration class for the specified environment.
+        BaseConfig: Configuration instance for the specified environment.
 
     Raises:
         ValueError: If the configuration name is not recognized.
@@ -220,10 +209,16 @@ def get_config(config_name: Optional[str] = None) -> Type[BaseConfig]:
             f"Available configurations: {available_configs}"
         )
 
-    # Validate configuration based on environment
-    if config_class == ProductionConfig:
-        config_class.validate_config()
-    elif config_class == DevelopmentConfig:
-        config_class.validate_config()
+    # Create and validate configuration instance
+    config_instance = config_class()
 
-    return config_class
+    # Import here to avoid circular imports
+    from app.validators import ConfigurationError, validate_config
+
+    try:
+        validate_config(config_instance)
+    except ConfigurationError as e:
+        # Re-raise as ValueError for backward compatibility with existing tests
+        raise ValueError(str(e)) from e
+
+    return config_instance
