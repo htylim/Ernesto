@@ -27,8 +27,10 @@ def configure_logging(app: "Flask") -> None:
     # Set the app logger level
     app.logger.setLevel(log_level)
 
-    # Remove default handlers to avoid duplicate logs
-    app.logger.handlers.clear()
+    # Properly close and remove existing handlers to avoid resource leaks
+    for handler in app.logger.handlers[:]:
+        handler.close()
+        app.logger.removeHandler(handler)
 
     # Configure based on environment
     if app.config.get("TESTING"):

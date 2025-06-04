@@ -1,7 +1,7 @@
 """Tests for configuration classes and utilities.
 
 This module tests the configuration classes (BaseConfig, DevelopmentConfig,
-TestingConfig, ProductionConfig) and the configuration mapping utilities.
+AppTestingConfig, ProductionConfig) and the configuration mapping utilities.
 """
 
 import os
@@ -11,10 +11,10 @@ from unittest.mock import patch
 import pytest
 
 from app.config import (
+    AppTestingConfig,
     BaseConfig,
     DevelopmentConfig,
     ProductionConfig,
-    TestingConfig,
     config_by_name,
     get_config,
 )
@@ -124,12 +124,12 @@ class TestTestingConfig:
     """Test the testing configuration class."""
 
     def test_testing_config_inheritance(self) -> None:
-        """Test that TestingConfig inherits from BaseConfig."""
-        assert issubclass(TestingConfig, BaseConfig)
+        """Test that AppTestingConfig inherits from BaseConfig."""
+        assert issubclass(AppTestingConfig, BaseConfig)
 
     def test_testing_config_settings(self) -> None:
         """Test testing-specific settings."""
-        config = TestingConfig()
+        config = AppTestingConfig()
         assert config.DEBUG is True
         assert config.TESTING is True
         assert config.LOG_LEVEL == "DEBUG"
@@ -142,7 +142,7 @@ class TestTestingConfig:
 
     def test_testing_config_database_default(self) -> None:
         """Test that testing config uses in-memory SQLite by default."""
-        config = TestingConfig()
+        config = AppTestingConfig()
         assert config.SQLALCHEMY_DATABASE_URI == "sqlite:///:memory:"
 
 
@@ -220,8 +220,8 @@ class TestConfigMapping:
         expected_mappings = {
             "development": DevelopmentConfig,
             "dev": DevelopmentConfig,
-            "testing": TestingConfig,
-            "test": TestingConfig,
+            "testing": AppTestingConfig,
+            "test": AppTestingConfig,
             "production": ProductionConfig,
             "prod": ProductionConfig,
         }
@@ -244,10 +244,10 @@ class TestConfigMapping:
     def test_get_config_testing(self) -> None:
         """Test getting testing configuration."""
         config_instance = get_config("testing")
-        assert isinstance(config_instance, TestingConfig)
+        assert isinstance(config_instance, AppTestingConfig)
 
         config_instance = get_config("test")
-        assert isinstance(config_instance, TestingConfig)
+        assert isinstance(config_instance, AppTestingConfig)
 
     def test_get_config_invalid(self) -> None:
         """Test that get_config raises ValueError for invalid config names."""
@@ -265,7 +265,7 @@ class TestConfigMapping:
             assert isinstance(config_instance, DevelopmentConfig)
 
             config_instance = get_config("Test")
-            assert isinstance(config_instance, TestingConfig)
+            assert isinstance(config_instance, AppTestingConfig)
 
     @patch.dict(
         os.environ,

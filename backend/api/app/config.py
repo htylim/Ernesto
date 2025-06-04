@@ -89,7 +89,7 @@ class DevelopmentConfig(BaseConfig):
         self.SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URI")
 
 
-class TestingConfig(BaseConfig):
+class AppTestingConfig(BaseConfig):
     """Testing environment configuration."""
 
     # Override constants for testing
@@ -147,8 +147,8 @@ class ProductionConfig(BaseConfig):
 config_by_name = {
     "development": DevelopmentConfig,
     "dev": DevelopmentConfig,
-    "testing": TestingConfig,
-    "test": TestingConfig,
+    "testing": AppTestingConfig,
+    "test": AppTestingConfig,
     "production": ProductionConfig,
     "prod": ProductionConfig,
 }
