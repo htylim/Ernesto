@@ -9,7 +9,9 @@ from unittest.mock import patch
 
 import pytest
 
-from app.config import AppTestingConfig, BaseConfig, DevelopmentConfig, ProductionConfig
+# NOTE: TestingConfig needs to be imported as EnvTestingConfig to not confuse pytest into thinking it as a Class containing tests
+from app.config import BaseConfig, DevelopmentConfig, ProductionConfig
+from app.config import TestingConfig as EnvTestingConfig
 from app.validators import ConfigurationError, ConfigValidator, validate_config
 
 
@@ -409,7 +411,7 @@ class TestValidateEnvironmentSpecific:
 
     def test_validate_environment_specific_testing(self) -> None:
         """Test environment-specific validation for testing."""
-        config = AppTestingConfig()
+        config = EnvTestingConfig()
 
         validator = ConfigValidator(config)
         validator.validate_environment_specific()
