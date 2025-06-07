@@ -1,0 +1,113 @@
+---
+description: when asked to perform a gap analysis on a subtask from the `/tasks/` directory
+globs: 
+alwaysApply: false
+---
+## Goal
+
+given the following: 
+
+- a project's existing documentation ([README.md](mdc:README.md))
+- a project's enumeration of high-level tasks ([master_plan.md](mdc:tasks/master_plan.md))
+- and a user choice of a specific task to perform the gap analysis (eg: `tasks/01_task.md`)
+
+Perform a thorough GAP analysis on what the task intended to be implementedm what was actually implemented, and update the task plan to reflect what is done and what is still missing. 
+
+## Terms
+- {task} : high-level task, from [master_plan.md](mdc:tasks/master_plan.md), chosen by the user to drilling down into a step-by-step two-level task list.
+- {subtask} : first level of the two-level task list to be generated from the given {task}.
+- {subsubtask} : second level of the two-level task list to be generated from the given {task}. This level is the most granular and concrete step.
+- {.. num} number of the task, subtask or subsubtask (eg. {subtask_num} is '1.1' in 'Task 1.1 Implement Configuration Classes Structure').
+- {.. title} title of the task, subtask or subsubtask (eg. {subtask_title} is 'Implement Configuration Classes Structure' in 'Task 1.1 Implement Configuration Classes Structure').
+- {.. description} longer description of the task, subtask, subsubtask.
+ 
+## Output
+
+- **format**: Markdown (`.md`)
+- **location**: `/tasks/`
+- **filename**: `{task num}_task.md` (eg `01_task.md`)
+
+## Process
+
+1. **Read project spec and plan files**
+- Open `/README.md`
+- Understand the overall goals, tech stack, folder structure, existing conventions, project requirements, everything on the file.
+- Open `/tasks/master_plan.md`
+- Understand the list of high-level tasks that conforms the master plan for the implementation of the project detailed in `/README.md`
+- Open the {task} plan file requested by the user (eg `tasks/01_task.md`)
+- Understand the step-by-step two-level execution plan stated there. Understand the goal that is intended to achieve by the task definition.
+
+2. **Perform GAP analysis**
+- Thoroughly walk the step-by-step task plan, checking each {subtask} and {subsubtask} if the current project implementation fulfills the {subtask} / {subsubtask} objective (it may surpass it).
+- Flag the {subtask} / {subsubtask} as DONE if required. (eg: replace '[ ]' with '[x]')
+- Append to each {subsubtask} and {subtask} specific section what was done, what is still missing, and any additional comment important for the implementation of the remainder of the entry.
+- And finally append 'Gap Analysis Summary' section at the end of the file with the analysis overall result.
+
+3. **Example Output**
+The following is an example of a correct update to a task plan file (NOTE: the file is only shown partially):
+
+```markdown
+# [x] 1 Setup Flask Application Factory Pattern
+
+Implement a modular Flask app using the application factory pattern. Include structured configuration management with environment-based settings, comprehensive error handling, logging setup, and extension registration to support different environments (development, testing, production).
+
+✅ All components have been implemented with comprehensive test coverage and validation.
+
+...
+
+## Tasks
+
+- [x] 1.1 Implement Configuration Classes Structure
+    - [x] 1.1.1 Create BaseConfig class with common settings
+    ...
+- [x] 1.2 Setup Flask Extensions Infrastructure
+    - [x] 1.2.1 Create extensions module with Flask extension instances
+...
+
+## **1.1 Implement Configuration Classes Structure**
+
+Develop a structured configuration system to manage different environments (development, testing, production) within the Flask application using Flask's native configuration patterns.
+
+✅ Complete with comprehensive validation and enhanced JWT security features
+
+### **1.1.1 Create BaseConfig class with common settings**
+Create `app/config.py` file with a `BaseConfig` class containing all common configuration variables needed by the Flask application. Include database URI templates, JWT settings, SQLAlchemy settings, and other Flask-specific configurations that are shared across all environments.
+
+✅ `BaseConfig` class created with comprehensive JWT settings including issuer/audience validation, token location configuration, and security settings. Includes Flask constants and API metadata.
+...
+
+---
+
+# Gap Analysis Summary
+
+## ✅ TASK COMPLETE - All Requirements Fulfilled
+
+**Overall Status**: Task 1 "Setup Flask Application Factory Pattern" is **100% complete** with comprehensive implementation and testing.
+
+### What Was Implemented:
+- **Configuration Management**: Complete with BaseConfig, DevelopmentConfig, TestingConfig, and ProductionConfig classes
+- **Application Factory**: Fully functional `create_app()` with modular component initialization
+- **Extension Management**: SQLAlchemy, JWT, Alembic, and Marshmallow properly integrated
+- **Logging System**: Environment-specific logging with file rotation and proper formatters
+- **Error Handling**: Comprehensive HTTP error handlers with JSON responses
+- **Testing**: Extensive test suite covering all components (test_config.py, test_app_factory.py, test_logging_config.py, test_error_handlers.py)
+
+### Enhanced Features Beyond Requirements:
+- **Validation System**: Comprehensive configuration validation via external validators module
+- **JWT Security**: Enhanced JWT configuration with issuer/audience validation and blacklisting
+- **Marshmallow Integration**: Additional serialization capabilities beyond basic requirements
+- **Development Warnings**: Warning systems for development environment misconfigurations
+- **Comprehensive Testing**: 433 lines of factory tests, 311 lines of config tests, extensive coverage
+
+### Current Project State:
+- All planned components are implemented and functional
+- Comprehensive test coverage validates all functionality
+- Production-ready with proper security configurations
+- Follows Flask best practices and application factory pattern
+- Ready for next development phase
+
+**No gaps identified - proceed to next task.**
+```
+
+4. **Communicate result to user**
+- Report back to the user the result of the GAP analysis stating what is done, what is missing, and how current implementation differs from what was aimed in the task plan.

@@ -1,5 +1,5 @@
 ---
-description: 
+description: When interacting with PostgresSQL thru CLI, code or setting up/modifying models and/or migrations
 globs: 
 alwaysApply: false
 ---
