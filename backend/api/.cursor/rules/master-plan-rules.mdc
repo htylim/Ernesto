@@ -1,0 +1,48 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+You're helping me write a master plan for developing a web app.
+
+Given the project specification given by the user I want you to output a tasks/master_plan.md file that contains only top-level tasks, organized as Markdown headings (## [ ] {Task number}. {Task Name}), each followed by a concise description.
+
+How you partition the implementation in top level tasks is key. The sum of all these tasks should result in a complete implementation of the given project specification.
+
+Rules:
+
+- Do not break down tasks into subtasks yet. Just describe each top-level task so we can do that later.
+
+- Focus on partitioning the implementation logically.
+
+- Avoid including tasks that are just parts of other tasks (e.g., don't make “Error Handling” a separate top-level task — that's something embedded within other tasks).
+
+- Each task should reflect an orthogonal or self-contained aspect of the project.
+
+Example Structure:
+
+'''
+# Master Development Plan
+
+# Master Plan
+
+## 1. [ ] Setup Flask Application Factory Pattern  
+Implement a modular Flask app using the application factory pattern. Include structured configuration, error handling, logging, and extension registration to support different environments (dev, test, prod).
+
+## 2. [ ] Setup Database Models with Flask-SQLAlchemy  
+Define SQLAlchemy models for core entities with relationships and constraints. Include UUID primary keys, timestamps, and plan for schema evolution.
+
+## 3. [ ] Implement Database Migrations with Flask-Alembic  
+Enable version-controlled schema changes using Flask-Alembic. Integrate migration commands with the app factory pattern for easy use in all environments.
+
+## 4. [ ] Implement Authentication System with JWT  
+Add support for OAuth2 client credentials flow using Flask-JWT-Extended. Secure endpoints with access tokens and manage client credentials securely.
+
+## 5. [ ] Create Authentication Middleware and Protected Routes  
+Implement decorators and JWT verification middleware to secure endpoints. Set up error responses and CORS handling for API use.
+
+## 6. [ ] Implement Sources API Endpoints  
+Build endpoints to retrieve and manage news sources. Include listing and detail views with JWT protection and consistent response formatting.
+
+...etc...
+'''

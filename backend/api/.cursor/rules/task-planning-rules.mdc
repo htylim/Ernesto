@@ -1,0 +1,166 @@
+---
+description: When asked to drill down or plan a task from the master_plan.md file
+globs: 
+alwaysApply: false
+---
+## Goal
+
+given the following: 
+
+- a project's existing documentation ([README.md](mdc:README.md))
+- a project's enumeration of high-level tasks ([master_plan.md](mdc:tasks/master_plan.md))
+- and a user choice of a specific high-level task from the aformentioned enumeration.
+
+Create a step-by-step two-level task list in markdown format to guide an AI assistant through the development of the given high-level task.
+
+## Terms
+
+- {task} : high-level task, from [master_plan.md](mdc:tasks/master_plan.md), chosen by the user to drilling down into a step-by-step two-level task list.
+- {subtask} : first level of the two-level task list to be generated from the given {task}.
+- {subsubtask} : second level of the two-level task list to be generated from the given {task}. This level is the most granular and concrete step.
+- {.. num} number of the task, subtask or subsubtask (eg. {subtask_num} is '1.1' in 'Task 1.1 Implement Configuration Classes Structure').
+- {.. title} title of the task, subtask or subsubtask (eg. {subtask_title} is 'Implement Configuration Classes Structure' in 'Task 1.1 Implement Configuration Classes Structure').
+- {.. description} longer description of the task, subtask, subsubtask.
+ 
+## Output
+
+- **format**: Markdown (`.md`)
+- **location**: `/tasks/`
+- **filename**: `{task num}_task.md` (eg `01_task.md`)
+
+## Process
+
+1. **Read project spec and master plan**
+- Open `/README.md`
+- Understand the overall goals, tech stack, folder structure, existing conventions, project requirements, everything on the file.
+- Open `/tasks/master_plan.md`
+- Understand the list of high-level tasks that conforms the master plan for the implementation of the project detailed in `/README.md`
+
+2. **Read the high-level task to plan**
+- In `tasks/master_plan.md` locate the top-level task asked to analyze (e.g. “Task 5: Implement payments API”).
+- Note the {task number}, {task title} and {task description}.
+
+3. **Verify you have all needed info**
+- Compare task requirements against the README details.
+- If *any* information is missing (e.g., which database to use, API endpoints, required config), list those gaps.
+- Ask the user specific, focused questions to fill in missing details. Do not start planning until you have answers.
+
+4. **Create a task plan file**  
+- The file will present a step-by-step two-level task list for the implementation of {task}.
+- Filename: `tasks/{task_num}_task.md` (e.g. `tasks/05_task.md`) 
+- Will contain several sections organized with markdown headings:
+    - `Relevant Files` section with the list of files (and their description) that are relevant to this implementation plan.
+    - `Notes` section with general notes important for the developer to know when executing this task plan.
+    - `Tasks` section with a step-by-step two-level break-down of {task} into trivial and concrete step implementation {subtasks} and {subsubtasks}.
+    - `{subtask}` sections with extra implementation details important to the developer for that specific {subtask} implementation.
+- Subtasks _must_ no overlap or duplicate another (they must be orthogonal).
+- Ordering is important, entries _must_ follow implementation order.
+- Generated file _must_ follow this structure:
+- Implementation follows all best practices (coding, DB, web app development, etc..)
+
+```markdown
+# [ ] {task num} {task title}
+
+{task description}
+
+## Relevant Files
+
+- `app/path/to/file1.py` - Brief description of why this file is relevant (e.g., Contains the main component for this feature).
+- `tests/path/to/test_file1.py` - Unit tests for `file1.py`.
+- `app/path/to/another/file.py` - Brief description (e.g., API route handler for data submission).
+- `tests/path/to/another/test_file.py` - Unit tests for `another/file.py`.
+- `app/utils/helpers.py` - Brief description (e.g., Utility functions needed for calculations).
+- `tests/utils/test_helpers.py` - Unit tests for `helpers.py`.
+
+## Notes
+
+- {general notes relevant for the implementation of task num}
+
+## Tasks
+
+- [ ] {task num}.1 {subtask 1 title}
+    - [ ] {task num}.1.1 {subsubtask 1.1 title}
+    - [ ] {task num}.1.2 {subsubtask 1.2 title}
+- [ ] {task num}.2 {subtask 2 title}
+    - [ ] 1.2.1 {subsubtask 2.1 title}
+...etc...
+
+### {subtask num} {subtask title}
+
+- {list of extra details and description for the implementation of subtask}
+```
+
+5. **Example structure**  
+```markdown
+# [ ] 1 Setup Flask Application Factory Pattern
+
+Implement a modular Flask app using the application factory pattern. Include structured configuration management with environment-based settings, comprehensive error handling, logging setup, and extension registration to support different environments (development, testing, production).
+
+## Relevant Files
+- `app/config.py` - Manages environment-based configuration settings (development, testing, production) with structured class hierarchies for different deployment environments.
+- `tests/test_config.py` - Validates configuration loading, environment variable handling, and ensures proper settings isolation across different environments.
+- `app/extensions.py` - Centralizes Flask extension initialization and registration, enabling clean separation of concerns in the application factory pattern.
+- `app/logging_config.py` - Configures structured logging with environment-specific handlers, formatters, and log levels for comprehensive application monitoring.
+- `tests/test_logging_config.py` - Tests logging configuration functionality, ensuring proper log formatting, handler setup, and environment-specific logging behavior.
+- `app/error_handlers.py` - Implements comprehensive error handling with custom exception classes and HTTP error responses for robust application behavior.
+- `tests/test_error_handler.py` - Validates error handling mechanisms, ensuring proper error responses, status codes, and exception handling across different scenarios.
+- `tests/test_app_factory.py` - Tests the application factory pattern implementation, verifying proper app creation, configuration loading, and extension registration across environments.
+
+
+## Notes
+- Unit tests should be placed under `/tests/`, testing for `src/dir/file1.py` should be on `tests/app/dir/test_file1.py`.
+- Use `pytest` to run all tests in the project.
+
+## Tasks
+- [ ] 1.1 Implement Configuration Classes Structure
+    - [ ] 1.1.1 Create a BaseConfig
+    - [ ] 1.1.2 Create DevelopmentConfig
+    - [ ] 1.1.3 Create TestingConfig
+    - [ ] 1.1.4 Create ProductionConfig
+    - [ ] 1.1.5 Create configuration selection mechanism
+- [ ] 1.2 Implement Application Factory Function
+    - [ ] 1.2.1 Create create_app Function
+    - [ ] 1.2.2 Implement configuration loading
+    - [ ] 1.2.3 Add extension initialization
+
+## 1.1 Implement Configuration Classes Structure
+Develop a structured configuration system to manage different environments (development, testing, production) within the Flask application
+
+### 1.1.1 Create a BaseConfig
+Create an `app/config.py` file and a `BaseConfig` class that will be the base for all configuration classes.
+This config class will contain as class variables all the configuration parameters that our app will require
+For configuration values that will need to be set at runtime (as opposed to import time) we will override those class variables on the subclasses'  __init__
+
+### 1.1.2 Create DevelopmentConfig
+Create in `app/config.py` a `DevelopmentConfig` class and have it set the configuration values for our development environment
+
+### 1.1.3 Create TestingConfig
+Create in `app/config.py` a `TestingConfig` class and have it set the configuration values for our testing environment
+
+### 1.1.4 Create ProductionConfig
+Create in `app/config.py` a `ProductionConfig` class and have it set the configuration values for our production environment
+
+### 1.1.5 Create configuration selection mechanism
+Implement `get_config()` function with environment-based configuration selection and validation
+
+## 1.2 Implement Application Factory Function
+Create the main application factory function that instantiates and configures Flask applications with proper extension initialization
+
+### 1.2.1 Create create_app Function
+Create the main `create_app()` function in `app/__init__.py` that serves as the application factory, accepting optional test configuration
+
+### 1.2.3 Add extension initialization
+Implement systematic extension initialization following proper Flask patterns
+```
+
+6. **Tone & style**
+- Be concise and neutral.
+- Use consistent numbering (e.g., 1, 1.1, 1.1.1).
+- Keep descriptions clear so any developer can follow them step by step.
+
+7. **Flagging tasks as Done**
+- When asked by the user to flag a task, subtask or subsubtask as done replace the "[ ]" in their title description by "[x]".
+- When a subtask has all its subsubtasks done mark the subtask as done as well.
+- When a task has all its subtasks as done mark the task as done. Find the task in `tasks/master_plan.md` and mark it as done there as well.
+
+

@@ -3,9 +3,10 @@ description:
 globs: 
 alwaysApply: true
 ---
-Read [database-rules.mdc](mdc:.cursor/rules/database-rules.mdc) before writing/modifying models or migrations
-Read [database-rules.mdc](mdc:.cursor/rules/database-rules.mdc) before database cli execution
-Read [database-rules.mdc](mdc:.cursor/rules/database-rules.mdc) before interacting with the development/testing or production database
-Read [code-rules.mdc](mdc:.cursor/rules/code-rules.mdc) before writing/modifying source code
-Read [git-rules.mdc](mdc:.cursor/rules/git-rules.mdc) before any git commands
-Read [cli-rules.mdc](mdc:.cursor/rules/cli-rules.mdc) before any CLI execution on bash
+Read [README.md](mdc:README.md) to get context and understanding prompts from the user. 
+Read [cli-rules.mdc](mdc:.cursor/rules/cli-rules.mdc) before any CLI execution on bash.
+Read [git-rules.mdc](mdc:.cursor/rules/git-rules.mdc) before any git commands.
+Read [coding-rules.mdc](mdc:.cursor/rules/coding-rules.mdc) before writing/modifying source code.
+Read [database-rules.mdc](mdc:.cursor/rules/database-rules.mdc) before writing/modifying models or migrations.
+Read [database-rules.mdc](mdc:.cursor/rules/database-rules.mdc) before any database cli command execution.
+Read [database-rules.mdc](mdc:.cursor/rules/database-rules.mdc) before interacting with development/testing or production database.
