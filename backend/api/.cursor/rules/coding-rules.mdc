@@ -6,6 +6,7 @@ alwaysApply: false
 - Always prefer to follow best practice.
 - Between many major decisions ask the user for which one to follow.
 - If failing to find a fix to a failing test interrupt your work and prompt the user for direction.
+- use context7
 
 ## **Code Quality & Formatting**
 - Python code must be compliant with `black` and `ruff` configurations as defined in `pyproject.toml`

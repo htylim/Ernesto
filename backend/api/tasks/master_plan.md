@@ -9,8 +9,8 @@ Define SQLAlchemy models for Articles, Topics, and Sources entities with proper 
 ## 3. Implement Database Migrations with Flask-Alembic
 Enable version-controlled schema changes using Flask-Alembic integration. Set up migration commands that work with the application factory pattern, configure migration environment, and create initial database schema migrations for all entities.
 
-## 4. Implement OAuth 2.0 Client Credentials Authentication with JWT
-Add support for OAuth2 client credentials flow using Flask-JWT-Extended. Implement secure client credential validation, JWT token generation and verification, and proper token expiration handling for the Chrome extension client.
+## 4. Implement API Key Authentication System and Remove OAuth2 Components
+Replace OAuth2 client credentials flow with API Key-based authentication system. Remove all OAuth2/JWT-related code and dependencies, enhance the existing ApiClient model and authentication middleware, create proper database migrations, and implement comprehensive API key management for the Chrome extension client. This includes cleaning up JWT configuration, removing unused Flask-JWT-Extended components, and ensuring robust API key validation with proper error handling and security features.
 
 ## 5. Create Authentication Middleware and Protected Routes
 Implement JWT verification decorators and middleware to secure API endpoints. Set up comprehensive error responses for authentication failures, proper CORS handling for cross-origin requests, and request context management for protected routes.

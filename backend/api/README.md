@@ -37,7 +37,7 @@ This project follows Flask ecosystem best practices and uses:
 - **ORM**: Flask-SQLAlchemy (Flask-specific SQLAlchemy integration)
 - **Database Migrations**: Flask-Alembic (Flask-specific Alembic integration)
 - **Database**: PostgreSQL
-- **Authentication**: Flask-JWT-Extended for JWT token management
+- **Authentication**: API Key-based authentication for single client access
 - **Session Management**: Flask-SQLAlchemy's `db.session` (automatic request-scoped)
 - **Configuration**: Flask's native configuration system with environment variables
 - **Application Structure**: Blueprint-based modular organization
@@ -82,6 +82,13 @@ The API exposes the following resources, reflecting the underlying database stru
 - `updated_at`: TIMESTAMP, When the topic was last updated (new article added)
 - `coverage_score`: INTEGER, Number of articles associated with this topic (indicates relevancy)
 
+#### API Clients
+- `id`: INTEGER, Primary Key
+- `name`: TEXT, Name of the API client (e.g., "Chrome Extension")
+- `api_key`: STRING, Unique API key for authentication
+- `is_active`: BOOLEAN, Whether the client is currently active
+- `created_at`: TIMESTAMP, When the client was created
+
 ### Database Relationships
 - `Articles.topic_id` → `Topics.id` (Many-to-One)
 - `Articles.source_id` → `Sources.id` (Many-to-One)
@@ -97,26 +104,16 @@ The API exposes the following resources, reflecting the underlying database stru
 
 ### Authentication
 
-#### `POST /api/auth/token`
-Authenticates the Chrome extension client using OAuth 2.0 Client Credentials Grant Flow.
+All API endpoints require authentication using API key-based authentication. Include the API key in the request header:
 
-**Request Body:**
-```json
-{
-  "client_id": "chrome_extension_client_id",
-  "client_secret": "chrome_extension_client_secret", 
-  "grant_type": "client_credentials"
-}
+```
+X-API-Key: your_api_key_here
 ```
 
-**Response:**
-```json
-{
-  "access_token": "jwt_token_here",
-  "token_type": "bearer",
-  "expires_in": 3600
-}
-```
+**Authentication Requirements:**
+- All endpoints marked with "Authentication: Required" need the `X-API-Key` header
+- Invalid or missing API keys return HTTP 401 Unauthorized
+- API keys are managed through the `ApiClient` model
 
 ### Topics
 
@@ -182,15 +179,38 @@ Retrieves details for a specific news source.
 ## Authentication & Security
 
 ### Mechanism
-OAuth 2.0 Client Credentials Grant Flow using JWTs (JSON Web Tokens) as access tokens, implemented with Flask-JWT-Extended.
+API Key-based authentication using the `X-API-Key` header. This approach is well-suited for the single Chrome extension client use case.
 
 ### Authentication Flow
-1. Chrome Extension requests an access token from `/api/auth/token` by sending `client_id`, `client_secret`, and `grant_type="client_credentials"`
-2. API server validates the client credentials using Flask-JWT-Extended
-3. If valid, API server generates a JWT using Flask-JWT-Extended and returns it to the extension
-4. Chrome Extension stores the JWT securely and includes it in the `Authorization: Bearer <token>` header for all subsequent requests
+1. Chrome Extension includes the API key in the `X-API-Key` header for all API requests
+2. API server validates the API key against the `ApiClient` model in the database
+3. If valid and active, the request is processed; otherwise, returns HTTP 401 Unauthorized
 
-This provides a secure way for the extension (a machine client) to access the API using Flask's ecosystem tools.
+**Security Features:**
+- API keys are stored securely in the database
+- Clients can be activated/deactivated via the `is_active` flag
+- Simple and reliable authentication for single-client scenarios
+- Proper error responses for authentication failures
+
+### API Key Management
+```python
+# Example API key validation
+from app.models import ApiClient
+
+def require_api_key(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        api_key = request.headers.get("X-API-Key")
+        if not api_key:
+            return jsonify({"error": "API key is missing"}), 401
+        
+        client = ApiClient.query.filter_by(api_key=api_key, is_active=True).first()
+        if not client:
+            return jsonify({"error": "Invalid or inactive API key"}), 401
+            
+        return f(*args, **kwargs)
+    return decorated_function
+```
 
 ## Development Setup
 
@@ -318,15 +338,14 @@ app/
 │   ├── __init__.py
 │   ├── article.py
 │   ├── topic.py
-│   └── source.py
+│   ├── source.py
+│   └── api_client.py
 ├── api/                 # Flask Blueprints for API routes
 │   ├── __init__.py
-│   ├── auth.py
 │   ├── articles.py
 │   ├── topics.py
 │   └── sources.py
-├── auth/                # Flask-JWT-Extended authentication
-│   └── __init__.py
+├── auth.py              # API key authentication
 └── config.py            # Flask configuration
 ```
 
@@ -342,7 +361,7 @@ import os
 
 class Config:
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URI')
-    JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY')
+    SECRET_KEY = os.environ.get('SECRET_KEY')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
 # app/__init__.py
@@ -351,7 +370,6 @@ def create_app(config_class=Config):
     app.config.from_object(config_class)
     
     db.init_app(app)
-    jwt.init_app(app)
     migrate.init_app(app, db)
 ```
 
@@ -374,6 +392,5 @@ Key Flask-specific packages used:
 - `Flask` - Core web framework
 - `Flask-SQLAlchemy` - Flask-specific SQLAlchemy integration
 - `Flask-Alembic` - Flask-specific Alembic integration  
-- `Flask-JWT-Extended` - JWT authentication for Flask
 - `Flask-CORS` - Cross-origin resource sharing
 - `Flask-Limiter` - Rate limiting (future enhancement)
