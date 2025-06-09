@@ -207,6 +207,7 @@ class TestApiClient:
             assert remaining_client is not None
             assert remaining_client.id == original_id
 
+    @pytest.mark.slow
     def test_api_client_concurrent_creation(self, app: "Flask") -> None:
         """Test ApiClient creation under simulated concurrent conditions."""
         with app.app_context():
@@ -219,6 +220,7 @@ class TestApiClient:
 
             assert len(generated_ids) == 10
 
+    @pytest.mark.slow
     def test_api_client_bulk_operations(self, app: "Flask") -> None:
         """Test bulk operations performance and integrity for ApiClient."""
         with app.app_context():
@@ -232,6 +234,7 @@ class TestApiClient:
 
             assert db.session.query(ApiClient).count() >= 50
 
+    @pytest.mark.slow
     def test_api_client_query_performance(self, app: "Flask") -> None:
         """Test basic query performance for ApiClient."""
         with app.app_context():
