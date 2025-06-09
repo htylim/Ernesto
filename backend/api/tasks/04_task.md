@@ -50,8 +50,8 @@ Replace OAuth2 client credentials flow with API Key-based authentication system.
     - [ ] 4.4.3 Remove JWT-related warning configurations
     - [ ] 4.4.4 Add API key strength validation
 - [ ] 4.5 Update Tests for API Key Authentication
-    - [ ] 4.5.1 Remove all JWT-related tests from test_config.py
-    - [ ] 4.5.2 Remove JWT validation tests from test_validators.py
+    - [x] 4.5.1 Remove all JWT-related tests from test_config.py
+    - [x] 4.5.2 Remove JWT validation tests from test_validators.py
     - [ ] 4.5.3 Update ApiClient model tests for new API key functionality
     - [ ] 4.5.4 Create comprehensive auth.py tests for API key authentication
 - [ ] 4.6 Create Database Migration for JWT Cleanup
