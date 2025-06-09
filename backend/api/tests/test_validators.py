@@ -75,7 +75,6 @@ class TestConfigValidator:
         config = BaseConfig()
         config.SECRET_KEY = "dev-secret-key-change-in-production"  # Default secret
         config.SQLALCHEMY_DATABASE_URI = "sqlite:///test.db"
-        config.JWT_SECRET_KEY = "jwt-secret-key"  # Default JWT secret
         config.DEBUG = True  # Development mode
 
         validator = ConfigValidator(config)
@@ -87,7 +86,6 @@ class TestConfigValidator:
             # Should have warnings about default secrets
             warning_messages = [str(warning.message) for warning in w]
             assert any("default SECRET_KEY" in msg for msg in warning_messages)
-            assert any("default JWT_SECRET_KEY" in msg for msg in warning_messages)
 
 
 class TestValidateRequiredFields:
@@ -128,20 +126,6 @@ class TestValidateRequiredFields:
 
         assert len(validator.errors) == 1
         assert "SQLALCHEMY_DATABASE_URI" in validator.errors[0]
-
-    def test_validate_required_fields_production_requires_jwt_secret(self) -> None:
-        """Test that production mode requires JWT_SECRET_KEY."""
-        config = BaseConfig()
-        config.SECRET_KEY = "secure-secret"
-        config.SQLALCHEMY_DATABASE_URI = "sqlite:///test.db"
-        config.JWT_SECRET_KEY = None
-        config.DEBUG = False  # Production mode
-
-        validator = ConfigValidator(config)
-        validator.validate_required_fields()
-
-        assert len(validator.errors) == 1
-        assert "JWT_SECRET_KEY" in validator.errors[0]
 
 
 class TestValidateDatabaseConfig:
@@ -203,93 +187,6 @@ class TestValidateDatabaseConfig:
         assert "SQLALCHEMY_TRACK_MODIFICATIONS" in validator.warnings[0]
 
 
-class TestValidateJwtConfig:
-    """Test validate_jwt_config method."""
-
-    def test_validate_jwt_config_valid_algorithm(self) -> None:
-        """Test validation of valid JWT algorithm."""
-        config = BaseConfig()
-        config.JWT_ALGORITHM = "HS256"
-        config.JWT_SECRET_KEY = "secure-jwt-secret"
-
-        validator = ConfigValidator(config)
-        validator.validate_jwt_config()
-
-        assert validator.errors == []
-
-    def test_validate_jwt_config_invalid_algorithm(self) -> None:
-        """Test validation fails with invalid JWT algorithm."""
-        config = BaseConfig()
-        config.JWT_ALGORITHM = "INVALID_ALG"
-
-        validator = ConfigValidator(config)
-        validator.validate_jwt_config()
-
-        assert len(validator.errors) == 1
-        assert "Unsupported JWT algorithm" in validator.errors[0]
-
-    def test_validate_jwt_config_invalid_token_location(self) -> None:
-        """Test validation fails with invalid JWT token location."""
-        config = BaseConfig()
-        config.JWT_TOKEN_LOCATION = ["invalid_location"]
-
-        validator = ConfigValidator(config)
-        validator.validate_jwt_config()
-
-        assert len(validator.errors) == 1
-        assert "Invalid JWT token locations" in validator.errors[0]
-
-    def test_validate_jwt_config_token_location_not_list(self) -> None:
-        """Test validation fails when JWT_TOKEN_LOCATION is not a list."""
-        config = BaseConfig()
-        config.JWT_TOKEN_LOCATION = "headers"  # Should be a list
-
-        validator = ConfigValidator(config)
-        validator.validate_jwt_config()
-
-        assert len(validator.errors) == 1
-        assert "JWT_TOKEN_LOCATION must be a list" in validator.errors[0]
-
-    def test_validate_jwt_config_weak_secret_in_development(self) -> None:
-        """Test warning for weak JWT secret in development."""
-        config = BaseConfig()
-        config.JWT_SECRET_KEY = "secret"  # Weak secret
-        config.DEBUG = True  # Development mode
-
-        validator = ConfigValidator(config)
-        validator.validate_jwt_config()
-
-        assert len(validator.warnings) == 1
-        assert "using weak jwt_secret_key" in validator.warnings[0].lower()
-
-    def test_validate_jwt_config_weak_secret_in_production(self) -> None:
-        """Test error for weak JWT secret in production."""
-        config = BaseConfig()
-        config.JWT_SECRET_KEY = "secret"  # Weak secret (both short and weak)
-        config.DEBUG = False  # Production mode
-
-        validator = ConfigValidator(config)
-        validator.validate_jwt_config()
-
-        # Should have both short length error and weak secret error
-        assert len(validator.errors) == 2
-        assert any(
-            "must be at least 12 characters long" in error for error in validator.errors
-        )
-        assert any("Weak JWT secret detected" in error for error in validator.errors)
-
-    def test_validate_jwt_config_short_secret(self) -> None:
-        """Test error for short JWT secret."""
-        config = BaseConfig()
-        config.JWT_SECRET_KEY = "short"  # Too short
-
-        validator = ConfigValidator(config)
-        validator.validate_jwt_config()
-
-        assert len(validator.errors) == 1
-        assert "must be at least 12 characters long" in validator.errors[0]
-
-
 class TestValidateSecurityConfig:
     """Test validate_security_config method."""
 
@@ -343,20 +240,6 @@ class TestValidateSecurityConfig:
         # Should have at least one error for the short secret
         assert len(validator.errors) >= 1
         assert any("SECRET_KEY" in error for error in validator.errors)
-
-    def test_validate_security_config_jwt_cookie_insecure_production(self) -> None:
-        """Test warning for insecure JWT cookies in production."""
-        config = BaseConfig()
-        config.SECRET_KEY = "a-very-secure-secret-key-for-testing-in-production"
-        config.JWT_COOKIE_SECURE = False
-        config.DEBUG = False  # Production mode
-        config.TESTING = False
-
-        validator = ConfigValidator(config)
-        validator.validate_security_config()
-
-        assert len(validator.warnings) == 1
-        assert "JWT_COOKIE_SECURE should be True in production" in validator.warnings[0]
 
 
 class TestValidateApplicationConfig:
@@ -433,7 +316,6 @@ class TestValidateEnvironmentSpecific:
         "os.environ",
         {
             "SECRET_KEY": "a-very-secure-secret-key-for-production-testing",
-            "JWT_SECRET_KEY": "a-very-secure-jwt-secret-key-for-production",
             "DATABASE_URI": "postgresql://user:pass@localhost:5432/prod_db",
         },
     )
@@ -456,7 +338,6 @@ class TestValidateConfigFunction:
         config = BaseConfig()
         config.SECRET_KEY = "a-very-secure-secret-key-for-testing"
         config.SQLALCHEMY_DATABASE_URI = "sqlite:///test.db"
-        config.JWT_SECRET_KEY = "a-secure-jwt-secret-key"
         config.DEBUG = True
 
         # Should not raise any exceptions
@@ -499,24 +380,6 @@ class TestPrivateValidationMethods:
 
         assert validator._is_valid_database_uri("invalid-uri") is False
         assert validator._is_valid_database_uri("") is False
-
-    def test_validate_jwt_secret_strength_secure(self) -> None:
-        """Test _validate_jwt_secret_strength with secure secret."""
-        config = BaseConfig()
-        config.DEBUG = True
-        validator = ConfigValidator(config)
-
-        validator._validate_jwt_secret_strength("a-very-secure-jwt-secret")
-        assert validator.errors == []
-
-    def test_validate_jwt_secret_strength_weak(self) -> None:
-        """Test _validate_jwt_secret_strength with weak secret."""
-        config = BaseConfig()
-        config.DEBUG = True
-        validator = ConfigValidator(config)
-
-        validator._validate_jwt_secret_strength("password")
-        assert len(validator.warnings) == 1
 
     def test_validate_secret_key_strength_secure(self) -> None:
         """Test _validate_secret_key_strength with secure secret."""
