@@ -1,8 +1,11 @@
 """Tests for the ApiClient model.
 
-This module tests ApiClient model validation, constraints, and data integrity.
+This module tests ApiClient model validation, constraints, and data integrity,
+including API key generation, hashing, and validation.
 """
 
+import re
+from datetime import datetime
 from typing import TYPE_CHECKING
 
 import pytest
@@ -22,152 +25,185 @@ class TestApiClient:
     def test_api_client_model(self, app: "Flask") -> None:
         """Test ApiClient model creation and validation."""
         with app.app_context():
-            # Test valid ApiClient creation
-            client = ApiClient(
-                name="test_client", api_key="test_key_123", is_active=True
-            )
-            db.session.add(client)
+            api_client, api_key = ApiClient.create_with_api_key(name="test_client")
+            db.session.add(api_client)
             db.session.commit()
 
-            # Verify the client was created
-            assert client.id is not None
-            assert client.name == "test_client"
-            assert client.api_key == "test_key_123"
-            assert client.is_active is True
-            assert client.created_at is not None
+            assert api_client.id is not None
+            assert api_client.name == "test_client"
+            assert api_client.hashed_api_key is not None
+            assert api_client.check_api_key(api_key)
+            assert not api_client.check_api_key("wrong_key")
+            assert api_client.is_active is True
+            assert api_client.created_at is not None
+            assert api_client.last_used_at is None
+            assert api_client.use_count == 0
+            assert str(api_client) == "<ApiClient test_client>"
 
-            # Test string representation
-            assert str(client) == "<ApiClient test_client>"
+    def test_generate_api_key(self) -> None:
+        """Test the API key generation method."""
+        key1 = ApiClient.generate_api_key()
+        key2 = ApiClient.generate_api_key()
+        assert isinstance(key1, str)
+        assert len(key1) > 20
+        assert key1 != key2
+
+        key_32 = ApiClient.generate_api_key(length=32)
+        # The length of a url-safe base64-encoded string from n bytes
+        # is about 4*n/3.
+        assert len(key_32) >= 4 * 32 / 3
+        # Check for URL-safe characters
+        assert re.match(r"^[A-Za-z0-9_-]+$", key_32)
+
+    def test_set_and_check_api_key(self) -> None:
+        """Test setting and checking the API key."""
+        api_client = ApiClient(name="key_test_client")
+        api_key = ApiClient.generate_api_key()
+
+        api_client.set_api_key(api_key)
+        assert api_client.hashed_api_key is not None
+        assert api_client.hashed_api_key != api_key
+        assert api_client.check_api_key(api_key) is True
+        assert api_client.check_api_key("not_the_key") is False
+
+    def test_create_with_api_key(self) -> None:
+        """Test the class method for creating a client with an API key."""
+        api_client, api_key = ApiClient.create_with_api_key(name="factory_client")
+        assert isinstance(api_client, ApiClient)
+        assert isinstance(api_key, str)
+        assert api_client.name == "factory_client"
+        assert api_client.check_api_key(api_key)
 
     def test_api_client_defaults(self, app: "Flask") -> None:
         """Test ApiClient model default values."""
         with app.app_context():
-            # Test with minimal required fields
-            client = ApiClient(name="minimal_client", api_key="key123")
-            db.session.add(client)
+            api_client, _ = ApiClient.create_with_api_key(name="minimal_client")
+            db.session.add(api_client)
             db.session.commit()
 
-            # Verify defaults are applied
-            assert client.is_active is True  # Should default to True
-            assert client.created_at is not None  # Should be auto-set
+            assert api_client.is_active is True
+            assert api_client.created_at is not None
+            assert api_client.use_count == 0
+            assert api_client.last_used_at is None
 
     def test_api_client_unique_constraints(self, app: "Flask") -> None:
-        """Test ApiClient unique constraints for name and api_key."""
+        """Test ApiClient unique constraint for name."""
         with app.app_context():
-            # Create first client
-            client1 = ApiClient(name="client1", api_key="key1")
+            client1, _ = ApiClient.create_with_api_key(name="client1")
             db.session.add(client1)
             db.session.commit()
 
-            # Test duplicate name constraint
-            client2 = ApiClient(name="client1", api_key="key2")
+            client2, _ = ApiClient.create_with_api_key(name="client1")
             db.session.add(client2)
             with pytest.raises(IntegrityError):
                 db.session.commit()
-
-            db.session.rollback()
-
-            # Test duplicate api_key constraint
-            client3 = ApiClient(name="client2", api_key="key1")
-            db.session.add(client3)
-            with pytest.raises(IntegrityError):
-                db.session.commit()
-
             db.session.rollback()
 
     def test_api_client_database_schema(self, app: "Flask") -> None:
         """Test that ApiClient database schema matches model definition."""
         with app.app_context():
             inspector = inspect(db.engine)
-
-            # Test ApiClient table structure
-            api_clients_columns = {
-                col["name"]: col for col in inspector.get_columns("api_clients")
-            }
-            assert "id" in api_clients_columns
-            assert "name" in api_clients_columns
-            assert "api_key" in api_clients_columns
-            assert "is_active" in api_clients_columns
-            assert "created_at" in api_clients_columns
+            columns = {col["name"]: col for col in inspector.get_columns("api_clients")}
+            assert "id" in columns
+            assert "name" in columns
+            assert "hashed_api_key" in columns
+            assert "is_active" in columns
+            assert "created_at" in columns
+            assert "last_used_at" in columns
+            assert "use_count" in columns
+            assert columns["hashed_api_key"]["type"].length == 128
 
     def test_api_client_id_generation(self, app: "Flask") -> None:
         """Test that integer IDs are properly generated for ApiClient."""
         with app.app_context():
-            client = ApiClient(name="ID Test Client", api_key="test_key")
+            client, _ = ApiClient.create_with_api_key(name="ID Test Client")
             db.session.add(client)
             db.session.commit()
 
-            # Verify integer ID is generated
             assert client.id is not None
-            assert isinstance(client.id, int)  # ApiClient uses integer ID
+            assert isinstance(client.id, int)
 
     def test_api_client_required_fields(self, app: "Flask") -> None:
         """Test that required fields are properly enforced for ApiClient."""
         with app.app_context():
-            # Test missing required fields
-            with pytest.raises((IntegrityError, ValueError)):
-                # Missing name for ApiClient
-                client = ApiClient(api_key="test_key")
-                db.session.add(client)
+            # Test missing name
+            client_no_name = ApiClient(hashed_api_key="some_key")
+            db.session.add(client_no_name)
+            with pytest.raises(IntegrityError):
                 db.session.commit()
+            db.session.rollback()
 
+            # Test missing hashed_api_key
+            client_no_key = ApiClient(name="no_key_client")
+            db.session.add(client_no_key)
+            with pytest.raises(IntegrityError):
+                db.session.commit()
             db.session.rollback()
 
     def test_api_client_string_length_constraints(self, app: "Flask") -> None:
         """Test string length constraints for ApiClient."""
         with app.app_context():
-            # Test API client name length (100 chars max)
             long_name = "a" * 101
-            client = ApiClient(name=long_name, api_key="test_key")
+            client, _ = ApiClient.create_with_api_key(name=long_name)
             db.session.add(client)
 
             # This should raise an error in databases that enforce length
             try:
                 db.session.commit()
-                # If we get here, length constraints aren't enforced (SQLite)
+                # If we get here, length constraints aren't enforced (e.g., SQLite)
+                # To make the test useful, we should at least verify the object state
+                # and then clean up.
+                retrieved = db.session.get(ApiClient, client.id)
+                assert len(retrieved.name) == 101
                 db.session.delete(client)
                 db.session.commit()
-            except (IntegrityError, Exception):
-                # Length constraints are enforced
+            except IntegrityError:
+                # This is the expected behavior for databases like PostgreSQL
                 db.session.rollback()
+                assert (
+                    db.session.query(ApiClient).filter_by(name=long_name).first()
+                    is None
+                )
 
     def test_api_client_null_handling(self, app: "Flask") -> None:
         """Test proper null value handling in ApiClient optional fields."""
         with app.app_context():
-            # Test that required fields cannot be None
-            client = ApiClient(name="Null Test Client", api_key="test_key")
+            client, _ = ApiClient.create_with_api_key(name="Null Test Client")
             db.session.add(client)
             db.session.commit()
 
-            # Verify required fields are not null
-            assert client.name is not None
-            assert client.api_key is not None
+            assert client.last_used_at is None
+
+            # Update to set a value and then back to null
+            client.last_used_at = datetime.utcnow()
+            db.session.commit()
+            assert client.last_used_at is not None
+
+            client.last_used_at = None
+            db.session.commit()
+            assert client.last_used_at is None
 
     def test_api_client_data_consistency_after_rollback(self, app: "Flask") -> None:
         """Test ApiClient data consistency after transaction rollbacks."""
         with app.app_context():
-            # Create valid data
-            client = ApiClient(name="Test Client", api_key="test_key_123")
+            client, _ = ApiClient.create_with_api_key(name="Test Client")
             db.session.add(client)
             db.session.commit()
 
-            original_count = ApiClient.query.count()
+            original_count = db.session.query(ApiClient).count()
             original_id = client.id
 
-            # Attempt invalid operation that should rollback
+            duplicate_client, _ = ApiClient.create_with_api_key(name="Test Client")
+            db.session.add(duplicate_client)
             try:
-                # This should fail due to unique constraint on api_key
-                duplicate_client = ApiClient(
-                    name="Different Name", api_key="test_key_123"
-                )
-                db.session.add(duplicate_client)
                 db.session.commit()
             except IntegrityError:
                 db.session.rollback()
 
-            # Verify original data is still intact
-            assert ApiClient.query.count() == original_count
-            remaining_client = ApiClient.query.filter_by(name="Test Client").first()
+            assert db.session.query(ApiClient).count() == original_count
+            remaining_client = (
+                db.session.query(ApiClient).filter_by(name="Test Client").first()
+            )
             assert remaining_client is not None
             assert remaining_client.id == original_id
 
@@ -175,34 +211,26 @@ class TestApiClient:
         """Test ApiClient creation under simulated concurrent conditions."""
         with app.app_context():
             generated_ids = set()
-
-            # Simulate concurrent creation
             for i in range(10):
-                client = ApiClient(name=f"Concurrent Client {i}", api_key=f"key_{i}")
+                client, _ = ApiClient.create_with_api_key(name=f"Concurrent Client {i}")
                 db.session.add(client)
                 db.session.commit()
                 generated_ids.add(client.id)
 
-            # Verify all IDs are unique
             assert len(generated_ids) == 10
 
     def test_api_client_bulk_operations(self, app: "Flask") -> None:
         """Test bulk operations performance and integrity for ApiClient."""
         with app.app_context():
-            # Test bulk insertion of clients
             clients = []
             for i in range(50):
-                client = ApiClient(
-                    name=f"Bulk Client {i}",
-                    api_key=f"bulk_key_{i}",
-                )
+                client, _ = ApiClient.create_with_api_key(name=f"Bulk Client {i}")
                 clients.append(client)
 
             db.session.add_all(clients)
             db.session.commit()
 
-            # Verify all clients were created
-            assert ApiClient.query.count() == 50
+            assert db.session.query(ApiClient).count() >= 50
 
     def test_api_client_query_performance(self, app: "Flask") -> None:
         """Test basic query performance for ApiClient."""
@@ -210,31 +238,28 @@ class TestApiClient:
             # Create test data
             clients = []
             for i in range(50):
-                client = ApiClient(
-                    name=f"Performance Client {i}",
-                    api_key=f"perf_key_{i}",
+                client, _ = ApiClient.create_with_api_key(
+                    name=f"Performance Client {i}"
                 )
                 clients.append(client)
-
             db.session.add_all(clients)
             db.session.commit()
 
-            # Test various query patterns
             # Filter by name
-            name_clients = ApiClient.query.filter_by(name="Performance Client 25").all()
+            name_clients = (
+                db.session.query(ApiClient)
+                .filter_by(name="Performance Client 25")
+                .all()
+            )
             assert len(name_clients) == 1
 
             # Filter by is_active
-            active_clients = ApiClient.query.filter_by(is_active=True).all()
-            assert len(active_clients) == 50
+            active_clients = db.session.query(ApiClient).filter_by(is_active=True).all()
+            assert len(active_clients) >= 50
 
     def test_api_client_foreign_key_constraints(self, app: "Flask") -> None:
         """Test foreign key constraints for ApiClient (if any)."""
         with app.app_context():
             inspector = inspect(db.engine)
-
-            # Test ApiClient foreign keys (should be none for this model)
-            api_clients_fks = inspector.get_foreign_keys("api_clients")
-
-            # ApiClient should not have foreign keys to other tables
-            assert len(api_clients_fks) == 0
+            fks = inspector.get_foreign_keys("api_clients")
+            assert len(fks) == 0

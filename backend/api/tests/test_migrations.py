@@ -164,9 +164,12 @@ class TestMigrations:
             }
             assert "id" in api_clients_columns
             assert "name" in api_clients_columns
-            assert "api_key" in api_clients_columns
+            assert "hashed_api_key" in api_clients_columns
             assert "is_active" in api_clients_columns
             assert "created_at" in api_clients_columns
+            assert "last_used_at" in api_clients_columns
+            assert "use_count" in api_clients_columns
+            assert "api_key" not in api_clients_columns
 
             # Test sources table structure
             sources_columns = {

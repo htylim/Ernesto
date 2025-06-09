@@ -245,6 +245,10 @@ flask db downgrade <revision_id>
 - **"Can't locate revision"**: Check migration files in `app/migrations/`
 - **Foreign key constraint errors**: Ensure referenced tables exist before creating relationships
 
+### **Migration Files Location**
+- **Directory**: Migration scripts are stored directly in `app/migrations/`. Note that there is no `versions` subdirectory.
+- **Naming Convention**: Files are named using the format `<revision_id>_<description>.py`.
+
 ### **Active Connection Errors**
 If you get "database is being accessed by other users":
 1. First terminate connections using the `pg_terminate_backend` command above

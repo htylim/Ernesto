@@ -22,15 +22,15 @@ def generate_key(client_name: str) -> int:
             print(f"Error: Client '{client_name}' already exists.")
             return 1
 
-        # Generate new API client
-        new_client = ApiClient(name=client_name, api_key=ApiClient.generate_api_key())
+        # Generate new API client and key
+        new_client, api_key = ApiClient.create_with_api_key(name=client_name)
 
         db.session.add(new_client)
         db.session.commit()
 
         print("\n===== API Key Generated Successfully =====")
         print(f"Client Name: {new_client.name}")
-        print(f"API Key: {new_client.api_key}")
+        print(f"API Key: {api_key}")
         print("\nImportant: Store this API key securely.")
         print("It won't be shown again.")
         print("===========================================\n")

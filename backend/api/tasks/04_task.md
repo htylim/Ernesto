@@ -34,11 +34,11 @@ Replace OAuth2 client credentials flow with API Key-based authentication system.
     - [x] 4.1.2 Remove JWT imports and initialization from app/extensions.py
     - [x] 4.1.3 Remove all JWT-related configuration from app/config.py
     - [x] 4.1.4 Clean up JWT test configurations from pyproject.toml
-- [ ] 4.2 Enhance ApiClient Model with API Key Generation
-    - [ ] 4.2.1 Add generate_api_key class method to ApiClient model
-    - [ ] 4.2.2 Add API key validation and security methods
-    - [ ] 4.2.3 Add API key hashing functionality for secure storage
-    - [ ] 4.2.4 Add rate limiting and usage tracking fields
+- [x] 4.2 Enhance ApiClient Model with API Key Generation
+    - [x] 4.2.1 Add generate_api_key class method to ApiClient model
+    - [x] 4.2.2 Add API key validation and security methods
+    - [x] 4.2.3 Add API key hashing functionality for secure storage
+    - [x] 4.2.4 Add rate limiting and usage tracking fields
 - [ ] 4.3 Update Authentication Middleware and Security
     - [ ] 4.3.1 Enhance require_api_key decorator with better error handling
     - [ ] 4.3.2 Add request logging and rate limiting capabilities
