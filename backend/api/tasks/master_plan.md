@@ -1,12 +1,12 @@
 # Master Development Plan
 
-## 1. Setup Flask Application Factory Pattern
+## [x] 1. Setup Flask Application Factory Pattern
 Implement a modular Flask app using the application factory pattern. Include structured configuration management with environment-based settings, comprehensive error handling, logging setup, and extension registration to support different environments (development, testing, production).
 
-## 2. Setup Database Models with Flask-SQLAlchemy
+## [x] 2. Setup Database Models with Flask-SQLAlchemy
 Define SQLAlchemy models for Articles, Topics, and Sources entities with proper relationships, constraints, and UUID primary keys. Include timestamp fields, foreign key relationships, and validation. Ensure models follow Flask-SQLAlchemy patterns with proper `db.Model` inheritance.
 
-## 3. Implement Database Migrations with Flask-Alembic
+## [x] 3. Implement Database Migrations with Flask-Alembic
 Enable version-controlled schema changes using Flask-Alembic integration. Set up migration commands that work with the application factory pattern, configure migration environment, and create initial database schema migrations for all entities.
 
 ## 4. Implement API Key Authentication System and Remove OAuth2 Components

@@ -4,23 +4,22 @@ globs:
 alwaysApply: false
 ---
 ## Goal
+Given:
 
-given the following: 
+- A project's documentation (`README.md`)
+- Its list of high-level tasks (`tasks/master_plan.md`)
+- A user choice of a specific task file to perform a GAP analysis (e.g. `tasks/01_task.md`)
 
-- a project's existing documentation ([README.md](mdc:README.md))
-- a project's enumeration of high-level tasks ([master_plan.md](mdc:tasks/master_plan.md))
-- and a user choice of a specific task to perform the gap analysis (eg: `tasks/01_task.md`)
-
-Perform a thorough GAP analysis on what the task intended to be implementedm what was actually implemented, and update the task plan to reflect what is done and what is still missing. 
+Perform a thorough GAP analysis on what the task intended to be implemented what is currently implemented, and update the task plan to reflect what is done and what is still missing. 
 
 ## Terms
-- {task} : high-level task, from [master_plan.md](mdc:tasks/master_plan.md), chosen by the user to drilling down into a step-by-step two-level task list.
-- {subtask} : first level of the two-level task list to be generated from the given {task}.
-- {subsubtask} : second level of the two-level task list to be generated from the given {task}. This level is the most granular and concrete step.
-- {.. num} number of the task, subtask or subsubtask (eg. {subtask_num} is '1.1' in 'Task 1.1 Implement Configuration Classes Structure').
-- {.. title} title of the task, subtask or subsubtask (eg. {subtask_title} is 'Implement Configuration Classes Structure' in 'Task 1.1 Implement Configuration Classes Structure').
-- {.. description} longer description of the task, subtask, subsubtask.
- 
+- **{task}**: one of the high-level items in `tasks/master_plan.md`.
+- **{subtask}**: a first-level step under a {task} in `tasks/{task_num}_task.md`.
+- **{subsubtask}**: a second-level, granular step under a {subtask}.
+- **{... num}**: the numeric identifier (e.g. 1.1).
+- **{... title}**: the title text (e.g. “Implement Configuration Classes”).
+- **{... description}**: the detailed instructions for a step.
+
 ## Output
 
 - **format**: Markdown (`.md`)
@@ -40,8 +39,10 @@ Perform a thorough GAP analysis on what the task intended to be implementedm wha
 2. **Perform GAP analysis**
 - Thoroughly walk the step-by-step task plan, checking each {subtask} and {subsubtask} if the current project implementation fulfills the {subtask} / {subsubtask} objective (it may surpass it).
 - Flag the {subtask} / {subsubtask} as DONE if required. (eg: replace '[ ]' with '[x]')
-- Append to each {subsubtask} and {subtask} specific section what was done, what is still missing, and any additional comment important for the implementation of the remainder of the entry.
-- And finally append 'Gap Analysis Summary' section at the end of the file with the analysis overall result.
+- if a {subtask} has all its {subsubtask} flagged as DONE mark the {subtask} as DONE
+- if a {task} has all its {subtask} flagged as DONE mark the {task} as DONE in both the {task} plan file and in the `master_plan.md` file
+- Append to each {subsubtask}'s and {subtask}'s specific sections what was done, what is still missing, and any additional comment that you deem important for the implementation of the remainder of the entry.
+- And finally append a new 'Gap Analysis Summary' section at the end of the file with the analysis overall result.
 
 3. **Example Output**
 The following is an example of a correct update to a task plan file (NOTE: the file is only shown partially):
