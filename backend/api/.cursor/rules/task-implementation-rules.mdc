@@ -1,5 +1,5 @@
 ---
-description: when asked to implement a subtask (or task) from a /tasks/xx_task.md file
+description: when asked to implement a task or subtask or subsubtask
 globs: 
 alwaysApply: false
 ---
@@ -33,7 +33,7 @@ Implement exactly that {subtask}/{subsubtask} per its definition in the task fil
 2. **Handle {subtask}s**
 - If a specific {subsubtask} is requested, skip to 3.
 - Locate the {subtask}. Review its {subsubtasks}.
-- Find the first unchecked (eg `[ ]`). Show it to the user and ask permission to continue.
+- Find the first unchecked (eg `[ ]`). Show it to the user and wait user approval to continue.
 - When approved, proceed to step 3. Repeat until all `[ ]` are `[x]`. Then mark the {subtask} with `[x]`.
 
 3. **Implement a {subsubtask}**

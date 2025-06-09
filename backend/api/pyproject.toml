@@ -35,11 +35,8 @@ filterwarnings = [
     "error",  # Turn warnings into errors by default
     # Allow expected configuration warnings in development/testing
     "ignore:.*Using default SECRET_KEY in development.*:UserWarning",
-    "ignore:.*Using default JWT_SECRET_KEY in development.*:UserWarning",
     # Allow general configuration warnings during testing
     "ignore:.*Configuration warning.*:UserWarning",
-    # Allow JWT configuration warning during testing
-    "ignore:.*JWT_SECRET_KEY not configured.*:UserWarning",
     # Ignore ResourceWarning from unclosed log files in tests
     "ignore:unclosed file.*:ResourceWarning",
     # Ignore PytestUnraisableExceptionWarning from logging handlers

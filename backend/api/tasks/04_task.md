@@ -29,11 +29,11 @@ Replace OAuth2 client credentials flow with API Key-based authentication system.
 
 ## Tasks
 
-- [ ] 4.1 Remove JWT/OAuth2 Dependencies and Configuration
-    - [ ] 4.1.1 Remove Flask-JWT-Extended from requirements.txt
-    - [ ] 4.1.2 Remove JWT imports and initialization from app/extensions.py
-    - [ ] 4.1.3 Remove all JWT-related configuration from app/config.py
-    - [ ] 4.1.4 Clean up JWT test configurations from pyproject.toml
+- [x] 4.1 Remove JWT/OAuth2 Dependencies and Configuration
+    - [x] 4.1.1 Remove Flask-JWT-Extended from requirements.txt
+    - [x] 4.1.2 Remove JWT imports and initialization from app/extensions.py
+    - [x] 4.1.3 Remove all JWT-related configuration from app/config.py
+    - [x] 4.1.4 Clean up JWT test configurations from pyproject.toml
 - [ ] 4.2 Enhance ApiClient Model with API Key Generation
     - [ ] 4.2.1 Add generate_api_key class method to ApiClient model
     - [ ] 4.2.2 Add API key validation and security methods
