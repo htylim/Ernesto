@@ -1,10 +1,14 @@
 """Shared test fixtures for all test modules."""
 
+from typing import Generator, Tuple
+
 import pytest
 from flask import Flask
+from flask.testing import FlaskClient
 
 from app import create_app
 from app.extensions import db
+from app.models import ApiClient
 
 
 @pytest.fixture
@@ -21,6 +25,22 @@ def app() -> Flask:
         db.create_all()
         yield app
         db.drop_all()
+
+
+@pytest.fixture
+def client(app: Flask) -> FlaskClient:
+    """Create a test client for the Flask application."""
+    return app.test_client()
+
+
+@pytest.fixture
+def sample_api_client(app: Flask) -> Generator[Tuple[ApiClient, str], None, None]:
+    """Create a sample API client for testing authentication."""
+    with app.app_context():
+        api_client, api_key = ApiClient.create_with_api_key("test_client")
+        db.session.add(api_client)
+        db.session.commit()
+        yield api_client, api_key
 
 
 @pytest.fixture

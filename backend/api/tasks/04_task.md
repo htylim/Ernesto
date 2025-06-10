@@ -40,10 +40,10 @@ Replace OAuth2 client credentials flow with API Key-based authentication system.
     - [x] 4.2.3 Add API key hashing functionality for secure storage
     - [x] 4.2.4 Add rate limiting and usage tracking fields
 - [ ] 4.3 Update Authentication Middleware and Security
-    - [ ] 4.3.1 Enhance require_api_key decorator with better error handling
-    - [ ] 4.3.2 Add request logging and rate limiting capabilities
+    - [x] 4.3.1 Enhance require_api_key decorator with better error handling
+    - [ ] 4.3.2 Add request logging and rate limiting capabilities **PARTIAL**
     - [ ] 4.3.3 Implement secure API key comparison methods
-    - [ ] 4.3.4 Add authentication failure tracking and security features
+    - [s] 4.3.4 Add authentication failure tracking and security features **SKIP**
 - [ ] 4.4 Remove JWT Validation and Clean Up Validators
     - [ ] 4.4.1 Remove all JWT validation methods from app/validators.py
     - [ ] 4.4.2 Add API key configuration validation
@@ -97,16 +97,59 @@ Add optional fields and methods for tracking API key usage, implementing rate li
 Enhance the existing API key authentication system with improved security features, error handling, and monitoring capabilities.
 
 ### **4.3.1 Enhance require_api_key decorator with better error handling**
-Improve the existing `require_api_key` decorator with more robust error handling, consistent error responses, and proper security headers.
+**IMPLEMENTATION SCOPE:** Improve the existing `require_api_key` decorator with more robust error handling and consistent error responses.
+
+**WHAT WILL BE IMPLEMENTED:**
+- Better error handling with informative but secure error messages
+- Consistent JSON error response format
+- Proper logging of authentication attempts
+- Fix critical bug where decorator looks for plain text API keys but model stores hashed ones
+
+**WHAT WILL NOT BE IMPLEMENTED:**
+- Security headers (not needed for API-only backend serving single Chrome extension client)
+- Complex error categorization (overkill for toy project)
 
 ### **4.3.2 Add request logging and rate limiting capabilities**
-Implement request logging for authentication attempts and add rate limiting functionality to prevent abuse and brute force attacks.
+**IMPLEMENTATION SCOPE:** Implement basic request logging for development monitoring and debugging purposes.
+
+**WHAT WILL BE IMPLEMENTED:**
+- Basic request logging for authentication attempts (success/failure)
+- Simple logging using Python's standard logging module
+- Log remote IP addresses for basic monitoring
+- Update existing usage statistics in ApiClient model (last_used_at, use_count)
+
+**WHAT WILL NOT BE IMPLEMENTED:**
+- Rate limiting functionality (not needed since we control the only client - our Chrome extension)
+- Complex logging infrastructure with external services
+- Brute force attack prevention (controlled environment with single trusted client)
+- Advanced monitoring and alerting systems
+
+**RATIONALE:** This is a toy project with our own Chrome extension as the only client, so rate limiting and complex security monitoring are unnecessary overhead.
 
 ### **4.3.3 Implement secure API key comparison methods**
-Use secure comparison functions that prevent timing attacks when validating API keys against stored hashed values.
+**IMPLEMENTATION SCOPE:** Fix critical authentication bug and implement secure API key validation using the existing ApiClient model methods.
+
+**WHAT WILL BE IMPLEMENTED:**
+- Fix critical bug where decorator searches for plain text API keys but model stores hashed versions
+- Use the existing `ApiClient.check_api_key()` method which implements secure bcrypt comparison
+- Implement proper flow: retrieve client first, then validate API key using secure comparison
+- Ensure timing-safe comparison operations to prevent timing attacks
+- Update the decorator to work correctly with the enhanced ApiClient model from task 4.2
+
+**RATIONALE:** This is a critical fix - the current authentication system is completely broken because it tries to match plain text keys against hashed storage. This must be implemented to have working authentication at all.
 
 ### **4.3.4 Add authentication failure tracking and security features**
-Implement tracking of failed authentication attempts and security features like temporary account lockouts for suspicious activity.
+**IMPLEMENTATION SCOPE:** SKIPPED - Not needed for toy project with controlled client environment.
+
+**WHAT WILL NOT BE IMPLEMENTED:**
+- Failed authentication attempt tracking
+- Temporary account lockouts for suspicious activity
+- Brute force attack detection
+- Complex security monitoring and alerting
+- IP-based blocking or throttling
+- Security event storage and analysis
+
+**RATIONALE:** This is a toy project where we control the only client (our Chrome extension). These enterprise-level security features would be overkill and add unnecessary complexity. Simple logging in 4.3.2 provides sufficient visibility for development purposes. If this becomes a production system with multiple clients, these features can be added later.
 
 ## **4.4 Remove JWT Validation and Clean Up Validators**
 
