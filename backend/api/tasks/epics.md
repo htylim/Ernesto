@@ -1,4 +1,6 @@
-# Master Development Plan
+# Epic roadmap
+
+High-level split of Epics for the implementation of the project described in `/README.md`
 
 ## [x] 1. Setup Flask Application Factory Pattern
 Implement a modular Flask app using the application factory pattern. Include structured configuration management with environment-based settings, comprehensive error handling, logging setup, and extension registration to support different environments (development, testing, production).

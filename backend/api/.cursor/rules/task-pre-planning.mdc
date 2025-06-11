@@ -1,0 +1,52 @@
+---
+description: when asked to do implementation pre-planning on a task
+globs: 
+alwaysApply: false
+---
+## Goal
+
+Given:
+
+- a project's existing documentation (`/README.md`).
+- a project's enumeration of its high-level epics (`/tasks/epics.md`).
+- a epic breakdown file (e.g. `tasks/01_epic.md`).
+- And a {Task} (user given) from that epic breakdown file to work on. (e.g. `1.3.2`)
+
+To write and to think thoroughly on the implementation plan to fulfill the given {Task}.
+
+
+## Terms
+
+- **{Epic}** : Top-level milestone or feature set that delivers a cohesive product outcome. Groups several stories and can span multiple sprints.
+- **{Story}** : User-facing slice of an epic that provides a complete piece of functionality or a clear non-functional goal. Small enough to estimate in days.
+- **{Task}** : Concrete engineering action required to complete a story (e.g., “Add API endpoint”, “Write unit tests”). Executable in a focused work session.
+- **{Epic id}** : Epic identifier. Composed of one integer, e.g.: "1".
+- **{Story id}** : Story identifier. Composed of {Epic Id} plus a story index, e.g.: "1.2".
+- **{Task num}** : Task identifier. Composed of {Story num} plus a task index, e.g.: "1.2.4".
+- **{Epic|Story|Task title}** : One sentence title describing the given Epic, Story or task.
+- **{Epic|Story|Task description}** : Longer description of the task, subtask, subsubtask.
+
+
+## Process
+
+1. **Read context**
+- Open `/README.md`.
+- Understand the project and all its functional and technical requirements as stated in the file. 
+- Open `/tasks/epics.md`.
+- Understand the split of the project into high-level epics for the implementation of the project.
+- Open the epic breakdown file (e.g.: `tasks/01_epic.md`).
+- Unnderstand the split of Stories and concrete step-by-step Tasks for the implementation of the Epic.
+- Locate the {Task} to implement specific section (Tasks have `### TASK: {Task}` specific sections after the breakdown list in the same file)
+- Read the section contents fully. 
+
+2. **Prepare implementation plan**
+- You are a sr full stack engineer with many years of experience developing this kind of projects and with knowledge of all the best practices required for this type of applications as well for the frameworks used.
+- Think thoroughly on the {Task} implementation and write a detailed step-by-step plan within the {Task} own section.
+- If you make assumptions confirm them with the user.
+- Include steps for unit testing and checking that code pass minimum required standards of formatting, linting, etc.
+
+3. **Discuss with user**
+- Do **NOT** start implementation.
+- Present to the user your implementation plan.
+- Wait for user feedback and iterate with the user on the plan updating the file as needed.
+- This prompts ends once the user is happy with the plan that has been written in the file.

@@ -1,6 +1,7 @@
-# [ ] 4 Implement API Key Authentication System and Remove OAuth2 Components
+# EPIC: [ ] 4 Implement API Key Authentication System and Remove OAuth2 Components
 
 Replace OAuth2 client credentials flow with API Key-based authentication system. Remove all OAuth2/JWT-related code and dependencies, enhance the existing ApiClient model and authentication middleware, create proper database migrations, and implement comprehensive API key management for the Chrome extension client. This includes cleaning up JWT configuration, removing unused Flask-JWT-Extended components, and ensuring robust API key validation with proper error handling and security features.
+
 
 ## Relevant Files
 
@@ -17,6 +18,7 @@ Replace OAuth2 client credentials flow with API Key-based authentication system.
 - `pyproject.toml` - Project configuration that needs JWT-related warnings and test configurations cleaned up.
 - `generate_api_key.py` - CLI script for generating API keys that needs to be updated to use the enhanced ApiClient model.
 
+
 ## Notes
 
 - API key authentication is simpler and more appropriate for the single Chrome extension client use case than JWT/OAuth2
@@ -27,7 +29,8 @@ Replace OAuth2 client credentials flow with API Key-based authentication system.
 - The ApiClient model should include methods for secure API key generation, validation, and management
 - Error responses should be consistent and informative without revealing sensitive information
 
-## Tasks
+
+## STORY and TASK Breakdown
 
 - [x] 4.1 Remove JWT/OAuth2 Dependencies and Configuration
     - [x] 4.1.1 Remove Flask-JWT-Extended from requirements.txt
@@ -39,7 +42,7 @@ Replace OAuth2 client credentials flow with API Key-based authentication system.
     - [x] 4.2.2 Add API key validation and security methods
     - [x] 4.2.3 Add API key hashing functionality for secure storage
     - [x] 4.2.4 Add rate limiting and usage tracking fields
-- [ ] 4.3 Update Authentication Middleware and Security
+- [ ] 4.3 Udate Authentication Middleware and pSecurity
     - [x] 4.3.1 Enhance require_api_key decorator with better error handling
     - [ ] 4.3.2 Add request logging and rate limiting capabilities **PARTIAL**
     - [ ] 4.3.3 Implement secure API key comparison methods
@@ -60,43 +63,64 @@ Replace OAuth2 client credentials flow with API Key-based authentication system.
     - [ ] 4.6.3 Test migration rollback functionality
     - [ ] 4.6.4 Verify database integrity after migration
 
-## **4.1 Remove JWT/OAuth2 Dependencies and Configuration**
+
+### STORY: **4.1 Remove JWT/OAuth2 Dependencies and Configuration**
 
 Remove all JWT and OAuth2 related dependencies, imports, and configuration from the project to eliminate unnecessary complexity and focus on API key authentication.
 
-### **4.1.1 Remove Flask-JWT-Extended from requirements.txt**
+
+### TASK: **4.1.1 Remove Flask-JWT-Extended from requirements.txt**
+
 Remove the Flask-JWT-Extended>=4.6.0 dependency from requirements.txt as it's no longer needed for API key-based authentication.
 
-### **4.1.2 Remove JWT imports and initialization from app/extensions.py**
+
+### TASK: **4.1.2 Remove JWT imports and initialization from app/extensions.py**
+
 Remove flask_jwt_extended imports and JWTManager initialization from the extensions file, along with all JWT configuration warnings and setup code.
 
-### **4.1.3 Remove all JWT-related configuration from app/config.py**
+
+### TASK: **4.1.3 Remove all JWT-related configuration from app/config.py**
+
 Remove all JWT_* configuration variables from BaseConfig, DevelopmentConfig, TestingConfig, and ProductionConfig classes to clean up the configuration system.
 
-### **4.1.4 Clean up JWT test configurations from pyproject.toml**
+
+### TASK: **4.1.4 Clean up JWT test configurations from pyproject.toml**
+
 Remove JWT-related warning suppressions and test configurations from pyproject.toml to clean up the project configuration.
 
-## **4.2 Enhance ApiClient Model with API Key Generation**
+
+### STORY: **4.2 Enhance ApiClient Model with API Key Generation**
 
 Enhance the ApiClient model with secure API key generation, validation, and management capabilities to support robust API key authentication.
 
-### **4.2.1 Add generate_api_key class method to ApiClient model**
+
+### TASK: **4.2.1 Add generate_api_key class method to ApiClient model**
+
 Implement a `generate_api_key()` class method that creates cryptographically secure, randomly generated API keys using appropriate security libraries.
 
-### **4.2.2 Add API key validation and security methods**
+
+### TASK: **4.2.2 Add API key validation and security methods**
+
 Add methods for validating API key format, checking key strength, and implementing secure comparison operations to prevent timing attacks.
 
-### **4.2.3 Add API key hashing functionality for secure storage**
+
+### TASK: **4.2.3 Add API key hashing functionality for secure storage**
+
 Implement API key hashing using bcrypt or similar secure hashing algorithms to store hashed versions of API keys in the database instead of plain text.
 
-### **4.2.4 Add rate limiting and usage tracking fields**
+
+### TASK: **4.2.4 Add rate limiting and usage tracking fields**
+
 Add optional fields and methods for tracking API key usage, implementing rate limiting, and monitoring authentication attempts for security purposes.
 
-## **4.3 Update Authentication Middleware and Security**
+
+### STORY: **4.3 Update Authentication Middleware and Security**
 
 Enhance the existing API key authentication system with improved security features, error handling, and monitoring capabilities.
 
-### **4.3.1 Enhance require_api_key decorator with better error handling**
+
+### TASK: **4.3.1 Enhance require_api_key decorator with better error handling**
+
 **IMPLEMENTATION SCOPE:** Improve the existing `require_api_key` decorator with more robust error handling and consistent error responses.
 
 **WHAT WILL BE IMPLEMENTED:**
@@ -109,7 +133,9 @@ Enhance the existing API key authentication system with improved security featur
 - Security headers (not needed for API-only backend serving single Chrome extension client)
 - Complex error categorization (overkill for toy project)
 
-### **4.3.2 Add request logging and rate limiting capabilities**
+
+### TASK: **4.3.2 Add request logging and rate limiting capabilities**
+
 **IMPLEMENTATION SCOPE:** Implement basic request logging for development monitoring and debugging purposes.
 
 **WHAT WILL BE IMPLEMENTED:**
@@ -126,7 +152,9 @@ Enhance the existing API key authentication system with improved security featur
 
 **RATIONALE:** This is a toy project with our own Chrome extension as the only client, so rate limiting and complex security monitoring are unnecessary overhead.
 
-### **4.3.3 Implement secure API key comparison methods**
+
+### TASK: **4.3.3 Implement secure API key comparison methods**
+
 **IMPLEMENTATION SCOPE:** Fix critical authentication bug and implement secure API key validation using the existing ApiClient model methods.
 
 **WHAT WILL BE IMPLEMENTED:**
@@ -138,7 +166,9 @@ Enhance the existing API key authentication system with improved security featur
 
 **RATIONALE:** This is a critical fix - the current authentication system is completely broken because it tries to match plain text keys against hashed storage. This must be implemented to have working authentication at all.
 
-### **4.3.4 Add authentication failure tracking and security features**
+
+### TASK: **4.3.4 Add authentication failure tracking and security features**
+
 **IMPLEMENTATION SCOPE:** SKIPPED - Not needed for toy project with controlled client environment.
 
 **WHAT WILL NOT BE IMPLEMENTED:**
@@ -151,50 +181,77 @@ Enhance the existing API key authentication system with improved security featur
 
 **RATIONALE:** This is a toy project where we control the only client (our Chrome extension). These enterprise-level security features would be overkill and add unnecessary complexity. Simple logging in 4.3.2 provides sufficient visibility for development purposes. If this becomes a production system with multiple clients, these features can be added later.
 
-## **4.4 Remove JWT Validation and Clean Up Validators**
+
+### STORY: **4.4 Remove JWT Validation and Clean Up Validators**
 
 Remove all JWT-related validation code from the validators module and replace with API key-specific validation functionality.
 
-### **4.4.1 Remove all JWT validation methods from app/validators.py**
+
+### TASK: **4.4.1 Remove all JWT validation methods from app/validators.py**
+
 Remove `validate_jwt_config()` method and all related JWT validation logic from the ConfigValidator class.
 
-### **4.4.2 Add API key configuration validation**
+
+### TASK: **4.4.2 Add API key configuration validation**
+
 Add validation methods for API key-related configuration settings to ensure proper security configuration.
 
-### **4.4.3 Remove JWT-related warning configurations**
+
+### TASK: **4.4.3 Remove JWT-related warning configurations**
+
 Remove all JWT-related warning and error message configurations from the validator system.
 
-### **4.4.4 Add API key strength validation**
+
+### TASK: **4.4.4 Add API key strength validation**
+
 Implement validation for API key strength requirements and security best practices in configuration.
 
-## **4.5 Update Tests for API Key Authentication**
+
+### STORY: **4.5 Update Tests for API Key Authentication**
 
 Update all test files to remove JWT-related tests and add comprehensive testing for the new API key authentication system.
 
-### **4.5.1 Remove all JWT-related tests from test_config.py**
+
+### TASK: **4.5.1 Remove all JWT-related tests from test_config.py**
+
 Remove TestJWTExtensionIntegration class and all JWT configuration tests from the configuration test file.
 
-### **4.5.2 Remove JWT validation tests from test_validators.py**
+
+### TASK: **4.5.2 Remove JWT validation tests from test_validators.py**
+
 Remove TestValidateJwtConfig class and all JWT validation test methods from the validators test file.
 
-### **4.5.3 Update ApiClient model tests for new API key functionality**
+
+### TASK: **4.5.3 Update ApiClient model tests for new API key functionality**
+
 Add comprehensive tests for the new API key generation, validation, and security methods in the ApiClient model.
 
-### **4.5.4 Create comprehensive auth.py tests for API key authentication**
+
+### TASK: **4.5.4 Create comprehensive auth.py tests for API key authentication**
+
 Create or enhance tests for the authentication middleware, covering all security features, error handling, and edge cases.
 
-## **4.6 Create Database Migration for JWT Cleanup**
+
+### STORY: **4.6 Create Database Migration for JWT Cleanup**
 
 Ensure the database schema is properly updated to support the enhanced API key system and remove any JWT-related artifacts.
 
-### **4.6.1 Generate migration to remove any JWT-related database fields**
+
+### TASK: **4.6.1 Generate migration to remove any JWT-related database fields**
+
 Create a database migration to remove any JWT-related fields if they exist in the current schema.
 
-### **4.6.2 Ensure ApiClient table structure supports enhanced API key features**
+
+### TASK: **4.6.2 Ensure ApiClient table structure supports enhanced API key features**
+
 Verify that the api_clients table has all necessary fields for the enhanced API key functionality, adding fields if needed.
 
-### **4.6.3 Test migration rollback functionality**
+
+### TASK: **4.6.3 Test migration rollback functionality**
+
 Ensure that the migration can be safely rolled back without data loss or corruption.
 
-### **4.6.4 Verify database integrity after migration**
+
+### TASK: **4.6.4 Verify database integrity after migration**
+
 Test the database integrity and ensure all constraints and relationships remain valid after the migration. 

@@ -1,54 +1,61 @@
 ---
-description: when asked to perform a gap analysis on a subtask from the `/tasks/` directory
+description: when asked to perform a gap analysis on a story
 globs: 
 alwaysApply: false
 ---
 ## Goal
+
 Given:
 
-- A project's documentation (`README.md`)
-- Its list of high-level tasks (`tasks/master_plan.md`)
-- A user choice of a specific task file to perform a GAP analysis (e.g. `tasks/01_task.md`)
+- a project's existing documentation (`/README.md`)
+- a project's enumeration of its high-level epics (`/tasks/epics.md`)
+- an epic breakdown file (user given) to perform GAP analysis of (e.g. `tasks/01_epic.md`)
 
-Perform a thorough GAP analysis on what the task intended to be implemented what is currently implemented, and update the task plan to reflect what is done and what is still missing. 
+Perform a thorough GAP analysis on what the Epic intended to be implemented vs what is currently implemented, and update the Epic breakdown file to reflect what is done and what is still missing. 
+
 
 ## Terms
-- **{task}**: one of the high-level items in `tasks/master_plan.md`.
-- **{subtask}**: a first-level step under a {task} in `tasks/{task_num}_task.md`.
-- **{subsubtask}**: a second-level, granular step under a {subtask}.
-- **{... num}**: the numeric identifier (e.g. 1.1).
-- **{... title}**: the title text (e.g. “Implement Configuration Classes”).
-- **{... description}**: the detailed instructions for a step.
+
+- **{Epic}** : Top-level milestone or feature set that delivers a cohesive product outcome. Groups several stories and can span multiple sprints.
+- **{Story}** : User-facing slice of an epic that provides a complete piece of functionality or a clear non-functional goal. Small enough to estimate in days.
+- **{Task}** : Concrete engineering action required to complete a story (e.g., “Add API endpoint”, “Write unit tests”). Executable in a focused work session.
+- **{Epic id}** : Epic identifier. Composed of one integer, e.g.: "1".
+- **{Story id}** : Story identifier. Composed of {Epic Id} plus a story index, e.g.: "1.2".
+- **{Task num}** : Task identifier. Composed of {Story num} plus a task index, e.g.: "1.2.4".
+- **{Epic|Story|Task title}** : One sentence title describing the given Epic, Story or task.
+- **{Epic|Story|Task description}** : Longer description of the task, subtask, subsubtask.
+
 
 ## Output
 
 - **format**: Markdown (`.md`)
 - **location**: `/tasks/`
-- **filename**: `{task num}_task.md` (eg `01_task.md`)
+- **filename**: `{Epic id}_epic.md` (eg `01_epic.md`)
+
 
 ## Process
 
-1. **Read project spec and plan files**
+1. **Read project spec and Epic roadmap**
 - Open `/README.md`
-- Understand the overall goals, tech stack, folder structure, existing conventions, project requirements, everything on the file.
-- Open `/tasks/master_plan.md`
-- Understand the list of high-level tasks that conforms the master plan for the implementation of the project detailed in `/README.md`
-- Open the {task} plan file requested by the user (eg `tasks/01_task.md`)
-- Understand the step-by-step two-level execution plan stated there. Understand the goal that is intended to achieve by the task definition.
+- Understand the project and all its functional and technical requirements as stated in the file. 
+- Open `/tasks/epics.md`
+- Understand the split of the project into high-level epics for the implementation of the project.
+- Open the user given epic breakdown file (e.g. `tasks/01_epic.md`)
+- Understand its step-by-step two-level roadmap of {Stories} and {Tasks} to drive the implementation of the Epic. 
 
 2. **Perform GAP analysis**
-- Thoroughly walk the step-by-step task plan, checking each {subtask} and {subsubtask} if the current project implementation fulfills the {subtask} / {subsubtask} objective (it may surpass it).
-- Flag the {subtask} / {subsubtask} as DONE if required. (eg: replace '[ ]' with '[x]')
-- if a {subtask} has all its {subsubtask} flagged as DONE mark the {subtask} as DONE
-- if a {task} has all its {subtask} flagged as DONE mark the {task} as DONE in both the {task} plan file and in the `master_plan.md` file
-- Append to each {subsubtask}'s and {subtask}'s specific sections what was done, what is still missing, and any additional comment that you deem important for the implementation of the remainder of the entry.
-- And finally append a new 'Gap Analysis Summary' section at the end of the file with the analysis overall result.
+- Thoroughly walk the step-by-step list of Stories and Tasks, checking whether if each {Story} and {Task} if fulfilled by the current state of the project implementation.
+- Flag the {Story}/{Task} as DONE if required. (e.g.: replace `[ ]` with `[x]`)
+- if a {Story} has all its {Task} DONE mark the {Story} as DONE as well.
+- if an {Epic} has all its {Stories} DONE mark the Epic DONE as well (as well in `/tasks/epics.md`).
+- To each `## STORY: {Story}` and `### TASK: {Task}` section append what was done, what is still missing, and any additional comment important for the implementation of the remainder of the item.
+- At the end of the file append a new `## Gap Analysis Summary` section with the analysis overall result.
 
 3. **Example Output**
-The following is an example of a correct update to a task plan file (NOTE: the file is only shown partially):
+The following is an example of a correct update to an Epic breakdown file (NOTE: the file is only shown partially):
 
 ```markdown
-# [x] 1 Setup Flask Application Factory Pattern
+# EPIC: [x] 1 Setup Flask Application Factory Pattern
 
 Implement a modular Flask app using the application factory pattern. Include structured configuration management with environment-based settings, comprehensive error handling, logging setup, and extension registration to support different environments (development, testing, production).
 
@@ -56,7 +63,7 @@ Implement a modular Flask app using the application factory pattern. Include str
 
 ...
 
-## Tasks
+## STORY and TASK Breakdown
 
 - [x] 1.1 Implement Configuration Classes Structure
     - [x] 1.1.1 Create BaseConfig class with common settings
@@ -65,13 +72,15 @@ Implement a modular Flask app using the application factory pattern. Include str
     - [x] 1.2.1 Create extensions module with Flask extension instances
 ...
 
-## **1.1 Implement Configuration Classes Structure**
+
+## STORY: **1.1 Implement Configuration Classes Structure**
 
 Develop a structured configuration system to manage different environments (development, testing, production) within the Flask application using Flask's native configuration patterns.
 
 ✅ Complete with comprehensive validation and enhanced JWT security features
 
-### **1.1.1 Create BaseConfig class with common settings**
+
+### TASK: **1.1.1 Create BaseConfig class with common settings**
 Create `app/config.py` file with a `BaseConfig` class containing all common configuration variables needed by the Flask application. Include database URI templates, JWT settings, SQLAlchemy settings, and other Flask-specific configurations that are shared across all environments.
 
 ✅ `BaseConfig` class created with comprehensive JWT settings including issuer/audience validation, token location configuration, and security settings. Includes Flask constants and API metadata.
@@ -79,9 +88,9 @@ Create `app/config.py` file with a `BaseConfig` class containing all common conf
 
 ---
 
-# Gap Analysis Summary
+## Gap Analysis Summary
 
-## ✅ TASK COMPLETE - All Requirements Fulfilled
+✅ TASK COMPLETE - All Requirements Fulfilled
 
 **Overall Status**: Task 1 "Setup Flask Application Factory Pattern" is **100% complete** with comprehensive implementation and testing.
 

@@ -1,0 +1,54 @@
+---
+description: when asked to implement a story
+globs: 
+alwaysApply: false
+---
+## Goal
+
+Given:
+
+- a project's existing documentation (`/README.md`).
+- a project's enumeration of its high-level epics (`/tasks/epics.md`).
+- a epic breakdown file (e.g. `tasks/01_epic.md`).
+- And a {Story} (user given) from that epic breakdown file to work on. (e.g.: `1.2`)
+
+Implement in the project the {Story} exactly as described step-by-step in the given Epic breakdown file. 
+
+
+## Terms
+
+- **{Epic}** : Top-level milestone or feature set that delivers a cohesive product outcome. Groups several stories and can span multiple sprints.
+- **{Story}** : User-facing slice of an epic that provides a complete piece of functionality or a clear non-functional goal. Small enough to estimate in days.
+- **{Task}** : Concrete engineering action required to complete a story (e.g., “Add API endpoint”, “Write unit tests”). Executable in a focused work session.
+- **{Epic id}** : Epic identifier. Composed of one integer, e.g.: "1".
+- **{Story id}** : Story identifier. Composed of {Epic Id} plus a story index, e.g.: "1.2".
+- **{Task num}** : Task identifier. Composed of {Story num} plus a task index, e.g.: "1.2.4".
+- **{Epic|Story|Task title}** : One sentence title describing the given Epic, Story or task.
+- **{Epic|Story|Task description}** : Longer description of the task, subtask, subsubtask.
+
+
+## Process
+
+1. **Read Context**
+- Open `/README.md`
+- Understand the project and all the functional and technical requirements stated in the file. 
+- Open `/tasks/epics.md`
+- Understand the split of high-level epics that has been created to drive the implementation of the project described in `/README.md`
+- Open the given Epic breakdown file (e.g.: `tasks/01_epic.md`)
+- Unnderstand the split of {Stories} and concrete step-by-step {Tasks} for the implementation of the {Epic}.
+
+2. **{Story} Implementation**
+- Locate the requested {Story} and note its list of {Tasks}.
+- Find the first unchecked {Task} (e.g.: `[ ]`). 
+- Show the {Task} to the user and ask approval to the user before starting. **WAIT** for user input.
+- Follow rule `task-preplanning.mdc` with the given {Task}.
+- Now follow rule `task-implementation.mdc` with the given {Task}.
+- Find the next unchecked {Task} and repeat until the whole {Story} is completed.
+
+
+## Best Practice Reminders
+
+- Always one {Task} implementation at a time.
+- Ask when scope or requirements are unclear. 
+- Confirm assumptions with user.
+- Keep PRs small, self-contained and fully tested.
