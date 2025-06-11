@@ -152,6 +152,54 @@ Enhance the existing API key authentication system with improved security featur
 
 **RATIONALE:** This is a toy project with our own Chrome extension as the only client, so rate limiting and complex security monitoring are unnecessary overhead.
 
+**IMPLEMENTATION PLAN:**
+
+Looking at the current `app/auth.py`, I can see that basic logging has already been implemented in the `require_api_key` decorator. The current implementation includes:
+
+1. **Already Implemented:**
+   - Authentication success/failure logging with IP addresses
+   - Usage statistics updates (last_used_at, use_count)
+   - Error logging for database issues
+   - Proper logging levels (INFO for success, WARNING for auth failures, ERROR for database issues)
+
+2. **Missing Components to Complete Task:**
+   - Enhanced logging configuration in Flask app
+   - Request-level logging beyond just authentication
+   - Structured logging format for better development debugging
+   - Log rotation and file output configuration
+
+**Step-by-Step Implementation Plan:**
+
+**Step 1: Add Application-Level Request Logging**
+- Create Flask `before_request` handler to log incoming requests
+- Log: timestamp, IP address, HTTP method, request path, and user agent
+- Create Flask `after_request` handler to log response information
+- Log: response status code, response size (if available), and request completion
+
+**Step 2: Add Debug-Level Logging for Development**
+- Add DEBUG level logs for request parameters and headers (excluding sensitive data)
+- Log query parameters for GET requests
+- Log request body size for POST/PUT requests (not content for security)
+- Add timing information for database operations in auth decorator
+
+**Step 3: Update Tests**
+- Test that new logging calls work correctly without breaking functionality
+- Verify log messages contain expected information (IP, method, path, status)
+- Test that sensitive information (API keys, request bodies) are not logged
+- Ensure logging doesn't impact authentication performance
+
+**Step 4: Verify Implementation**
+- Test with actual API requests to verify logging output appears correctly
+- Verify different log levels work appropriately in development vs testing
+- Ensure logging provides useful debugging information for development
+- Check that logs don't contain sensitive information
+
+**Files to Modify:**
+- `app/__init__.py` - Add global before_request and after_request handlers for ALL requests
+- `tests/` - Add tests to verify request logging works correctly
+
+This implementation focuses on adding useful logging calls within the existing logging framework, providing better visibility into request flow and authentication activity for development and debugging purposes.
+
 
 ### TASK: **4.3.3 Implement secure API key comparison methods**
 
