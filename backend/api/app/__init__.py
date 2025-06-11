@@ -4,10 +4,11 @@ This module provides the application factory pattern for creating and configurin
 Flask application instances with all necessary extensions, routes, and error handlers.
 """
 
+import time
 from typing import TYPE_CHECKING, Dict, Optional
 
 from dotenv import load_dotenv
-from flask import Flask
+from flask import Flask, Response, g, request
 
 # Import models for backward compatibility
 from app.models import ApiClient as ApiClient
@@ -43,6 +44,9 @@ def create_app(test_config: Optional[Dict[str, "Any"]] = None) -> Flask:
 
     # Configure logging
     _configure_logging(app)
+
+    # Register request handlers for logging
+    _register_request_handlers(app)
 
     # Register error handlers
     _register_error_handlers(app)
@@ -111,6 +115,108 @@ def _configure_logging(app: Flask) -> None:
     from app.logging_config import configure_logging
 
     configure_logging(app)
+
+
+def _register_request_handlers(app: Flask) -> None:
+    """Register request logging handlers with the application.
+
+    Args:
+        app (Flask): The Flask application instance.
+
+    """
+
+    @app.before_request
+    def log_request_start() -> None:
+        """Log the start of each request with basic information."""
+        # Get remote IP (handle X-Forwarded-For for proxy/load balancer)
+        remote_ip = request.environ.get("HTTP_X_FORWARDED_FOR", request.remote_addr)
+        user_agent = request.headers.get("User-Agent", "Unknown")
+
+        # Store start time for timing calculations
+        g.start_time = time.time()
+
+        # Log basic request information
+        app.logger.info(
+            "Request started: %s %s from IP %s (User-Agent: %s)",
+            request.method,
+            request.path,
+            remote_ip,
+            user_agent,
+        )
+
+        # Debug-level logging for development (excluding sensitive data)
+        if app.config.get("DEBUG") and app.logger.isEnabledFor(
+            app.logger.getEffectiveLevel()
+        ):
+            # Log query parameters for GET requests (no sensitive data expected)
+            if request.method == "GET" and request.args:
+                # Filter out potentially sensitive parameters
+                safe_params = {
+                    k: v
+                    for k, v in request.args.items()
+                    if k.lower() not in ["api_key", "password", "token", "secret"]
+                }
+                if safe_params:
+                    app.logger.debug("Query parameters: %s", safe_params)
+
+            # Log request body size for POST/PUT (not content for security)
+            if request.method in ["POST", "PUT", "PATCH"] and hasattr(
+                request, "content_length"
+            ):
+                if request.content_length:
+                    app.logger.debug(
+                        "Request body size: %d bytes", request.content_length
+                    )
+
+    @app.after_request
+    def log_request_end(response: Response) -> Response:
+        """Log the completion of each request with response information.
+
+        Args:
+            response: The Flask response object.
+
+        Returns:
+            The unmodified response object.
+
+        """
+        # Get remote IP for consistency
+        remote_ip = request.environ.get("HTTP_X_FORWARDED_FOR", request.remote_addr)
+
+        # Calculate request duration
+        duration = None
+        if hasattr(g, "start_time"):
+            duration = time.time() - g.start_time
+
+        # Log response information
+        if duration is not None:
+            app.logger.info(
+                "Request completed: %s %s -> %d (%s) in %.3f seconds from IP %s",
+                request.method,
+                request.path,
+                response.status_code,
+                response.status,
+                duration,
+                remote_ip,
+            )
+        else:
+            app.logger.info(
+                "Request completed: %s %s -> %d (%s) from IP %s",
+                request.method,
+                request.path,
+                response.status_code,
+                response.status,
+                remote_ip,
+            )
+
+        # Debug-level logging for response details
+        if app.config.get("DEBUG") and app.logger.isEnabledFor(
+            app.logger.getEffectiveLevel()
+        ):
+            # Log response size if available
+            if hasattr(response, "content_length") and response.content_length:
+                app.logger.debug("Response size: %d bytes", response.content_length)
+
+        return response
 
 
 def _register_error_handlers(app: Flask) -> None:
