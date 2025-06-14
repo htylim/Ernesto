@@ -327,7 +327,6 @@ class TestApplicationFactoryIntegration:
             patch("app._register_error_handlers") as mock_errors,
             patch("app._register_routes") as mock_routes,
         ):
-
             app = create_app({"SQLALCHEMY_DATABASE_URI": "sqlite:///:memory:"})
 
             # Verify all components were called

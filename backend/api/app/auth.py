@@ -8,7 +8,7 @@ from datetime import datetime
 from functools import wraps
 from typing import Callable, Tuple, TypeVar, Union
 
-from flask import Response, jsonify, request
+from flask import Response, g, jsonify, request
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.extensions import db
@@ -45,10 +45,10 @@ def require_api_key(f: F) -> F:
         remote_ip = request.environ.get("HTTP_X_FORWARDED_FOR", request.remote_addr)
 
         # Check for API key in header
-        api_key = request.headers.get("X-API-Key")
-        if not api_key:
+        api_key_header = request.headers.get("X-API-Key")
+        if not api_key_header:
             logger.warning(
-                "Authentication failed: Missing API key from IP %s", remote_ip
+                "Authentication failed: Missing API key header from IP %s", remote_ip
             )
             return (
                 jsonify(
@@ -57,20 +57,46 @@ def require_api_key(f: F) -> F:
                 401,
             )
 
+        # Validate key format: <name>.<secret_key>
+        if "." not in api_key_header:
+            logger.warning(
+                "Authentication failed: Invalid API key format from IP %s", remote_ip
+            )
+            return (
+                jsonify(
+                    {
+                        "error": "Authentication failed",
+                        "message": "Invalid API key format",
+                    }
+                ),
+                401,
+            )
+
+        client_name, secret_key = api_key_header.split(".", 1)
+        if not client_name or not secret_key:
+            logger.warning(
+                "Authentication failed: Malformed API key from IP %s", remote_ip
+            )
+            return (
+                jsonify(
+                    {
+                        "error": "Authentication failed",
+                        "message": "Malformed API key",
+                    }
+                ),
+                401,
+            )
+
         try:
-            # Get all active clients (we need to check the hashed key for each)
-            active_clients = ApiClient.query.filter_by(is_active=True).all()
+            # Find the client by name (public identifier)
+            client = ApiClient.query.filter_by(name=client_name, is_active=True).first()
 
-            # Find matching client using secure comparison
-            authenticated_client = None
-            for client in active_clients:
-                if client.check_api_key(api_key):
-                    authenticated_client = client
-                    break
-
-            if not authenticated_client:
+            # Securely check the secret key
+            if not client or not client.check_api_key(secret_key):
                 logger.warning(
-                    "Authentication failed: Invalid API key from IP %s", remote_ip
+                    "Authentication failed: Invalid API key for client '%s' from IP %s",
+                    client_name,
+                    remote_ip,
                 )
                 return (
                     jsonify(
@@ -82,22 +108,25 @@ def require_api_key(f: F) -> F:
                     401,
                 )
 
+            # Attach client to request context
+            g.api_client = client
+
             # Update usage statistics
             try:
-                authenticated_client.last_used_at = datetime.utcnow()
-                authenticated_client.use_count += 1
+                client.last_used_at = datetime.utcnow()
+                client.use_count += 1
                 db.session.commit()
 
                 logger.info(
                     "Authentication successful: Client '%s' from IP %s",
-                    authenticated_client.name,
+                    client.name,
                     remote_ip,
                 )
             except SQLAlchemyError as e:
                 # Log the error but don't fail the request
                 logger.error(
                     "Failed to update usage statistics for client '%s': %s",
-                    authenticated_client.name,
+                    client.name,
                     str(e),
                 )
                 db.session.rollback()

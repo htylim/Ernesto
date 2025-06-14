@@ -152,9 +152,8 @@ class TestRequestLogging:
 
         with app.test_client() as client:
             with caplog.at_level(logging.INFO):
-                response = client.get(
-                    "/api/secure-endpoint", headers={"X-API-Key": api_key}
-                )
+                headers = {"X-API-Key": f"{api_client.name}.{api_key}"}
+                response = client.get("/api/secure-endpoint", headers=headers)
 
         # Check for authentication success log
         auth_logs = [
@@ -227,7 +226,10 @@ class TestRequestLogging:
         """Test that authentication errors are logged without timing information."""
         with app.test_client() as client:
             with caplog.at_level(logging.WARNING):
-                client.get("/api/secure-endpoint", headers={"X-API-Key": "invalid-key"})
+                client.get(
+                    "/api/secure-endpoint",
+                    headers={"X-API-Key": "invalid-client.invalid-key"},
+                )
 
         # Check that authentication failure is logged
         error_logs = [

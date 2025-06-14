@@ -45,7 +45,7 @@ Replace OAuth2 client credentials flow with API Key-based authentication system.
 - [ ] 4.3 Udate Authentication Middleware and pSecurity
     - [x] 4.3.1 Enhance require_api_key decorator with better error handling
     - [x] 4.3.2 Add request logging and rate limiting capabilities
-    - [ ] 4.3.3 Implement secure API key comparison methods
+    - [x] 4.3.3 Implement secure API key comparison methods
     - [s] 4.3.4 Add authentication failure tracking and security features **SKIP**
 - [ ] 4.4 Remove JWT Validation and Clean Up Validators
     - [ ] 4.4.1 Remove all JWT validation methods from app/validators.py
@@ -64,7 +64,7 @@ Replace OAuth2 client credentials flow with API Key-based authentication system.
     - [ ] 4.6.4 Verify database integrity after migration
 
 
-### STORY: **4.1 Remove JWT/OAuth2 Dependencies and Configuration**
+## STORY: **4.1 Remove JWT/OAuth2 Dependencies and Configuration**
 
 Remove all JWT and OAuth2 related dependencies, imports, and configuration from the project to eliminate unnecessary complexity and focus on API key authentication.
 
@@ -89,7 +89,7 @@ Remove all JWT_* configuration variables from BaseConfig, DevelopmentConfig, Tes
 Remove JWT-related warning suppressions and test configurations from pyproject.toml to clean up the project configuration.
 
 
-### STORY: **4.2 Enhance ApiClient Model with API Key Generation**
+## STORY: **4.2 Enhance ApiClient Model with API Key Generation**
 
 Enhance the ApiClient model with secure API key generation, validation, and management capabilities to support robust API key authentication.
 
@@ -114,7 +114,7 @@ Implement API key hashing using bcrypt or similar secure hashing algorithms to s
 Add optional fields and methods for tracking API key usage, implementing rate limiting, and monitoring authentication attempts for security purposes.
 
 
-### STORY: **4.3 Update Authentication Middleware and Security**
+## STORY: **4.3 Update Authentication Middleware and Security**
 
 Enhance the existing API key authentication system with improved security features, error handling, and monitoring capabilities.
 
@@ -214,6 +214,49 @@ This implementation focuses on adding useful logging calls within the existing l
 
 **RATIONALE:** This is a critical fix - the current authentication system is completely broken because it tries to match plain text keys against hashed storage. This must be implemented to have working authentication at all.
 
+**IMPLEMENTATION PLAN:**
+
+The core of this task is to refactor the `require_api_key` decorator in `app/auth.py` to use a secure, two-part API key system (`public_id.secret_key`) and perform a timing-attack-resistant comparison.
+
+**Step 1: Analyze `ApiClient` Model and `require_api_key` Decorator**
+- Review `app/models/api_client.py` to confirm that the model, as implemented in Story 4.2, includes:
+    - A `public_id` field (e.g., `db.Column(db.String, unique=True, nullable=False)`) for safe client lookups.
+    - The `api_key_hash` field to store the hashed secret.
+    - A `check_api_key(secret_key)` method that uses a secure comparison function like `bcrypt.checkpw()`.
+- Review `app/auth.py` and identify the current `require_api_key` decorator, which likely contains the flawed logic: `ApiClient.query.filter_by(api_key=api_key, ...)`.
+
+**Step 2: Refactor `require_api_key` Decorator**
+- Modify the decorator to implement the following logic:
+    1. Retrieve the full key from the `X-API-Key` header.
+    2. Check if the key exists and is in the format `<public_id>.<secret_key>`. Return a 401 error with a generic message if not.
+    3. Parse the key to extract `public_id` and `secret_key`.
+    4. Query the database for an active client using the `public_id`:
+       ```python
+       client = ApiClient.query.filter_by(public_id=public_id, is_active=True).first()
+       ```
+    5. If no client is found, return a 401 error.
+    6. Call the secure comparison method: `if client and client.check_api_key(secret_key):`.
+    7. If the check passes, attach the client object to Flask's request context for use in downstream logic: `g.api_client = client`.
+    8. If the check fails, return a 401 error.
+
+**Step 3: Update `generate_api_key.py` Script**
+- The CLI script from task 4.2.1 must be adjusted to ensure it outputs the full, user-facing API key in the `public_id.secret_key` format. The user should only ever see this combined key.
+
+**Step 4: Update Unit Tests in `tests/test_auth.py`**
+- Create or update tests for the `require_api_key` decorator to cover all scenarios:
+    - **Success:** A valid `X-API-Key` provides access.
+    - **Failure (401 Unauthorized):**
+        - Missing `X-API-Key` header.
+        - Malformed key (e.g., missing `.`, empty parts).
+        - Unknown `public_id`.
+        - Correct `public_id` but incorrect `secret_key`.
+        - Client is marked as inactive (`is_active=False`).
+    - **Context:** Verify that `g.api_client` is correctly populated with the `ApiClient` object on successful authentication.
+
+**Step 5: Verify Implementation**
+- Run all tests, including linting and formatting checks, to ensure the changes are correct and adhere to code quality standards.
+- Manually test the authentication flow using an API client like Postman or `curl` to confirm the end-to-end functionality.
+
 
 ### TASK: **4.3.4 Add authentication failure tracking and security features**
 
@@ -230,7 +273,7 @@ This implementation focuses on adding useful logging calls within the existing l
 **RATIONALE:** This is a toy project where we control the only client (our Chrome extension). These enterprise-level security features would be overkill and add unnecessary complexity. Simple logging in 4.3.2 provides sufficient visibility for development purposes. If this becomes a production system with multiple clients, these features can be added later.
 
 
-### STORY: **4.4 Remove JWT Validation and Clean Up Validators**
+## STORY: **4.4 Remove JWT Validation and Clean Up Validators**
 
 Remove all JWT-related validation code from the validators module and replace with API key-specific validation functionality.
 
@@ -255,7 +298,7 @@ Remove all JWT-related warning and error message configurations from the validat
 Implement validation for API key strength requirements and security best practices in configuration.
 
 
-### STORY: **4.5 Update Tests for API Key Authentication**
+## STORY: **4.5 Update Tests for API Key Authentication**
 
 Update all test files to remove JWT-related tests and add comprehensive testing for the new API key authentication system.
 
@@ -280,7 +323,7 @@ Add comprehensive tests for the new API key generation, validation, and security
 Create or enhance tests for the authentication middleware, covering all security features, error handling, and edge cases.
 
 
-### STORY: **4.6 Create Database Migration for JWT Cleanup**
+## STORY: **4.6 Create Database Migration for JWT Cleanup**
 
 Ensure the database schema is properly updated to support the enhanced API key system and remove any JWT-related artifacts.
 

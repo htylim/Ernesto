@@ -28,9 +28,12 @@ def generate_key(client_name: str) -> int:
         db.session.add(new_client)
         db.session.commit()
 
+        # The full API key to be used by the client
+        full_api_key = f"{new_client.name}.{api_key}"
+
         print("\n===== API Key Generated Successfully =====")
         print(f"Client Name: {new_client.name}")
-        print(f"API Key: {api_key}")
+        print(f"API Key: {full_api_key}")
         print("\nImportant: Store this API key securely.")
         print("It won't be shown again.")
         print("===========================================\n")

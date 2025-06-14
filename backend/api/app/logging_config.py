@@ -83,7 +83,9 @@ def _configure_production_logging(app: "Flask", log_level: int) -> None:
     # Create rotating file handler for production
     log_file = os.path.join(logs_dir, "ernesto_api.log")
     file_handler = RotatingFileHandler(
-        log_file, maxBytes=10 * 1024 * 1024, backupCount=10  # 10MB
+        log_file,
+        maxBytes=10 * 1024 * 1024,
+        backupCount=10,  # 10MB
     )
     file_handler.setLevel(log_level)
 
