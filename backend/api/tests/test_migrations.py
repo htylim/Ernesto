@@ -3,9 +3,14 @@
 This module tests migration operations like upgrade, downgrade, and migration detection.
 """
 
-from flask import Flask
-from sqlalchemy import inspect
+import os
+import urllib.parse
 
+import pytest
+from flask import Flask
+from sqlalchemy import create_engine, inspect, text
+
+from app import create_app
 from app.extensions import alembic, db
 
 
@@ -261,3 +266,125 @@ class TestMigrations:
             assert (
                 current_first == current_second
             ), "Current revision changed after second migration run"
+
+    @pytest.mark.skipif(
+        not os.getenv("DATABASE_URI")
+        or "postgresql" not in os.getenv("DATABASE_URI", ""),
+        reason="PostgreSQL DATABASE_URI not available",
+    )
+    def test_migration_postgresql_compatibility(self) -> None:
+        """Test that migrations work correctly with PostgreSQL database.
+
+        This test uses a test database derived from the DATABASE_URI environment variable
+        to ensure migrations are compatible with PostgreSQL in addition to SQLite.
+        """
+        # Get the base DATABASE_URI and construct test database URI
+        base_uri = os.getenv("DATABASE_URI")
+        if not base_uri:
+            pytest.skip("DATABASE_URI environment variable not set")
+
+        # Parse the URI to extract components
+        parsed = urllib.parse.urlparse(base_uri)
+
+        # Extract database name and create test database name
+        original_db_name = parsed.path.lstrip("/")
+        test_db_name = f"test_{original_db_name}"
+
+        # Construct URIs for admin operations and test database
+        admin_uri = f"{parsed.scheme}://{parsed.netloc}/postgres"
+        test_uri = f"{parsed.scheme}://{parsed.netloc}/{test_db_name}"
+
+        # Create admin engine for database operations
+        admin_engine = create_engine(admin_uri, isolation_level="AUTOCOMMIT")
+
+        try:
+            # Drop test database if it exists (cleanup from previous runs)
+            with admin_engine.connect() as conn:
+                # Terminate any active connections to the test database
+                conn.execute(
+                    text(
+                        f"""
+                    SELECT pg_terminate_backend(pid) 
+                    FROM pg_stat_activity 
+                    WHERE datname = '{test_db_name}' AND pid <> pg_backend_pid()
+                """
+                    )
+                )
+
+                # Drop the test database if it exists
+                conn.execute(text(f"DROP DATABASE IF EXISTS {test_db_name}"))
+
+                # Create fresh test database
+                conn.execute(text(f"CREATE DATABASE {test_db_name}"))
+
+            # Create test app with PostgreSQL test database
+            test_config = {
+                "SQLALCHEMY_DATABASE_URI": test_uri,
+                "SQLALCHEMY_TRACK_MODIFICATIONS": False,
+                "TESTING": True,
+            }
+            app = create_app(test_config)
+
+            with app.app_context():
+                # Verify database starts empty (no tables)
+                inspector = inspect(db.engine)
+                initial_tables = inspector.get_table_names()
+                assert (
+                    len(initial_tables) == 0
+                ), f"Expected empty DB, found tables: {initial_tables}"
+
+                # Apply all migrations to head
+                alembic.upgrade()
+
+                # Verify database state after upgrade
+                inspector = inspect(db.engine)
+                tables = inspector.get_table_names()
+
+                # Should have our model tables plus alembic_version
+                expected_tables = [
+                    "api_clients",
+                    "sources",
+                    "topics",
+                    "articles",
+                    "alembic_version",
+                ]
+                for table in expected_tables:
+                    assert table in tables, f"Table {table} not found after migration"
+
+                # Verify we have the correct number of tables
+                assert len(tables) == len(
+                    expected_tables
+                ), f"Expected {len(expected_tables)} tables, found {len(tables)}: {tables}"
+
+                # Test that we can downgrade successfully
+                alembic.downgrade(target="base")
+
+                # Verify database is back to empty state (except alembic_version)
+                inspector = inspect(db.engine)
+                tables_after_downgrade = inspector.get_table_names()
+                assert (
+                    len(tables_after_downgrade) <= 1
+                ), f"Expected empty or only alembic_version, found: {tables_after_downgrade}"
+
+        finally:
+            # Cleanup: Drop the test database
+            try:
+                with admin_engine.connect() as conn:
+                    # Terminate any active connections
+                    conn.execute(
+                        text(
+                            f"""
+                        SELECT pg_terminate_backend(pid) 
+                        FROM pg_stat_activity 
+                        WHERE datname = '{test_db_name}' AND pid <> pg_backend_pid()
+                    """
+                        )
+                    )
+
+                    # Drop the test database
+                    conn.execute(text(f"DROP DATABASE IF EXISTS {test_db_name}"))
+            except Exception:
+                # If cleanup fails, it's not critical for the test result
+                pass
+            finally:
+                admin_engine.dispose()
