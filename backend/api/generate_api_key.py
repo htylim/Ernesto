@@ -14,6 +14,12 @@ from app.extensions import db
 
 def generate_key(client_name: str) -> int:
     """Generate an API key for a client."""
+    # Validate client name before attempting to create the client
+    if "." in client_name:
+        print(f"Error: Client name '{client_name}' cannot contain a dot ('.').")
+        print("The dot character is reserved for API key formatting.")
+        return 1
+
     app = create_app()
     with app.app_context():
         # Check if client already exists
@@ -23,7 +29,11 @@ def generate_key(client_name: str) -> int:
             return 1
 
         # Generate new API client and key
-        new_client, api_key = ApiClient.create_with_api_key(name=client_name)
+        try:
+            new_client, api_key = ApiClient.create_with_api_key(name=client_name)
+        except ValueError as e:
+            print(f"Error: {e}")
+            return 1
 
         db.session.add(new_client)
         db.session.commit()

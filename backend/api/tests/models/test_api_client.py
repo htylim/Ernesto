@@ -74,6 +74,72 @@ class TestApiClient:
         assert api_client.name == "factory_client"
         assert api_client.check_api_key(api_key)
 
+    def test_api_client_name_validation_rejects_dots(self, app: "Flask") -> None:
+        """Test that client names containing dots are rejected by validation."""
+        with app.app_context():
+            # Test direct instantiation with dot in name
+            with pytest.raises(ValueError, match="Client name cannot contain a dot"):
+                ApiClient(name="client.with.dots", hashed_api_key="some_key")
+
+            # Test create_with_api_key with dot in name
+            with pytest.raises(ValueError, match="Client name cannot contain a dot"):
+                ApiClient.create_with_api_key(name="client.name")
+
+            # Test setting name with dot after creation
+            client = ApiClient(name="valid_name", hashed_api_key="some_key")
+            with pytest.raises(ValueError, match="Client name cannot contain a dot"):
+                client.name = "invalid.name"
+
+    def test_api_client_name_validation_accepts_valid_names(self, app: "Flask") -> None:
+        """Test that valid client names without dots are accepted."""
+        with app.app_context():
+            valid_names = [
+                "simple_name",
+                "name-with-dashes",
+                "name_with_underscores",
+                "NameWithCamelCase",
+                "name123",
+                "123name",
+                "a",
+                "very_long_name_that_is_still_valid",
+            ]
+
+            for name in valid_names:
+                # Test direct instantiation
+                client = ApiClient(name=name, hashed_api_key="some_key")
+                assert client.name == name
+
+                # Test create_with_api_key
+                client2, _ = ApiClient.create_with_api_key(name=f"{name}_2")
+                assert client2.name == f"{name}_2"
+
+                # Test setting name after creation
+                client3 = ApiClient(name="temp", hashed_api_key="some_key")
+                client3.name = f"{name}_3"
+                assert client3.name == f"{name}_3"
+
+    def test_api_client_name_validation_edge_cases(self, app: "Flask") -> None:
+        """Test edge cases for client name validation."""
+        with app.app_context():
+            # Test names that start or end with dots
+            with pytest.raises(ValueError, match="Client name cannot contain a dot"):
+                ApiClient(name=".starts_with_dot", hashed_api_key="some_key")
+
+            with pytest.raises(ValueError, match="Client name cannot contain a dot"):
+                ApiClient(name="ends_with_dot.", hashed_api_key="some_key")
+
+            # Test multiple dots
+            with pytest.raises(ValueError, match="Client name cannot contain a dot"):
+                ApiClient(name="multiple.dots.here", hashed_api_key="some_key")
+
+            # Test single dot
+            with pytest.raises(ValueError, match="Client name cannot contain a dot"):
+                ApiClient(name=".", hashed_api_key="some_key")
+
+            # Test empty string (should be handled by database constraints, not validation)
+            client = ApiClient(name="", hashed_api_key="some_key")
+            assert client.name == ""
+
     def test_api_client_defaults(self, app: "Flask") -> None:
         """Test ApiClient model default values."""
         with app.app_context():

@@ -6,7 +6,7 @@ from typing import Optional, Tuple
 
 import bcrypt
 from sqlalchemy import Boolean, DateTime, Integer, String, func
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, validates
 
 from app.extensions import db
 
@@ -22,7 +22,9 @@ class ApiClient(db.Model):
     __tablename__ = "api_clients"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    name: Mapped[str] = mapped_column(String(100), nullable=False, unique=True)
+    name: Mapped[str] = mapped_column(
+        String(100), nullable=False, unique=True, index=True
+    )
     hashed_api_key: Mapped[str] = mapped_column(
         String(128), unique=True, nullable=False
     )
@@ -36,6 +38,25 @@ class ApiClient(db.Model):
     def __repr__(self) -> str:
         """Return string representation of the ApiClient instance."""
         return f"<ApiClient {self.name}>"
+
+    @validates("name")
+    def validate_name(self, key: str, name: str) -> str:
+        """Validate that client name does not contain a dot character.
+
+        Args:
+            key: The attribute name being validated
+            name: The client name value
+
+        Returns:
+            The validated name
+
+        Raises:
+            ValueError: If the name contains a dot character
+
+        """
+        if "." in name:
+            raise ValueError("Client name cannot contain a dot ('.').")
+        return name
 
     @staticmethod
     def generate_api_key(length: int = 32) -> str:
