@@ -1,7 +1,7 @@
 """Test configuration validators module.
 
 This module tests the configuration validation framework without testing
-actual database connectivity or JWT token validation.
+actual database connectivity.
 """
 
 import warnings
@@ -48,7 +48,6 @@ class TestConfigValidator:
         config = BaseConfig()
         config.SECRET_KEY = "a-very-secure-secret-key-for-testing"
         config.SQLALCHEMY_DATABASE_URI = "sqlite:///test.db"
-        config.JWT_SECRET_KEY = "a-secure-jwt-secret-key"
         config.DEBUG = True  # Development mode
 
         validator = ConfigValidator(config)
