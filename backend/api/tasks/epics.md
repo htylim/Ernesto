@@ -14,26 +14,23 @@ Enable version-controlled schema changes using Flask-Alembic integration. Set up
 ## [x] 4. Implement API Key Authentication System and Remove OAuth2 Components
 Replace OAuth2 client credentials flow with API Key-based authentication system. Remove all OAuth2/JWT-related code and dependencies, enhance the existing ApiClient model and authentication middleware, create proper database migrations, and implement comprehensive API key management for the Chrome extension client. This includes cleaning up JWT configuration, removing unused Flask-JWT-Extended components, and ensuring robust API key validation with proper error handling and security features.
 
-## [ ] 5. Create Authentication Middleware and Protected Routes
-Implement JWT verification decorators and middleware to secure API endpoints. Set up comprehensive error responses for authentication failures, proper CORS handling for cross-origin requests, and request context management for protected routes.
+## [ ] 5. Configure CORS and Authentication Infrastructure
+Set up CORS configuration for Chrome extension cross-origin requests, ensure API key authentication middleware is properly integrated across the application, and establish comprehensive error response patterns for authentication failures. This epic focuses on the infrastructure needed before implementing API endpoints.
 
-## [ ] 6. Implement Topics API Endpoints
-Build complete endpoints for topic management including list retrieval sorted by coverage score, date range filtering, and individual topic detail views. Include proper query parameter validation, response serialization, and JWT-protected access.
+## [ ] 6. Implement Request Validation and Response Infrastructure  
+Create comprehensive infrastructure for API request validation including query parameter validation, input validation patterns, standardized JSON response formatting, and consistent error response schemas. Implement reusable validation decorators and response formatters that will be used by all API endpoints.
 
-## [ ] 7. Implement Articles API Endpoints  
-Create comprehensive article endpoints with list retrieval, filtering by topic and date range, sorting options, and individual article detail views. Include nested topic/source serialization, efficient database queries, and proper pagination support.
+## [ ] 7. Implement Database Seeding Utilities
+Create database seeding utilities to populate development and testing environments with realistic sample data. Include scripts to generate sample articles, topics, sources, and API clients for development and testing purposes, making it easier to develop and test API endpoints with realistic data scenarios.
 
-## [ ] 8. Implement Sources API Endpoints
-Develop endpoints for news source management including complete source listing and individual source detail retrieval. Ensure proper response formatting, JWT protection, and integration with article relationships.
+## [ ] 8. Implement Topics API Endpoints
+Build complete endpoints for topic management including list retrieval sorted by coverage score, date range filtering, and individual topic detail views. Apply request validation for query parameters (start_date, end_date), implement response serialization using TopicSchema, and secure endpoints with API key authentication.
 
-## [ ] 9. Implement Request Validation and Response Serialization
-Create comprehensive input validation for all API endpoints using proper Flask patterns. Implement consistent JSON response formatting, query parameter validation with proper error messages, and standardized API response schemas.
+## [ ] 9. Implement Articles API Endpoints  
+Create comprehensive article endpoints with list retrieval, filtering by topic and date range, sorting options, and individual article detail views. Include query parameter validation (start_date, end_date, topic_id, sort_by), nested topic/source serialization, efficient database queries, proper pagination support, and API key protection.
 
-## [ ] 10. Setup Comprehensive Testing Framework
-Establish complete testing infrastructure using Flask's test client and pytest. Create fixtures for database testing, authentication testing utilities, and comprehensive test coverage for all models, endpoints, and authentication flows.
+## [ ] 10. Implement Sources API Endpoints
+Develop endpoints for news source management including complete source listing and individual source detail retrieval. Implement response formatting using SourceSchema, API key protection, and integration with article relationships.
 
-## [ ] 11. Setup Development Environment and Tooling
-Configure complete development environment with Docker containerization, code formatting using Black, linting with Ruff, and development workflow automation. Include database seeding utilities and development server configuration.
-
-## [ ] 12. Implement Production Configuration and Deployment Setup
+## [ ] 11. Implement Production Configuration and Deployment Setup
 Configure production-ready deployment settings for Google Cloud Run, set up Gunicorn WSGI server configuration, implement proper logging and monitoring, and create deployment scripts with environment-specific configurations. 
