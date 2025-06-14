@@ -11,7 +11,7 @@ Define SQLAlchemy models for Articles, Topics, and Sources entities with proper 
 ## [x] 3. Implement Database Migrations with Flask-Alembic
 Enable version-controlled schema changes using Flask-Alembic integration. Set up migration commands that work with the application factory pattern, configure migration environment, and create initial database schema migrations for all entities.
 
-## [ ] 4. Implement API Key Authentication System and Remove OAuth2 Components
+## [x] 4. Implement API Key Authentication System and Remove OAuth2 Components
 Replace OAuth2 client credentials flow with API Key-based authentication system. Remove all OAuth2/JWT-related code and dependencies, enhance the existing ApiClient model and authentication middleware, create proper database migrations, and implement comprehensive API key management for the Chrome extension client. This includes cleaning up JWT configuration, removing unused Flask-JWT-Extended components, and ensuring robust API key validation with proper error handling and security features.
 
 ## [ ] 5. Create Authentication Middleware and Protected Routes
