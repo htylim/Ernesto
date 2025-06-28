@@ -41,7 +41,7 @@ Implement in the project the {Story} exactly as described step-by-step in the gi
 - Locate the requested {Story} and note its list of {Tasks}.
 - Find the first unchecked {Task} (e.g.: `[ ]`). 
 - Show the {Task} to the user and ask approval to the user before starting. **WAIT** for user input.
-- Follow rule `task-preplanning.mdc` with the given {Task}.
+- Follow rule `task-pre-planning.mdc` with the given {Task}.
 - Now follow rule `task-implementation.mdc` with the given {Task}.
 - Find the next unchecked {Task} and repeat until the whole {Story} is completed.
 

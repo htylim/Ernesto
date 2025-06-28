@@ -56,6 +56,50 @@ As a Chrome extension developer, I want the API server to support CORS so that m
 - Unit tests verify CORS configuration loading and validation across all environments
 
 
+### Implementation Plan
+
+This story will be implemented across four tasks, covering the addition of the `Flask-CORS` dependency, configuration setup, and testing.
+
+#### Task 5.1.1: Add Flask-CORS to requirements.txt
+
+1.  **Modify `requirements.txt`**:
+    -   Add `Flask-CORS==6.0.1` to the `requirements.txt` file to include the necessary package for handling Cross-Origin Resource Sharing.
+
+#### Task 5.1.2: Add CORS configuration variables to BaseConfig
+
+1.  **Edit `app/config.py`**:
+    -   In the `BaseConfig` class, add the following configuration variables with sensible defaults:
+        -   `CORS_ORIGINS`: An empty list `[]`. This will hold the list of allowed origins.
+        -   `CORS_METHODS`: A list of common HTTP methods, e.g., `["GET", "POST", "PUT", "DELETE", "OPTIONS"]`.
+        -   `CORS_HEADERS`: A list of allowed headers, e.g., `["Content-Type", "X-API-Key"]`.
+        -   `CORS_SUPPORTS_CREDENTIALS`: `False`, as the API key authentication does not rely on cookies or traditional credentials.
+
+#### Task 5.1.3: Configure environment-specific CORS settings
+
+1.  **Edit `app/config.py`**:
+    -   **`DevelopmentConfig`**:
+        -   Override `CORS_ORIGINS` with a list of patterns suitable for local development, such as `[r"http://localhost:.*", r"http://127.0.0.1:.*"]`. This will allow requests from any port on localhost.
+    -   **`TestingConfig`**:
+        -   `CORS_ORIGINS` will remain an empty list `[]`. Tests that require specific CORS origins can override this setting.
+    -   **`ProductionConfig`**:
+        -   `CORS_ORIGINS` will remain an empty list `[]`. This will be populated in Story 5.3 with the specific Chrome extension origin(s). This ensures a secure-by-default policy.
+
+#### Task 5.1.4: Create unit tests for CORS configuration
+
+1.  **Create/Modify `tests/test_config.py`**:
+    -   Add a new test class or extend an existing one to verify the CORS configuration.
+    -   **`test_development_config_cors`**:
+        -   Create a Flask app with `DevelopmentConfig`.
+        -   Assert that `app.config["CORS_ORIGINS"]` matches the expected development patterns.
+        -   Assert that other `CORS_*` settings are correctly loaded.
+    -   **`test_testing_config_cors`**:
+        -   Create a Flask app with `TestingConfig`.
+        -   Assert that `app.config["CORS_ORIGINS"]` is an empty list.
+    -   **`test_production_config_cors`**:
+        -   Create a Flask app with `ProductionConfig`.
+        -   Assert that `app.config["CORS_ORIGINS"]` is an empty list, enforcing the secure-by-default policy.
+
+
 ## STORY: **5.2 Implement CORS Extension Integration**
 
 As a system administrator, I want CORS to be properly initialized and configured within the Flask application factory pattern so that cross-origin requests are handled consistently across all environments.

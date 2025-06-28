@@ -24,6 +24,7 @@ services:
       - db
     # Install dev requirements and start an interactive shell
     command: sleep infinity
+
   db:
     image: postgres:14
     volumes:
