@@ -56,12 +56,20 @@ Create a two-tier roadmap with stories as first level and tasks beneath laying o
 - Will contain several sections organized with markdown headings:
     - `## Relevant Files` section with the list of files (and their description) that are relevant to this implementation plan.
     - `## Notes` section with general notes important for the developer to know when executing this roadmap.
-    - `## Breakdown` section with a two-level break-down of the Epic into {Stories} and concrete step implementaetion {Tasks}.
+    - `## STORY and TASK Breakdown` section with a two-level break-down of the Epic into {Stories} and concrete step-by-step implementations {Tasks}.
     - `## STORY: {Story}` and `### TASK: {Task}` sections with additional implementation details important to the developer for that specific {Story} and {Task} implementation.
-- {Stories}/{Tasks} _must_ no overlap or duplicate another (they must be orthogonal).
-- Ordering is important, {Stories}/{Tasks} _must_ follow implementation order.
-- {Stories}/{Tasks} break down should take into consideration all implementation best practices (coding, DB, web app development, etc..)
-- {Tasks} has to be testable.
+- {Stories} are individual units of work that represent an specific features or functionality.
+- Think {Story} definitions following story creation best practices (e.g.: "As a <user> I want <goal> so that <reason>")
+- {Stories} _must_ include acceptance criteria. 
+- {Task} breakdown is the spliting of a story into smaller concrete units of work.
+- {Tasks} _must_ be independent.
+- {Tasks} goals _must_ be aligned with their parent {Story} acceptance criteria.
+- {Story} and {Task} _must_ be testable and include its own comprehensive testing as part of the task completion.
+- {Story} and {Task} _must_ no overlap or duplicate another (they must be orthogonal).
+- {Story} and {Task} ordering _must_ follow implementation order (what needs to be implemented first should appear first on the list)
+- {Story} and {Task} definition _must_ align with implementation best practices (coding, DB, web app development, etc..)
+- {Story} and {Task} definitions _must_ be precise and clear (not be confusing nor vague) and be easily understood by jr developers.
+
 - Generated file _must_ follow this structure:
 ```markdown
 # EPIC: [ ] {Epic id} {Epic title}
