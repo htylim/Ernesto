@@ -42,6 +42,14 @@ class TestBaseConfig:
         config = BaseConfig()
         assert config.SECRET_KEY == "dev-secret-key-change-in-production"
 
+    def test_base_config_cors_defaults(self) -> None:
+        """Test that BaseConfig has expected CORS default values."""
+        config = BaseConfig()
+        assert config.CORS_ORIGINS == []
+        assert config.CORS_METHODS == ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+        assert config.CORS_HEADERS == ["Content-Type", "X-API-Key"]
+        assert config.CORS_SUPPORTS_CREDENTIALS is False
+
 
 class TestDevelopmentConfig:
     """Test the development configuration class."""
@@ -63,6 +71,15 @@ class TestDevelopmentConfig:
         config = DevelopmentConfig()
         assert config.SQLALCHEMY_DATABASE_URI is not None
 
+    def test_development_config_cors(self) -> None:
+        """Test development-specific CORS settings."""
+        config = DevelopmentConfig()
+        assert config.CORS_ORIGINS == [r"http://localhost:.*", r"http://127.0.0.1:.*"]
+        # Other CORS settings should inherit from BaseConfig
+        assert config.CORS_METHODS == ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+        assert config.CORS_HEADERS == ["Content-Type", "X-API-Key"]
+        assert config.CORS_SUPPORTS_CREDENTIALS is False
+
 
 class TestTestingConfig:
     """Test the testing configuration class."""
@@ -83,6 +100,15 @@ class TestTestingConfig:
         config = EnvTestingConfig()
         assert config.SQLALCHEMY_DATABASE_URI == "sqlite:///:memory:"
 
+    def test_testing_config_cors(self) -> None:
+        """Test testing-specific CORS settings."""
+        config = EnvTestingConfig()
+        # Testing should inherit empty origins from BaseConfig
+        assert config.CORS_ORIGINS == []
+        assert config.CORS_METHODS == ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+        assert config.CORS_HEADERS == ["Content-Type", "X-API-Key"]
+        assert config.CORS_SUPPORTS_CREDENTIALS is False
+
 
 class TestProductionConfig:
     """Test the production configuration class."""
@@ -97,6 +123,15 @@ class TestProductionConfig:
         assert config.DEBUG is False
         assert config.TESTING is False
         assert config.LOG_LEVEL == "ERROR"
+
+    def test_production_config_cors(self) -> None:
+        """Test production-specific CORS settings."""
+        config = ProductionConfig()
+        # Production should inherit empty origins from BaseConfig (secure by default)
+        assert config.CORS_ORIGINS == []
+        assert config.CORS_METHODS == ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+        assert config.CORS_HEADERS == ["Content-Type", "X-API-Key"]
+        assert config.CORS_SUPPORTS_CREDENTIALS is False
 
     @patch.dict(
         os.environ,

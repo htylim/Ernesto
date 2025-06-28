@@ -38,6 +38,12 @@ class BaseConfig:
             os.getenv("SQLALCHEMY_TRACK_MODIFICATIONS", "False").lower() == "true"
         )
 
+        # CORS configuration - runtime values only
+        self.CORS_ORIGINS = []  # Empty list by default for security
+        self.CORS_METHODS = ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+        self.CORS_HEADERS = ["Content-Type", "X-API-Key"]
+        self.CORS_SUPPORTS_CREDENTIALS = False  # API key auth doesn't need credentials
+
 
 class DevelopmentConfig(BaseConfig):
     """Development environment configuration."""
@@ -52,6 +58,9 @@ class DevelopmentConfig(BaseConfig):
 
         # Use environment DATABASE_URI - no hardcoded fallback
         self.SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URI")
+
+        # CORS origins for development - allow localhost patterns
+        self.CORS_ORIGINS = [r"http://localhost:.*", r"http://127.0.0.1:.*"]
 
 
 class TestingConfig(BaseConfig):
