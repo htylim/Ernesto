@@ -1,7 +1,9 @@
 name: ernesto
 services:
   api:
-    build: .
+    build:
+      context: .
+      target: production
     ports:
       - "8080:8080"
     volumes:
@@ -12,7 +14,9 @@ services:
       - db
 
   api-dev:
-    build: .
+    build:
+      context: .
+      target: development
     ports:
       - "8081:8081"
     volumes:
@@ -22,8 +26,7 @@ services:
       - .env
     depends_on:
       - db
-    # Install dev requirements and start an interactive shell
-    command: sleep infinity
+    # Development stage already has sleep infinity command
 
   db:
     image: postgres:14

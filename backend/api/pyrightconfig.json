@@ -1,0 +1,24 @@
+{
+    "include": [
+        "app",
+        "tests",
+        "generate_api_key.py"
+    ],
+    "exclude": [
+        "app/migrations"
+    ],
+    "pythonVersion": "3.9",
+    "typeCheckingMode": "strict",
+    "venvPath": "/opt",
+    "venv": "venv",
+    "reportMissingImports": "error",
+    "reportMissingTypeStubs": false,
+    "reportMissingModuleSource": false,
+    "reportImportCycles": "error",
+    "reportUndefinedVariable": "error",
+    "reportGeneralTypeIssues": "error",
+    "reportOperatorIssue": "error",
+    "reportArgumentType": "error",
+    "reportReturnType": "error",
+    "reportAttributeAccessIssue": "error"
+} 

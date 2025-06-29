@@ -29,6 +29,8 @@ select = ["E", "F", "I", "ANN", "D"]
 ignore = ["E203", "E501", "D203", "D213"]
 fixable = ["ALL"]
 
+
+
 [tool.pytest.ini_options]
 # Configure pytest warning handling
 filterwarnings = [

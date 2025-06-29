@@ -3,10 +3,20 @@ repos:
     rev: v0.11.11
     hooks:
       - id: ruff
-        args: ["."]
+        args: ["backend/api"]
 
   - repo: https://github.com/psf/black
     rev: 24.4.2
     hooks:
       - id: black
-        language_version: python3 
+        language_version: python3
+        files: ^backend/api/
+
+  - repo: https://github.com/RobertCraigie/pyright-python
+    rev: v1.1.388
+    hooks:
+      - id: pyright
+        # CI/CD compatible: auto-installs pyright when not available
+        additional_dependencies: []
+        args: ["--pythonpath", "/opt/venv/bin/python"]
+        files: ^backend/api/ 
