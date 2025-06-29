@@ -4,7 +4,7 @@ This module provides centralized error handling with consistent JSON responses
 and appropriate logging for debugging purposes.
 """
 
-from typing import TYPE_CHECKING, Tuple, Union
+from typing import TYPE_CHECKING, Union
 
 from flask import Response, jsonify, request
 from werkzeug.exceptions import HTTPException
@@ -22,7 +22,9 @@ def register_error_handlers(app: "Flask") -> None:
     """
 
     @app.errorhandler(400)
-    def bad_request(error: Exception) -> Tuple[Response, int]:
+    def bad_request(  # pyright: ignore[reportUnusedFunction]
+        error: Exception,  # pyright: ignore[reportUnusedParameter]
+    ) -> tuple[Response, int]:
         """Handle 400 Bad Request errors."""
         app.logger.warning(f"Bad request from {request.remote_addr}: {request.url}")
         return (
@@ -37,7 +39,9 @@ def register_error_handlers(app: "Flask") -> None:
         )
 
     @app.errorhandler(401)
-    def unauthorized(error: Exception) -> Tuple[Response, int]:
+    def unauthorized(  # pyright: ignore[reportUnusedFunction]
+        error: Exception,  # pyright: ignore[reportUnusedParameter]
+    ) -> tuple[Response, int]:
         """Handle 401 Unauthorized errors."""
         app.logger.warning(
             f"Unauthorized access attempt from {request.remote_addr}: {request.url}"
@@ -54,7 +58,9 @@ def register_error_handlers(app: "Flask") -> None:
         )
 
     @app.errorhandler(403)
-    def forbidden(error: Exception) -> Tuple[Response, int]:
+    def forbidden(  # pyright: ignore[reportUnusedFunction]
+        error: Exception,  # pyright: ignore[reportUnusedParameter]
+    ) -> tuple[Response, int]:
         """Handle 403 Forbidden errors."""
         app.logger.warning(
             f"Forbidden access attempt from {request.remote_addr}: {request.url}"
@@ -71,7 +77,9 @@ def register_error_handlers(app: "Flask") -> None:
         )
 
     @app.errorhandler(404)
-    def not_found(error: Exception) -> Tuple[Response, int]:
+    def not_found(  # pyright: ignore[reportUnusedFunction]
+        error: Exception,  # pyright: ignore[reportUnusedParameter]
+    ) -> tuple[Response, int]:
         """Handle 404 Not Found errors."""
         app.logger.info(f"404 error from {request.remote_addr}: {request.url}")
         return (
@@ -86,7 +94,9 @@ def register_error_handlers(app: "Flask") -> None:
         )
 
     @app.errorhandler(405)
-    def method_not_allowed(error: Exception) -> Tuple[Response, int]:
+    def method_not_allowed(  # pyright: ignore[reportUnusedFunction]
+        error: Exception,  # pyright: ignore[reportUnusedParameter]
+    ) -> tuple[Response, int]:
         """Handle 405 Method Not Allowed errors."""
         app.logger.warning(
             f"Method not allowed from {request.remote_addr}: {request.method} {request.url}"
@@ -103,7 +113,9 @@ def register_error_handlers(app: "Flask") -> None:
         )
 
     @app.errorhandler(500)
-    def internal_server_error(error: Exception) -> Tuple[Response, int]:
+    def internal_server_error(  # pyright: ignore[reportUnusedFunction]
+        error: Exception,
+    ) -> tuple[Response, int]:
         """Handle 500 Internal Server Error."""
         app.logger.error(f"Internal server error: {error}", exc_info=True)
         return (
@@ -118,9 +130,9 @@ def register_error_handlers(app: "Flask") -> None:
         )
 
     @app.errorhandler(Exception)
-    def handle_unexpected_error(
+    def handle_unexpected_error(  # pyright: ignore[reportUnusedFunction]
         error: Exception,
-    ) -> Union[HTTPException, Tuple[Response, int]]:
+    ) -> Union[HTTPException, tuple[Response, int]]:
         """Handle any unexpected exceptions that aren't caught by specific handlers."""
         # If it's an HTTP exception, let the specific handler deal with it
         if isinstance(error, HTTPException):

@@ -3,3 +3,9 @@ pre-commit==4.2.0
 black==25.1.0
 ruff==0.11.11
 pytest==8.3.5
+# Type stubs for pyright/mypy
+types-Flask>=1.1.6
+types-Flask-Cors>=6.0.0
+types-psycopg2>=2.9.21
+# Note: SQLAlchemy 2.0+ and Flask-SQLAlchemy 3.0.1+ include built-in type annotations
+# so types-SQLAlchemy and types-Flask-SQLAlchemy are NOT needed and should be avoided
