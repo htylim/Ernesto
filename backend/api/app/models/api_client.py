@@ -2,11 +2,12 @@
 
 import secrets
 from datetime import datetime
-from typing import Optional, Tuple
+from typing import ClassVar, Optional
 
 import bcrypt
 from sqlalchemy import Boolean, DateTime, Integer, String, func
 from sqlalchemy.orm import Mapped, mapped_column, validates
+from typing_extensions import override
 
 from app.extensions import db
 
@@ -19,7 +20,7 @@ class ApiClient(db.Model):
     hashing, and validation.
     """
 
-    __tablename__ = "api_clients"
+    __tablename__: ClassVar[str] = "api_clients"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     name: Mapped[str] = mapped_column(
@@ -35,16 +36,17 @@ class ApiClient(db.Model):
     last_used_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     use_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
 
+    @override
     def __repr__(self) -> str:
         """Return string representation of the ApiClient instance."""
         return f"<ApiClient {self.name}>"
 
     @validates("name")
-    def validate_name(self, key: str, name: str) -> str:
+    def validate_name(self, _key: str, name: str) -> str:
         """Validate that client name does not contain a dot character.
 
         Args:
-            key: The attribute name being validated
+            _key: The attribute name being validated (unused)
             name: The client name value
 
         Returns:
@@ -78,9 +80,11 @@ class ApiClient(db.Model):
     @classmethod
     def create_with_api_key(
         cls, name: str, is_active: bool = True
-    ) -> Tuple["ApiClient", str]:
+    ) -> tuple["ApiClient", str]:
         """Create a new ApiClient and return the instance and plaintext API key."""
         api_key = cls.generate_api_key()
-        api_client = cls(name=name, is_active=is_active)
+        api_client = cls(
+            name=name, is_active=is_active  # pyright: ignore[reportCallIssue]
+        )
         api_client.set_api_key(api_key)
         return api_client, api_key
