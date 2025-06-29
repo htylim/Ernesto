@@ -43,6 +43,8 @@ filterwarnings = [
     "ignore:unclosed file.*:ResourceWarning",
     # Ignore PytestUnraisableExceptionWarning from logging handlers
     "ignore:Exception ignored in.*FileIO.*:pytest.PytestUnraisableExceptionWarning",
+    # Ignore Alembic deprecation warning about missing path_separator
+    "ignore:No path_separator found in configuration.*:DeprecationWarning",
 ]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
