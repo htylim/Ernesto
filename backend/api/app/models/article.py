@@ -1,12 +1,13 @@
 """Article model for storing news articles."""
 
 import uuid
-from datetime import datetime
-from typing import TYPE_CHECKING, Optional
+from datetime import datetime, timezone
+from typing import TYPE_CHECKING, ClassVar, Optional
 
 from sqlalchemy import DateTime, ForeignKey, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from typing_extensions import override
 
 from app.extensions import db
 
@@ -22,7 +23,7 @@ class Article(db.Model):
     brief description, and relationships to topics and sources.
     """
 
-    __tablename__ = "articles"
+    __tablename__: ClassVar[str] = "articles"
 
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
@@ -38,7 +39,7 @@ class Article(db.Model):
         UUID(as_uuid=True), ForeignKey("sources.id"), nullable=True, index=True
     )
     added_at: Mapped[datetime] = mapped_column(
-        DateTime, default=datetime.utcnow, nullable=False
+        DateTime, default=lambda: datetime.now(timezone.utc), nullable=False
     )
 
     # Relationships
@@ -47,6 +48,7 @@ class Article(db.Model):
         "Source", back_populates="articles"
     )
 
+    @override
     def __repr__(self) -> str:
         """Return string representation of the article."""
         return f"<Article {self.title[:30]}>"
