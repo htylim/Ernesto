@@ -1,11 +1,12 @@
 """Source model for storing news sources."""
 
 import uuid
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, ClassVar, Optional
 
 from sqlalchemy import Boolean, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from typing_extensions import override
 
 from app.extensions import db
 
@@ -20,7 +21,7 @@ class Source(db.Model):
     are collected and stored in the system.
     """
 
-    __tablename__ = "sources"
+    __tablename__: ClassVar[str] = "sources"
 
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
@@ -31,10 +32,11 @@ class Source(db.Model):
     is_enabled: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
     # Relationships
-    articles: Mapped[List["Article"]] = relationship(
+    articles: Mapped[list["Article"]] = relationship(
         "Article", back_populates="source", cascade="all, delete-orphan"
     )
 
+    @override
     def __repr__(self) -> str:
         """Return string representation of the Source instance."""
         return f"<Source {self.name}>"
