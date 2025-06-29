@@ -8,6 +8,7 @@ following the application factory pattern best practices.
 from typing import TYPE_CHECKING
 
 from flask_alembic import Alembic
+from flask_cors import CORS
 from flask_marshmallow import Marshmallow
 from flask_sqlalchemy import SQLAlchemy
 
@@ -26,6 +27,10 @@ alembic = Alembic()
 # This handles serialization/deserialization of SQLAlchemy models
 ma = Marshmallow()
 
+# Initialize Flask-CORS instance
+# This handles Cross-Origin Resource Sharing for Chrome extension client access
+cors = CORS()
+
 
 def init_extensions(app: "Flask") -> None:
     """Initialize all Flask extensions with the given app instance.
@@ -40,6 +45,23 @@ def init_extensions(app: "Flask") -> None:
     # Initialize SQLAlchemy with the app
     # This must be done before importing models or initializing Alembic
     db.init_app(app)
+
+    # Initialize Flask-CORS with configuration from Flask config
+    cors.init_app(
+        app,
+        origins=app.config.get("CORS_ORIGINS", []),
+        methods=app.config.get(
+            "CORS_METHODS", ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+        ),
+        allow_headers=app.config.get("CORS_HEADERS", ["Content-Type", "X-API-Key"]),
+        supports_credentials=app.config.get("CORS_SUPPORTS_CREDENTIALS", False),
+    )
+
+    # Log CORS configuration for debugging in development
+    if app.config.get("DEBUG"):
+        app.logger.debug(
+            f"CORS origins configured: {app.config.get('CORS_ORIGINS', [])}"
+        )
 
     # Initialize Flask-Marshmallow with the app
     # This must be done after SQLAlchemy initialization
