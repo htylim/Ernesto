@@ -1,40 +1,37 @@
 """Source schema for API serialization/deserialization."""
 
-from typing import TYPE_CHECKING
-
+from flask_sqlalchemy.session import Session
 from marshmallow import fields
 from marshmallow_sqlalchemy import SQLAlchemyAutoSchema
+from sqlalchemy.orm import scoped_session
 
 from app.extensions import db
 from app.models.source import Source
 
-if TYPE_CHECKING:
-    pass
 
-
-class SourceSchema(SQLAlchemyAutoSchema):
+class SourceSchema(SQLAlchemyAutoSchema):  # pyright: ignore[reportMissingTypeArgument]
     """Schema for Source model serialization/deserialization."""
 
     class Meta:
         """Meta configuration for SourceSchema."""
 
-        model = Source
-        load_instance = True
-        sqla_session = db.session
-        include_relationships = True
+        model: type[Source] = Source
+        load_instance: bool = True
+        sqla_session: scoped_session[Session] = db.session
+        include_relationships: bool = True
 
     # Explicitly define UUID fields to ensure proper serialization
-    id = fields.UUID(dump_only=True)
+    id: fields.UUID = fields.UUID(dump_only=True)
 
     # Optional: Add validation for URLs
-    logo_url = fields.Url(allow_none=True)
-    homepage_url = fields.Url(allow_none=True)
+    logo_url: fields.Url = fields.Url(allow_none=True)
+    homepage_url: fields.Url = fields.Url(allow_none=True)
 
     # Computed field: article count
-    article_count = fields.Method("get_article_count", dump_only=True)
+    article_count: fields.Method = fields.Method("get_article_count", dump_only=True)
 
     # Nested articles (exclude to avoid circular references by default)
-    articles = fields.Nested(
+    articles: fields.Nested = fields.Nested(
         "ArticleSchema", many=True, exclude=("source",), dump_only=True
     )
 
