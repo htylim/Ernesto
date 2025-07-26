@@ -5,7 +5,7 @@ parameters including database URLs, security parameters, and
 environment-specific validation requirements.
 """
 
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, Optional
 from urllib.parse import urlparse
 
 if TYPE_CHECKING:
@@ -15,16 +15,16 @@ if TYPE_CHECKING:
 class ConfigurationError(Exception):
     """Raised when configuration validation fails."""
 
-    def __init__(self, message: str, missing_vars: Optional[List[str]] = None) -> None:
+    def __init__(self, message: str, missing_vars: Optional[list[str]] = None) -> None:
         """Initialize configuration error.
 
         Args:
             message (str): Error message describing the validation failure.
-            missing_vars (List[str], optional): List of missing environment variables.
+            missing_vars (list[str], optional): list of missing environment variables.
 
         """
         super().__init__(message)
-        self.missing_vars = missing_vars or []
+        self.missing_vars: list[str] = missing_vars or []
 
 
 class ConfigValidator:
@@ -42,9 +42,9 @@ class ConfigValidator:
             config (BaseConfig): The configuration object to validate.
 
         """
-        self.config = config
-        self.errors: List[str] = []
-        self.warnings: List[str] = []
+        self.config: "BaseConfig" = config
+        self.errors: list[str] = []
+        self.warnings: list[str] = []
 
     def validate_all(self) -> None:
         """Perform comprehensive validation of all configuration parameters.
@@ -106,7 +106,7 @@ class ConfigValidator:
         if not self._is_valid_database_uri(database_uri):
             self.errors.append(
                 f"Invalid database URI format: {database_uri}"
-                " (Expected format: scheme://[user[:password]@]host[:port]/database)"
+                + " (Expected format: scheme://[user[:password]@]host[:port]/database)"
             )
 
         # Validate SQLAlchemy track modifications setting
@@ -209,7 +209,7 @@ class ConfigValidator:
             if getattr(self.config, "DEBUG", False):
                 self.warnings.append(
                     "Using weak SECRET_KEY in development. "
-                    "Consider using a stronger secret for better security."
+                    + "Consider using a stronger secret for better security."
                 )
             else:
                 self.errors.append(
@@ -221,7 +221,7 @@ class ConfigValidator:
         ):
             self.warnings.append(
                 "Using default SECRET_KEY in development. "
-                "Consider using a stronger secret for better security."
+                + "Consider using a stronger secret for better security."
             )
 
     def _validate_development_environment(self) -> None:

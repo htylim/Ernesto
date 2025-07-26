@@ -10,7 +10,7 @@ import time
 import pytest
 from flask import Flask
 
-from app.models import ApiClient
+from app.models.api_client import ApiClient
 
 
 class TestRequestLogging:

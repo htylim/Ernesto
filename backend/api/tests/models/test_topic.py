@@ -11,8 +11,8 @@ import pytest
 from sqlalchemy import inspect
 from sqlalchemy.exc import IntegrityError
 
-from app import Topic
 from app.extensions import db
+from app.models.topic import Topic
 
 if TYPE_CHECKING:
     from flask import Flask

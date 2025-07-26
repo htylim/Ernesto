@@ -67,12 +67,8 @@ def init_extensions(app: "Flask") -> None:
     # This must be done after SQLAlchemy initialization
     ma.init_app(app)
 
-    # Import models to ensure they're registered with SQLAlchemy
-    # This is done here to avoid circular imports and ensure proper registration
-    from app import models  # noqa: F401
-
     # Initialize Flask-Alembic with the app
-    # This must be done after SQLAlchemy initialization and model imports
+    # Models will be discovered when imported by routes and other modules
     alembic.init_app(app)
 
 

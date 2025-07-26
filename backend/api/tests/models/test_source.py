@@ -10,8 +10,8 @@ import pytest
 from sqlalchemy import inspect
 from sqlalchemy.exc import IntegrityError
 
-from app import Source
 from app.extensions import db
+from app.models.source import Source
 
 if TYPE_CHECKING:
     from flask import Flask

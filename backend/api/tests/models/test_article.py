@@ -11,8 +11,10 @@ import pytest
 from sqlalchemy import inspect
 from sqlalchemy.exc import IntegrityError
 
-from app import Article, Source, Topic
 from app.extensions import db
+from app.models.article import Article
+from app.models.source import Source
+from app.models.topic import Topic
 
 if TYPE_CHECKING:
     from flask import Flask
@@ -336,4 +338,4 @@ class TestArticle:
                 .filter_by(id=topic.id)
                 .first()
             )
-            assert len(topic_with_articles.articles) == 50
+            assert topic_with_articles and len(topic_with_articles.articles) == 50

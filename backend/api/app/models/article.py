@@ -48,6 +48,37 @@ class Article(db.Model):
         "Source", back_populates="articles"
     )
 
+    def __init__(
+        self,
+        id: Optional[uuid.UUID] = None,
+        title: Optional[str] = None,
+        url: Optional[str] = None,
+        image_url: Optional[str] = None,
+        brief: Optional[str] = None,
+        topic_id: Optional[uuid.UUID] = None,
+        source_id: Optional[uuid.UUID] = None,
+        added_at: Optional[datetime] = None,
+    ) -> None:
+        """Create an Article."""
+        kwargs = {}
+        if id is not None:
+            kwargs["id"] = id
+        if title is not None:
+            kwargs["title"] = title
+        if url is not None:
+            kwargs["url"] = url
+        if image_url is not None:
+            kwargs["image_url"] = image_url
+        if brief is not None:
+            kwargs["brief"] = brief
+        if topic_id is not None:
+            kwargs["topic_id"] = topic_id
+        if source_id is not None:
+            kwargs["source_id"] = source_id
+        if added_at is not None:
+            kwargs["added_at"] = added_at
+        super().__init__(**kwargs)
+
     @override
     def __repr__(self) -> str:
         """Return string representation of the article."""

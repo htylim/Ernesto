@@ -1,6 +1,6 @@
 """Shared test fixtures for all test modules."""
 
-from typing import Generator, Tuple
+from collections.abc import Generator
 
 import pytest
 from flask import Flask
@@ -8,11 +8,11 @@ from flask.testing import FlaskClient
 
 from app import create_app
 from app.extensions import db
-from app.models import ApiClient
+from app.models.api_client import ApiClient
 
 
 @pytest.fixture
-def app() -> Flask:
+def app() -> Generator[Flask, None, None]:
     """Create a test Flask application with in-memory database."""
     test_config = {
         "SQLALCHEMY_DATABASE_URI": "sqlite:///:memory:",
@@ -34,7 +34,7 @@ def client(app: Flask) -> FlaskClient:
 
 
 @pytest.fixture
-def sample_api_client(app: Flask) -> Generator[Tuple[ApiClient, str], None, None]:
+def sample_api_client(app: Flask) -> Generator[tuple[ApiClient, str], None, None]:
     """Create a sample API client for testing authentication."""
     with app.app_context():
         api_client, api_key = ApiClient.create_with_api_key("test_client")
@@ -44,7 +44,7 @@ def sample_api_client(app: Flask) -> Generator[Tuple[ApiClient, str], None, None
 
 
 @pytest.fixture
-def empty_db_app() -> Flask:
+def empty_db_app() -> Generator[Flask, None, None]:
     """Create a test Flask application with empty database for migration testing.
 
     This fixture creates an app with an empty database (no tables created)

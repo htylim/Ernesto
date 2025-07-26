@@ -2,7 +2,7 @@
 
 import uuid
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING, ClassVar
+from typing import TYPE_CHECKING, ClassVar, Optional
 
 from sqlalchemy import DateTime, Integer, String
 from sqlalchemy.dialects.postgresql import UUID
@@ -43,6 +43,28 @@ class Topic(db.Model):
     articles: Mapped[list["Article"]] = relationship(
         "Article", back_populates="topic", cascade="all, delete-orphan"
     )
+
+    def __init__(
+        self,
+        id: Optional[uuid.UUID] = None,
+        label: Optional[str] = None,
+        added_at: Optional[datetime] = None,
+        updated_at: Optional[datetime] = None,
+        coverage_score: Optional[int] = None,
+    ) -> None:
+        """Create a Topic."""
+        kwargs = {}
+        if id is not None:
+            kwargs["id"] = id
+        if label is not None:
+            kwargs["label"] = label
+        if added_at is not None:
+            kwargs["added_at"] = added_at
+        if updated_at is not None:
+            kwargs["updated_at"] = updated_at
+        if coverage_score is not None:
+            kwargs["coverage_score"] = coverage_score
+        super().__init__(**kwargs)
 
     @override
     def __repr__(self) -> str:

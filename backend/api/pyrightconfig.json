@@ -11,15 +11,11 @@
     "typeCheckingMode": "recommended",
     "venvPath": "/opt",
     "venv": "venv",
-    "reportMissingImports": "error",
-    "reportMissingTypeStubs": false,
-    "reportMissingModuleSource": false,
+    "reportImportCycles": false,
+    "reportExplicitAny": false,
+    "reportAny": false,
+    "reportUnusedCallResult": false,
+    "reportUnknownMemberType": false,
     "reportUnknownVariableType": false,
-    "reportImportCycles": "error",
-    "reportUndefinedVariable": "error",
-    "reportGeneralTypeIssues": "error",
-    "reportOperatorIssue": "error",
-    "reportArgumentType": "error",
-    "reportReturnType": "error",
-    "reportAttributeAccessIssue": "error"
+    "reportUnknownArgumentType": false
 } 

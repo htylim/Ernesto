@@ -17,67 +17,71 @@ class BaseConfig:
     """Base configuration class with common settings for all environments."""
 
     # General Flask settings - constants
-    DEBUG = False
-    TESTING = False
-    LOG_LEVEL = "INFO"
-    JSON_SORT_KEYS = False
-    JSONIFY_PRETTYPRINT_REGULAR = True
+    DEBUG: bool = False
+    TESTING: bool = False
+    LOG_LEVEL: str = "INFO"
+    JSON_SORT_KEYS: bool = False
+    JSONIFY_PRETTYPRINT_REGULAR: bool = True
 
     # API metadata
-    API_TITLE = "Ernesto API"
-    API_VERSION = "v1"
+    API_TITLE: str = "Ernesto API"
+    API_VERSION: str = "v1"
 
     def __init__(self) -> None:
         """Initialize configuration by reading environment variables at runtime."""
         # Security - runtime values only
-        self.SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-key-change-in-production")
+        self.SECRET_KEY: str = os.getenv(
+            "SECRET_KEY", "dev-secret-key-change-in-production"
+        )
 
         # Database - runtime values only
-        self.SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URI")
-        self.SQLALCHEMY_TRACK_MODIFICATIONS = (
+        self.SQLALCHEMY_DATABASE_URI: str = os.getenv("DATABASE_URI", "")
+        self.SQLALCHEMY_TRACK_MODIFICATIONS: bool = (
             os.getenv("SQLALCHEMY_TRACK_MODIFICATIONS", "False").lower() == "true"
         )
 
         # CORS configuration - runtime values only
-        self.CORS_ORIGINS = []  # Empty list by default for security
-        self.CORS_METHODS = ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
-        self.CORS_HEADERS = ["Content-Type", "X-API-Key"]
-        self.CORS_SUPPORTS_CREDENTIALS = False  # API key auth doesn't need credentials
+        self.CORS_ORIGINS: list[str] = []  # Empty list by default for security
+        self.CORS_METHODS: list[str] = ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+        self.CORS_HEADERS: list[str] = ["Content-Type", "X-API-Key"]
+        self.CORS_SUPPORTS_CREDENTIALS: bool = (
+            False  # API key auth doesn't need credentials
+        )
 
 
 class DevelopmentConfig(BaseConfig):
     """Development environment configuration."""
 
     # Override constants for development
-    DEBUG = True
-    LOG_LEVEL = "DEBUG"
+    DEBUG: bool = True
+    LOG_LEVEL: str = "DEBUG"
 
     def __init__(self) -> None:
         """Initialize development configuration."""
         super().__init__()
 
         # Use environment DATABASE_URI - no hardcoded fallback
-        self.SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URI")
+        self.SQLALCHEMY_DATABASE_URI: str = os.getenv("DATABASE_URI", "")
 
         # CORS origins for development - allow localhost patterns
-        self.CORS_ORIGINS = [r"http://localhost:.*", r"http://127.0.0.1:.*"]
+        self.CORS_ORIGINS: list[str] = [r"http://localhost:.*", r"http://127.0.0.1:.*"]
 
 
 class TestingConfig(BaseConfig):
     """Testing environment configuration."""
 
     # Override constants for testing
-    TESTING = True
-    DEBUG = True
-    LOG_LEVEL = "DEBUG"
-    WTF_CSRF_ENABLED = False  # Disable CSRF protection in testing
+    TESTING: bool = True
+    DEBUG: bool = True
+    LOG_LEVEL: str = "DEBUG"
+    WTF_CSRF_ENABLED: bool = False  # Disable CSRF protection in testing
 
     def __init__(self) -> None:
         """Initialize testing configuration."""
         super().__init__()
 
         # Use in-memory SQLite for testing by default
-        self.SQLALCHEMY_DATABASE_URI = os.getenv(
+        self.SQLALCHEMY_DATABASE_URI: str = os.getenv(
             "TEST_DATABASE_URI", "sqlite:///:memory:"
         )
 
@@ -86,18 +90,18 @@ class ProductionConfig(BaseConfig):
     """Production environment configuration."""
 
     # Override constants for production
-    DEBUG = False
-    LOG_LEVEL = "ERROR"
+    DEBUG: bool = False
+    LOG_LEVEL: str = "ERROR"
 
     def __init__(self) -> None:
         """Initialize production configuration."""
         super().__init__()
 
         # Ensure SECRET_KEY is set in production
-        self.SECRET_KEY = os.getenv("SECRET_KEY")
+        self.SECRET_KEY: str = os.getenv("SECRET_KEY", "")
 
         # Production database must be explicitly set
-        self.SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URI")
+        self.SQLALCHEMY_DATABASE_URI: str = os.getenv("DATABASE_URI", "")
 
 
 # Configuration mapping for environment-based selection
@@ -135,7 +139,7 @@ def get_config(config_name: Optional[str] = None) -> BaseConfig:
         available_configs = ", ".join(config_by_name.keys())
         raise ValueError(
             f"Unknown configuration '{config_name}'. "
-            f"Available configurations: {available_configs}"
+            + f"Available configurations: {available_configs}"
         )
 
     # Create and validate configuration instance

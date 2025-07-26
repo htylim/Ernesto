@@ -1,8 +1,9 @@
 ---
 description: When interacting with PostgresSQL thru CLI, code or setting up/modifying models and/or migrations
-globs: 
+globs:
 alwaysApply: false
 ---
+
 # Database Operations
 
 This rule documents how to interact with the PostgreSQL database for the Ernesto project using Flask-Alembic for migrations.
@@ -12,7 +13,7 @@ This rule documents how to interact with the PostgreSQL database for the Ernesto
 Based on [docker-compose.yml](mdc:docker-compose.yml), the database connection details are:
 
 - **Host:** `db` (Docker service name)
-- **Port:** `5432` 
+- **Port:** `5433`
 - **User:** `postgres`
 - **Password:** `postgres`
 - **Database:** `ernesto`
@@ -22,6 +23,7 @@ Based on [docker-compose.yml](mdc:docker-compose.yml), the database connection d
 Flask-Alembic provides a Flask-native interface to Alembic migrations. All commands are prefixed with `flask db`.
 
 ### **Basic Migration Operations**
+
 ```bash
 # Apply all pending migrations to latest
 flask db upgrade
@@ -40,6 +42,7 @@ flask db downgrade base
 ```
 
 ### **Migration Information Commands**
+
 ```bash
 # Show current migration revision
 flask db current
@@ -55,6 +58,7 @@ flask db show <revision_id>
 ```
 
 ### **Creating New Migrations**
+
 ```bash
 # Generate a new migration with auto-detection of model changes (default behavior)
 flask db revision "Description of changes"
@@ -66,6 +70,7 @@ flask db revision --empty "Empty migration for custom SQL"
 ## **PostgreSQL Commands (psql)**
 
 ### **Basic Connection**
+
 ```bash
 # Connect to PostgreSQL server
 PGPASSWORD=postgres psql -h db -U postgres
@@ -75,6 +80,7 @@ PGPASSWORD=postgres psql -h db -U postgres -d ernesto
 ```
 
 ### **Execute Single Commands**
+
 ```bash
 # Run SQL command directly
 PGPASSWORD=postgres psql -h db -U postgres -c "COMMAND_HERE"
@@ -84,6 +90,7 @@ PGPASSWORD=postgres psql -h db -U postgres -d ernesto -c "COMMAND_HERE"
 ```
 
 ### **Common Database Operations**
+
 ```bash
 # List all tables
 PGPASSWORD=postgres psql -h db -U postgres -d ernesto -c "\dt"
@@ -97,6 +104,7 @@ PGPASSWORD=postgres psql -h db -U postgres -c "CREATE DATABASE ernesto;"
 ```
 
 ### **Verify Database State**
+
 ```bash
 # List created tables
 PGPASSWORD=postgres psql -h db -U postgres -d ernesto -c "\dt"
@@ -135,6 +143,7 @@ pytest tests/test_migrations.py -v
 ## **Expected Schema Tables**
 
 After successful migration, the database should contain:
+
 - `alembic_version` - Migration tracking
 - `api_clients` - API client management (Integer ID, unique constraints)
 - `sources` - Content sources (UUID primary key, relationships to articles)
@@ -142,6 +151,7 @@ After successful migration, the database should contain:
 - `articles` - Article storage (UUID primary key, foreign keys to sources/topics, performance indexes)
 
 ### **Table Relationships**
+
 - `articles.source_id` → `sources.id` (with index)
 - `articles.topic_id` → `topics.id` (with index)
 - Cascade deletion: Deleting source/topic removes related articles
@@ -149,15 +159,17 @@ After successful migration, the database should contain:
 ## **Flask-Alembic Best Practices**
 
 ### **Migration Development Workflow**
+
 1. **Make Model Changes**: Modify models in `app/models/`
 2. **Add Model Changes Tests**: Modify or add new tests for the models in `tests/models/`
-2. **Generate Migration**: `flask db revision "Descriptive message"`
-3. **Review Generated Code**: Always inspect the migration file before applying
-4. **Run Tests **: Run `pytest tests/test_migrations.py` to verify migrations plus any new tests added
-5. **Apply Migration**: `flask db upgrade`
-6. **Verify Schema**: Check database state with psql commands
+3. **Generate Migration**: `flask db revision "Descriptive message"`
+4. **Review Generated Code**: Always inspect the migration file before applying
+5. **Run Tests **: Run `pytest tests/test_migrations.py` to verify migrations plus any new tests added
+6. **Apply Migration**: `flask db upgrade`
+7. **Verify Schema**: Check database state with psql commands
 
 ### **Migration File Best Practices**
+
 - **Use descriptive messages**: `flask db revision "Add user preferences table"`
 - **Review auto-generated code**: Always check generated migrations for accuracy
 - **Add custom logic when needed**: Include data migrations, custom indexes, etc.
@@ -165,6 +177,7 @@ After successful migration, the database should contain:
 - **Use conditional operations**: Check if tables/columns exist before creating/dropping
 
 ### **Safe Migration Patterns**
+
 ```python
 # ✅ DO: Check if table exists before creating
 def upgrade():
@@ -185,29 +198,32 @@ def upgrade():
 ```
 
 ### **Data Migration Patterns**
+
 ```python
 # ✅ DO: Include data migrations when needed
 def upgrade():
     # Create new table
     op.create_table('new_table', ...)
-    
+
     # Migrate existing data
     connection = op.get_bind()
     connection.execute(
         text("INSERT INTO new_table (id, name) SELECT id, name FROM old_table")
     )
-    
+
     # Drop old table
     op.drop_table('old_table')
 ```
 
 ### **Testing Migrations**
+
 - **Run migration tests**: `pytest tests/test_migrations.py -v`
 - **Test on fresh database**: Verify migrations work from empty state
 - **Test rollbacks**: Ensure downgrade operations work correctly
 - **Verify schema integrity**: Check foreign keys, indexes, and constraints
 
 ### **Testing Model Changes**
+
 When adding or modifying models, comprehensive testing is essential:
 
 - **Model validation tests**: Test field constraints, required fields, and data types
@@ -221,10 +237,12 @@ When adding or modifying models, comprehensive testing is essential:
 ## **Troubleshooting**
 
 ### **Connection Issues**
+
 - Ensure the `db` container is running: `docker-compose ps`
 - Check if database service is healthy: `docker-compose logs db`
 
 ### **Migration Issues**
+
 ```bash
 # Check current migration status
 flask db current
@@ -240,23 +258,27 @@ flask db downgrade <revision_id>
 ```
 
 ### **Common Migration Errors**
+
 - **"Target database is not up to date"**: Run `flask db upgrade` first
 - **"Multiple heads detected"**: Merge migration branches or reset to common revision
 - **"Can't locate revision"**: Check migration files in `app/migrations/`
 - **Foreign key constraint errors**: Ensure referenced tables exist before creating relationships
 
 ### **Migration Files Location**
+
 - **Directory**: Migration scripts are stored directly in `app/migrations/`. Note that there is no `versions` subdirectory.
 - **Naming Convention**: Files are named using the format `<revision_id>_<description>.py`.
 
 ### **Active Connection Errors**
+
 If you get "database is being accessed by other users":
+
 1. First terminate connections using the `pg_terminate_backend` command above
 2. Then proceed with the database operation
 
 ## **Integration with Flask Application**
 
-Flask-Alembic is initialized in [app/__init__.py](mdc:app/__init__.py):
+Flask-Alembic is initialized in [app/**init**.py](mdc:app/__init__.py):
 
 ```python
 from flask_alembic import Alembic
@@ -266,17 +288,18 @@ alembic = Alembic()
 
 def create_app():
     app = Flask(__name__)
-    
+
     # Import models before Alembic initialization
     from app import models
-    
+
     # Initialize Flask-Alembic with the app
     alembic.init_app(app)
-    
+
     return app
 ```
 
 This setup ensures that:
+
 - Models are registered with SQLAlchemy before migration detection
 - Flask-Alembic can auto-detect model changes
 - Migration commands are available via `flask db` CLI

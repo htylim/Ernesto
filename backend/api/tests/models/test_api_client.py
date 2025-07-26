@@ -5,15 +5,15 @@ including API key generation, hashing, and validation.
 """
 
 import re
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 
 import pytest
 from sqlalchemy import inspect
 from sqlalchemy.exc import IntegrityError
 
-from app import ApiClient
 from app.extensions import db
+from app.models.api_client import ApiClient
 
 if TYPE_CHECKING:
     from flask import Flask
@@ -177,7 +177,12 @@ class TestApiClient:
             assert "created_at" in columns
             assert "last_used_at" in columns
             assert "use_count" in columns
-            assert columns["hashed_api_key"]["type"].length == 128
+            assert (
+                columns["hashed_api_key"][
+                    "type"
+                ].length  # pyright: ignore[reportAttributeAccessIssue]
+                == 128
+            )
 
     def test_api_client_id_generation(self, app: "Flask") -> None:
         """Test that integer IDs are properly generated for ApiClient."""
@@ -220,7 +225,7 @@ class TestApiClient:
                 # To make the test useful, we should at least verify the object state
                 # and then clean up.
                 retrieved = db.session.get(ApiClient, client.id)
-                assert len(retrieved.name) == 101
+                assert retrieved and len(retrieved.name) == 101
                 db.session.delete(client)
                 db.session.commit()
             except IntegrityError:
@@ -241,7 +246,7 @@ class TestApiClient:
             assert client.last_used_at is None
 
             # Update to set a value and then back to null
-            client.last_used_at = datetime.utcnow()
+            client.last_used_at = datetime.now(timezone.utc)
             db.session.commit()
             assert client.last_used_at is not None
 

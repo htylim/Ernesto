@@ -1,3 +1,5 @@
+# pyright: reportAttributeAccessIssue=false
+# pyright: reportPrivateUsage=false
 """Test configuration validators module.
 
 This module tests the configuration validation framework without testing
@@ -9,7 +11,8 @@ from unittest.mock import patch
 
 import pytest
 
-# NOTE: TestingConfig needs to be imported as EnvTestingConfig to not confuse pytest into thinking it as a Class containing tests
+# NOTE: TestingConfig needs to be imported as EnvTestingConfig to not confuse
+#       pytest into thinking it as a Class containing tests
 from app.config import BaseConfig, DevelopmentConfig, ProductionConfig
 from app.config import TestingConfig as EnvTestingConfig
 from app.validators import ConfigurationError, ConfigValidator, validate_config

@@ -36,6 +36,34 @@ class ApiClient(db.Model):
     last_used_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     use_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
 
+    def __init__(
+        self,
+        id: Optional[int] = None,
+        name: Optional[str] = None,
+        hashed_api_key: Optional[str] = None,
+        is_active: Optional[bool] = None,
+        created_at: Optional[datetime] = None,
+        last_used_at: Optional[datetime] = None,
+        use_count: Optional[int] = None,
+    ) -> None:
+        """Create an ApiClient."""
+        kwargs = {}
+        if id is not None:
+            kwargs["id"] = id
+        if name is not None:
+            kwargs["name"] = name
+        if hashed_api_key is not None:
+            kwargs["hashed_api_key"] = hashed_api_key
+        if is_active is not None:
+            kwargs["is_active"] = is_active
+        if created_at is not None:
+            kwargs["created_at"] = created_at
+        if last_used_at is not None:
+            kwargs["last_used_at"] = last_used_at
+        if use_count is not None:
+            kwargs["use_count"] = use_count
+        super().__init__(**kwargs)
+
     @override
     def __repr__(self) -> str:
         """Return string representation of the ApiClient instance."""
@@ -83,8 +111,6 @@ class ApiClient(db.Model):
     ) -> tuple["ApiClient", str]:
         """Create a new ApiClient and return the instance and plaintext API key."""
         api_key = cls.generate_api_key()
-        api_client = cls(
-            name=name, is_active=is_active  # pyright: ignore[reportCallIssue]
-        )
+        api_client = cls(name=name, is_active=is_active)
         api_client.set_api_key(api_key)
         return api_client, api_key

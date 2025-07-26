@@ -36,6 +36,28 @@ class Source(db.Model):
         "Article", back_populates="source", cascade="all, delete-orphan"
     )
 
+    def __init__(
+        self,
+        id: Optional[uuid.UUID] = None,
+        logo_url: Optional[str] = None,
+        name: Optional[str] = None,
+        homepage_url: Optional[str] = None,
+        is_enabled: Optional[bool] = None,
+    ) -> None:
+        """Create a Source."""
+        kwargs = {}
+        if id is not None:
+            kwargs["id"] = id
+        if logo_url is not None:
+            kwargs["logo_url"] = logo_url
+        if name is not None:
+            kwargs["name"] = name
+        if homepage_url is not None:
+            kwargs["homepage_url"] = homepage_url
+        if is_enabled is not None:
+            kwargs["is_enabled"] = is_enabled
+        super().__init__(**kwargs)
+
     @override
     def __repr__(self) -> str:
         """Return string representation of the Source instance."""

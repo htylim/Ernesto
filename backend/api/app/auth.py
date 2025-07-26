@@ -4,18 +4,18 @@ This module provides decorators and utilities for API key authentication.
 """
 
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from functools import wraps
-from typing import Callable, Tuple, TypeVar, Union
+from typing import Callable, TypeVar, Union
 
 from flask import Response, g, jsonify, request
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.extensions import db
-from app.models import ApiClient
+from app.models.api_client import ApiClient
 
 # Type variable for the decorated function
-F = TypeVar("F", bound=Callable[..., Union[Response, Tuple[Response, int], str]])
+F = TypeVar("F", bound=Callable[..., Union[Response, tuple[Response, int]]])
 
 # Set up logger for authentication events
 logger = logging.getLogger(__name__)
@@ -40,7 +40,9 @@ def require_api_key(f: F) -> F:
     """
 
     @wraps(f)
-    def decorated_function(*args: object, **kwargs: object) -> Tuple[Response, int]:
+    def decorated_function(
+        *args: object, **kwargs: object
+    ) -> Union[Response, tuple[Response, int], str]:
         # Get remote IP for logging
         remote_ip = request.environ.get("HTTP_X_FORWARDED_FOR", request.remote_addr)
 
@@ -113,7 +115,7 @@ def require_api_key(f: F) -> F:
 
             # Update usage statistics
             try:
-                client.last_used_at = datetime.utcnow()
+                client.last_used_at = datetime.now(timezone.utc)
                 client.use_count += 1
                 db.session.commit()
 
@@ -163,4 +165,4 @@ def require_api_key(f: F) -> F:
                 500,
             )
 
-    return decorated_function
+    return decorated_function  # pyright: ignore[reportReturnType]

@@ -23,13 +23,13 @@ def register_routes(app: "Flask") -> None:
     """
 
     @app.route("/")
-    def hello_world() -> str:
+    def hello_world() -> str:  # pyright: ignore[reportUnusedFunction]
         """Return basic test endpoint response."""
         return "<p>Hello from the API!</p>"
 
     @app.route("/api/secure-endpoint")
     @require_api_key
-    def secure_endpoint() -> Response:
+    def secure_endpoint() -> Response:  # pyright: ignore[reportUnusedFunction]
         """Return response for protected endpoint that requires API key."""
         return jsonify({"message": "You have access to this secure endpoint"})
 

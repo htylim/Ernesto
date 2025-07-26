@@ -5,25 +5,19 @@ Flask application instances with all necessary extensions, routes, and error han
 """
 
 import time
-from typing import TYPE_CHECKING, Dict, Optional
+from typing import TYPE_CHECKING
 
 from dotenv import load_dotenv
 from flask import Flask, Response, g, request
 
-# Import models for backward compatibility
-from app.models import ApiClient as ApiClient
-from app.models import Article as Article
-from app.models import Source as Source
-from app.models import Topic as Topic
-
 if TYPE_CHECKING:
-    from typing import Any
+    from typing import Any, Optional
 
 # Load environment variables from .env file
 load_dotenv()
 
 
-def create_app(test_config: Optional[Dict[str, "Any"]] = None) -> Flask:
+def create_app(test_config: Optional[dict[str, "Any"]] = None) -> Flask:
     """Create and configure the Flask application.
 
     Args:
@@ -57,7 +51,7 @@ def create_app(test_config: Optional[Dict[str, "Any"]] = None) -> Flask:
     return app
 
 
-def _configure_app(app: Flask, test_config: Optional[Dict[str, "Any"]] = None) -> None:
+def _configure_app(app: Flask, test_config: Optional[dict[str, "Any"]] = None) -> None:
     """Configure the Flask application with appropriate settings.
 
     Args:
@@ -126,7 +120,7 @@ def _register_request_handlers(app: Flask) -> None:
     """
 
     @app.before_request
-    def log_request_start() -> None:
+    def log_request_start() -> None:  # pyright: ignore [reportUnusedFunction]
         """Log the start of each request with basic information."""
         # Get remote IP (handle X-Forwarded-For for proxy/load balancer)
         remote_ip = request.environ.get("HTTP_X_FORWARDED_FOR", request.remote_addr)
@@ -169,7 +163,9 @@ def _register_request_handlers(app: Flask) -> None:
                     )
 
     @app.after_request
-    def log_request_end(response: Response) -> Response:
+    def log_request_end(  # pyright: ignore[reportUnusedFunction]
+        response: Response,
+    ) -> Response:
         """Log the completion of each request with response information.
 
         Args:

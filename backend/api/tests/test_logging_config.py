@@ -10,7 +10,10 @@ import tempfile
 from unittest.mock import MagicMock, patch
 
 from app import create_app
-from app.logging_config import _get_environment_name, configure_logging
+from app.logging_config import (
+    _get_environment_name,  # pyright: ignore[reportPrivateUsage]
+    configure_logging,
+)
 
 
 class TestLoggingConfiguration:
@@ -221,6 +224,7 @@ class TestLoggingConfiguration:
         with app.app_context():
             handler = app.logger.handlers[0]
             formatter = handler.formatter
+            assert formatter
 
             # Create a test log record
             record = logging.LogRecord(

@@ -118,7 +118,10 @@ class TestExtensionInitialization:
 
         with app.app_context():
             # Test that models are available
-            from app.models import ApiClient, Article, Source, Topic
+            from app.models.api_client import ApiClient
+            from app.models.article import Article
+            from app.models.source import Source
+            from app.models.topic import Topic
 
             # Test that models are registered with SQLAlchemy
             assert hasattr(ApiClient, "__tablename__")
@@ -165,7 +168,7 @@ class TestErrorHandlerRegistration:
 
         # Create a route that raises an exception
         @app.route("/test-error")
-        def test_error() -> NoReturn:
+        def test_error() -> NoReturn:  # pyright: ignore[reportUnusedFunction]
             raise Exception("Test exception")
 
         with app.test_client() as client:
@@ -344,7 +347,7 @@ class TestApplicationFactoryIntegration:
                 mock_errors,
                 mock_routes,
             ]:
-                args, kwargs = mock_func.call_args
+                args, _kwargs = mock_func.call_args
                 assert args[0] is app
 
 
