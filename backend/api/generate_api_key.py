@@ -8,8 +8,9 @@ import sys
 
 from dotenv import load_dotenv
 
-from app import ApiClient, create_app
+from app import create_app
 from app.extensions import db
+from app.models.api_client import ApiClient
 
 
 def generate_key(client_name: str) -> int:

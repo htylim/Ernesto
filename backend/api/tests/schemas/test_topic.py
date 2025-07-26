@@ -1,3 +1,7 @@
+# these comments are temporary until we move from marshmallow to pydantic
+# pyright: reportCallIssue=false
+# pyright: reportArgumentType=false
+
 """Unit tests for TopicSchema.
 
 This module tests the TopicSchema serialization and deserialization
@@ -6,7 +10,7 @@ functionality to ensure proper API response formatting.
 
 import time
 from datetime import datetime
-from typing import Any, List
+from typing import Any
 from uuid import uuid4
 
 import pytest
@@ -103,8 +107,8 @@ class TestTopicSchema:
         with app.app_context():
             # Create a mock topic with articles attribute
             class MockTopic:
-                def __init__(self, articles: List[Any]) -> None:
-                    self.articles = articles
+                def __init__(self, articles: list[Any]) -> None:
+                    self.articles: list[Any] = articles
 
             schema = TopicSchema()
 

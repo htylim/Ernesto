@@ -1,3 +1,7 @@
+# these comments are temporary until we move from marshmallow to pydantic
+# pyright: reportCallIssue=false
+# pyright: reportArgumentType=false
+
 """Unit tests for SourceSchema.
 
 This module tests the SourceSchema serialization and deserialization
@@ -5,7 +9,7 @@ functionality to ensure proper API response formatting.
 """
 
 import time
-from typing import Any, List
+from typing import Any
 from uuid import uuid4
 
 import pytest
@@ -78,8 +82,8 @@ class TestSourceSchema:
         with app.app_context():
             # Create a mock source with articles attribute
             class MockSource:
-                def __init__(self, articles: List[Any]) -> None:
-                    self.articles = articles
+                def __init__(self, articles: list[Any]) -> None:
+                    self.articles: list[Any] = articles
 
             schema = SourceSchema()
 

@@ -1,3 +1,6 @@
+# these comments are temporary until we move from marshmallow to pydantic
+# pyright: reportCallIssue=false
+# pyright: reportArgumentType=false
 """Unit tests for ArticleSchema.
 
 This module tests the ArticleSchema serialization and deserialization
