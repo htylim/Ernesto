@@ -3,7 +3,7 @@
 from collections.abc import Generator
 
 import pytest
-from flask import Flask
+from flask import Flask, Response
 from flask.testing import FlaskClient
 
 from app import create_app
@@ -28,7 +28,7 @@ def app() -> Generator[Flask, None, None]:
 
 
 @pytest.fixture
-def client(app: Flask) -> FlaskClient:
+def client(app: Flask) -> "FlaskClient[Response]":
     """Create a test client for the Flask application."""
     return app.test_client()
 

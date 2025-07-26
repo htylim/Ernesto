@@ -270,7 +270,7 @@ class TestRequireApiKeyDecorator:
         assert len(error_logs) == 1
         assert "Failed to update usage statistics" in error_logs[0].message
 
-    @patch("app.models.ApiClient.query")
+    @patch("app.models.api_client.ApiClient.query")
     def test_require_api_key_query_error_handling(
         self, mock_query: MagicMock, app: Flask, caplog: LogCaptureFixture
     ) -> None:
@@ -290,7 +290,7 @@ class TestRequireApiKeyDecorator:
         assert "Authentication service unavailable" in response.json["error"]
         assert "DB connection failed" in caplog.text
 
-    @patch("app.models.ApiClient.check_api_key")
+    @patch("app.models.api_client.ApiClient.check_api_key")
     def test_require_api_key_unexpected_error_handling(
         self,
         mock_check: MagicMock,

@@ -31,11 +31,11 @@ class TestErrorHandlers:
         return app
 
     @pytest.fixture
-    def client(self, app: Flask) -> FlaskClient[Response]:
+    def client(self, app: Flask) -> "FlaskClient[Response]":
         """Create a test client for the Flask application."""
         return app.test_client()
 
-    def test_404_not_found_handler(self, client: FlaskClient[Response]) -> None:
+    def test_404_not_found_handler(self, client: "FlaskClient[Response]") -> None:
         """Test that 404 errors return proper JSON response."""
         response = client.get("/nonexistent-route")
 
@@ -48,7 +48,7 @@ class TestErrorHandlers:
         assert data["status_code"] == 404
 
     def test_405_method_not_allowed_handler(
-        self, app: Flask, client: FlaskClient[Response]
+        self, app: Flask, client: "FlaskClient[Response]"
     ) -> None:
         """Test that 405 errors return proper JSON response."""
 
@@ -69,7 +69,7 @@ class TestErrorHandlers:
         assert data["status_code"] == 405
 
     def test_500_internal_server_error_handler(
-        self, app: Flask, client: FlaskClient[Response]
+        self, app: Flask, client: "FlaskClient[Response]"
     ) -> None:
         """Test that 500 errors return proper JSON response."""
 
@@ -91,7 +91,7 @@ class TestErrorHandlers:
         assert data["status_code"] == 500
 
     def test_400_bad_request_handler(
-        self, app: Flask, client: FlaskClient[Response]
+        self, app: Flask, client: "FlaskClient[Response]"
     ) -> None:
         """Test that 400 errors return proper JSON response."""
         from werkzeug.exceptions import BadRequest
@@ -115,7 +115,7 @@ class TestErrorHandlers:
         assert data["status_code"] == 400
 
     def test_401_unauthorized_handler(
-        self, app: Flask, client: FlaskClient[Response]
+        self, app: Flask, client: "FlaskClient[Response]"
     ) -> None:
         """Test that 401 errors return proper JSON response."""
         from werkzeug.exceptions import Unauthorized
@@ -136,7 +136,7 @@ class TestErrorHandlers:
         assert data["status_code"] == 401
 
     def test_403_forbidden_handler(
-        self, app: Flask, client: FlaskClient[Response]
+        self, app: Flask, client: "FlaskClient[Response]"
     ) -> None:
         """Test that 403 errors return proper JSON response."""
         from werkzeug.exceptions import Forbidden
@@ -157,7 +157,7 @@ class TestErrorHandlers:
         assert data["status_code"] == 403
 
     def test_unexpected_exception_handler(
-        self, app: Flask, client: FlaskClient[Response]
+        self, app: Flask, client: "FlaskClient[Response]"
     ) -> None:
         """Test that unexpected exceptions are handled properly."""
 
@@ -191,7 +191,7 @@ class TestErrorHandlers:
         # Exception handler is registered under None key in the nested dict
         assert Exception in app.error_handler_spec[None][None]
 
-    def test_error_response_structure(self, client: FlaskClient[Response]) -> None:
+    def test_error_response_structure(self, client: "FlaskClient[Response]") -> None:
         """Test that all error responses have consistent structure."""
         response = client.get("/nonexistent-route")
 
@@ -212,7 +212,7 @@ class TestErrorHandlers:
     def test_logging_on_errors(
         self,
         app: Flask,
-        client: FlaskClient[Response],
+        client: "FlaskClient[Response]",
         caplog: pytest.LogCaptureFixture,
     ) -> None:
         """Test that errors are properly logged."""

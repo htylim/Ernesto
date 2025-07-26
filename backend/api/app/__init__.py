@@ -5,13 +5,10 @@ Flask application instances with all necessary extensions, routes, and error han
 """
 
 import time
-from typing import TYPE_CHECKING
+from typing import Any, Optional
 
 from dotenv import load_dotenv
 from flask import Flask, Response, g, request
-
-if TYPE_CHECKING:
-    from typing import Any, Optional
 
 # Load environment variables from .env file
 load_dotenv()
