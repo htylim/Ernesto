@@ -185,6 +185,7 @@ class TestProductionConfig:
         {
             "SECRET_KEY": "very-long-secret-key-for-production-use-that-meets-32-character-minimum",
             "DATABASE_URI": "postgresql://prod:secret@db:5432/ernesto_prod",
+            "CHROME_EXTENSION_IDS": "abcdefghijklmnopabcdefghijklmnop",
         },
     )
     def test_production_config_validation_success(self) -> None:
@@ -276,6 +277,7 @@ class TestConfigMapping:
         {
             "SECRET_KEY": "very-long-secret-key-for-production-use-that-meets-32-character-minimum",
             "DATABASE_URI": "postgresql://prod:secret@db:5432/ernesto_prod",
+            "CHROME_EXTENSION_IDS": "abcdefghijklmnopabcdefghijklmnop",
         },
     )
     def test_get_config_production_case_insensitive(self) -> None:

@@ -319,6 +319,7 @@ class TestValidateEnvironmentSpecific:
         {
             "SECRET_KEY": "a-very-secure-secret-key-for-production-testing",
             "DATABASE_URI": "postgresql://user:pass@localhost:5432/prod_db",
+            "CHROME_EXTENSION_IDS": "abcdefghijklmnopabcdefghijklmnop",
         },
     )
     def test_validate_environment_specific_production(self) -> None:
@@ -400,3 +401,132 @@ class TestPrivateValidationMethods:
 
         validator._validate_secret_key_strength("dev-secret-key-change-in-production")
         assert len(validator.warnings) == 1
+
+
+class TestValidateCorsConfig:
+    """Tests for CORS configuration validation."""
+
+    @patch.dict(
+        "os.environ",
+        {
+            "SECRET_KEY": "very-long-secret-key-for-production-use-that-meets-32-character-minimum",
+            "DATABASE_URI": "postgresql://prod:secret@db:5432/ernesto_prod",
+            # No CHROME_EXTENSION_IDS → should error for empty CORS_ORIGINS in production
+        },
+        clear=True,
+    )
+    def test_prod_cors_missing_ids_is_error(self) -> None:
+        """Production must error when no CORS_ORIGINS are configured."""
+        config = ProductionConfig()
+        validator = ConfigValidator(config)
+        with pytest.raises(ConfigurationError):
+            validator.validate_all()
+
+    @patch.dict(
+        "os.environ",
+        {
+            "SECRET_KEY": "very-long-secret-key-for-production-use-that-meets-32-character-minimum",
+            "DATABASE_URI": "postgresql://prod:secret@db:5432/ernesto_prod",
+            "CHROME_EXTENSION_IDS": "abcdefghijklmnopabcdefghijklmnop",
+        },
+        clear=True,
+    )
+    def test_prod_cors_invalid_origin_scheme_is_error(self) -> None:
+        """Production must reject non-chrome-extension origins."""
+        config = ProductionConfig()
+        # Force an invalid origin to simulate misconfiguration at runtime
+        config.CORS_ORIGINS = ["https://example.com"]
+        validator = ConfigValidator(config)
+        with pytest.raises(ConfigurationError):
+            validator.validate_all()
+
+    @patch.dict(
+        "os.environ",
+        {
+            "SECRET_KEY": "very-long-secret-key-for-production-use-that-meets-32-character-minimum",
+            "DATABASE_URI": "postgresql://prod:secret@db:5432/ernesto_prod",
+        },
+        clear=True,
+    )
+    def test_prod_cors_wildcard_origin_is_error(self) -> None:
+        """Production must reject wildcard origin."""
+        config = ProductionConfig()
+        config.CORS_ORIGINS = ["*"]
+        validator = ConfigValidator(config)
+        with pytest.raises(ConfigurationError):
+            validator.validate_all()
+
+    @patch.dict(
+        "os.environ",
+        {
+            "SECRET_KEY": "very-long-secret-key-for-production-use-that-meets-32-character-minimum",
+            "DATABASE_URI": "postgresql://prod:secret@db:5432/ernesto_prod",
+            "CHROME_EXTENSION_IDS": "abcdefghijklmnopabcdefghijklmnop",
+        },
+        clear=True,
+    )
+    def test_prod_cors_invalid_extension_id_is_error(self) -> None:
+        """Production must reject invalid extension ID format."""
+        config = ProductionConfig()
+        # Simulate an invalid extension id by overriding origins
+        config.CORS_ORIGINS = ["chrome-extension://not-a-valid-id"]
+        validator = ConfigValidator(config)
+        with pytest.raises(ConfigurationError):
+            validator.validate_all()
+
+    @patch.dict(
+        "os.environ",
+        {
+            "SECRET_KEY": "very-long-secret-key-for-production-use-that-meets-32-character-minimum",
+            "DATABASE_URI": "postgresql://prod:secret@db:5432/ernesto_prod",
+            "CHROME_EXTENSION_IDS": "abcdefghijklmnopabcdefghijklmnop",
+        },
+        clear=True,
+    )
+    def test_prod_cors_headers_restricted(self) -> None:
+        """Production must restrict allowed headers to Content-Type and X-API-Key."""
+        config = ProductionConfig()
+        # Add an unauthorized header
+        config.CORS_HEADERS = ["Content-Type", "X-API-Key", "Authorization"]
+        validator = ConfigValidator(config)
+        with pytest.raises(ConfigurationError):
+            validator.validate_all()
+
+    @patch.dict(
+        "os.environ",
+        {
+            "SECRET_KEY": "very-long-secret-key-for-production-use-that-meets-32-character-minimum",
+            "DATABASE_URI": "postgresql://prod:secret@db:5432/ernesto_prod",
+            "CHROME_EXTENSION_IDS": "abcdefghijklmnopabcdefghijklmnop",
+        },
+        clear=True,
+    )
+    def test_prod_cors_supports_credentials_false(self) -> None:
+        """Production must not enable supports_credentials for API key auth."""
+        config = ProductionConfig()
+        config.CORS_SUPPORTS_CREDENTIALS = True
+        validator = ConfigValidator(config)
+        with pytest.raises(ConfigurationError):
+            validator.validate_all()
+
+    def test_cors_methods_require_options(self) -> None:
+        """CORS_METHODS must include OPTIONS for all environments."""
+        config = BaseConfig()
+        config.SECRET_KEY = "a-very-secure-secret-key-for-testing"
+        config.SQLALCHEMY_DATABASE_URI = "sqlite:///test.db"
+        config.DEBUG = True
+        config.CORS_METHODS = ["GET", "POST"]  # Missing OPTIONS
+        with pytest.raises(ConfigurationError):
+            validate_config(config)
+
+    def test_dev_cors_localhost_patterns_warning_only(self) -> None:
+        """Development allows warnings for non-localhost origins instead of errors."""
+        config = DevelopmentConfig()
+        # Introduce a non-localhost origin in dev to trigger a warning only
+        config.CORS_ORIGINS = ["https://example.com"]
+        validator = ConfigValidator(config)
+        # Should not raise, but will populate warnings via validate_all
+        validator.validate_all()
+        assert any(
+            "Non-localhost CORS origin in development" in w for w in validator.warnings
+        )

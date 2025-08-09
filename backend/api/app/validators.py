@@ -1,10 +1,11 @@
 """Configuration validation module.
 
 This module provides comprehensive validation for Flask application configuration
-parameters including database URLs, security parameters, and
-environment-specific validation requirements.
+parameters including database URLs, security parameters, CORS configuration,
+and environment-specific validation requirements.
 """
 
+import re
 from typing import TYPE_CHECKING, Optional
 from urllib.parse import urlparse
 
@@ -62,6 +63,7 @@ class ConfigValidator:
         self.validate_database_config()
         self.validate_security_config()
         self.validate_application_config()
+        self.validate_cors_config()
         self.validate_environment_specific()
 
         # Raise error if any validation failed
@@ -155,6 +157,105 @@ class ConfigValidator:
         api_version = getattr(self.config, "API_VERSION", None)
         if api_version and not isinstance(api_version, str):
             self.errors.append("API_VERSION must be a string")
+
+    def validate_cors_config(self) -> None:
+        """Validate CORS configuration parameters.
+
+        Enforces secure defaults and production restrictions for CORS settings.
+        """
+        cors_origins = getattr(self.config, "CORS_ORIGINS", []) or []
+        cors_methods = getattr(self.config, "CORS_METHODS", []) or []
+        cors_headers = getattr(self.config, "CORS_HEADERS", []) or []
+        supports_credentials = getattr(self.config, "CORS_SUPPORTS_CREDENTIALS", False)
+
+        debug = getattr(self.config, "DEBUG", False)
+        testing = getattr(self.config, "TESTING", False)
+
+        is_production = not debug and not testing
+
+        # OPTIONS must be supported everywhere for preflight
+        if "OPTIONS" not in cors_methods:
+            self.errors.append(
+                "CORS_METHODS must include OPTIONS for preflight handling"
+            )
+
+        # Wildcards are not allowed in production; warn in non-prod
+        if any(origin == "*" for origin in cors_origins):
+            if is_production:
+                self.errors.append("CORS_ORIGINS cannot contain wildcard '*'")
+            else:
+                self.warnings.append(
+                    "CORS_ORIGINS contains wildcard '*'; avoid in production"
+                )
+
+        if any(header == "*" for header in cors_headers):
+            if is_production:
+                self.errors.append("CORS_HEADERS cannot contain wildcard '*'")
+            else:
+                self.warnings.append(
+                    "CORS_HEADERS contains wildcard '*'; avoid in production"
+                )
+
+        if is_production:
+            # Production must have explicit extension origins
+            if not cors_origins:
+                self.errors.append("CORS_ORIGINS cannot be empty in production")
+            else:
+                # Only allow chrome-extension scheme with valid extension IDs
+                chrome_scheme = "chrome-extension://"
+                id_pattern = re.compile(r"^[a-p]{32}$")
+                for origin in cors_origins:
+                    if not isinstance(origin, str):
+                        self.errors.append(
+                            f"Invalid production CORS origin type: {origin!r}"
+                        )
+                        continue
+                    if not origin.startswith(chrome_scheme):
+                        self.errors.append(
+                            f"Invalid production CORS origin: {origin}. "
+                            + "Only chrome-extension://<32 a-p chars> allowed"
+                        )
+                        continue
+                    ext_id = origin[len(chrome_scheme) :]
+                    if not id_pattern.match(ext_id):
+                        self.errors.append(
+                            f"Invalid Chrome extension ID in origin: {origin}"
+                        )
+
+            # Credentials are not used for API key auth
+            if supports_credentials:
+                self.errors.append(
+                    "CORS_SUPPORTS_CREDENTIALS must be False in production"
+                )
+
+            # Restrict allowed headers
+            allowed_headers = {"Content-Type", "X-API-Key"}
+            extra_headers = [h for h in cors_headers if h not in allowed_headers]
+            if extra_headers:
+                self.errors.append(
+                    "CORS_HEADERS must only include: Content-Type, X-API-Key"
+                )
+        else:
+            # Development: warn if non-localhost/non-regex localhost are used
+            if debug and cors_origins:
+                # Accept regex or literal localhost/127.0.0.1 schemes
+                localhost_ok_patterns = [
+                    re.compile(r"^r?http://localhost:.*$"),
+                    re.compile(r"^r?http://127\.0\.0\.1:.*$"),
+                    re.compile(r"^r?https://localhost:.*$"),
+                    re.compile(r"^r?https://127\.0\.0\.1:.*$"),
+                ]
+                for origin in cors_origins:
+                    if not isinstance(origin, str):
+                        self.warnings.append(
+                            f"Unexpected CORS origin type in development: {origin!r}"
+                        )
+                        continue
+                    if any(p.match(origin) for p in localhost_ok_patterns):
+                        continue
+                    self.warnings.append(
+                        f"Non-localhost CORS origin in development: {origin}"
+                    )
 
     def validate_environment_specific(self) -> None:
         """Validate environment-specific configuration requirements."""
