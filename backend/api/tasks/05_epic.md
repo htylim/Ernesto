@@ -36,11 +36,11 @@ Install Flask-CORS dependency and configure comprehensive cross-origin resource 
     - [x] 5.2.2 Configure CORS headers and methods
     - [x] 5.2.3 Integrate CORS with application factory
     - [x] 5.2.4 Create unit tests for CORS extension integration
-- [ ] 5.3 Implement Environment-Specific Origin Validation
+- [x] 5.3 Implement Environment-Specific Origin Validation
     - [x] 5.3.1 Configure development CORS origins for localhost
     - [x] 5.3.2 Configure production CORS origins for Chrome extension
     - [x] 5.3.3 Add CORS configuration validation
-    - [ ] 5.3.4 Create integration tests for origin validation and preflight requests
+    - [x] 5.3.4 Create integration tests for origin validation and preflight requests
 
 
 ## STORY: **5.1 Add Flask-CORS Dependency and Basic Configuration**
@@ -451,6 +451,63 @@ Extend the existing configuration validation system to include CORS settings ver
 ### TASK: **5.3.4 Create integration tests for origin validation and preflight requests**
 
 Create integration tests in `tests/test_cors.py` to verify actual CORS functionality including preflight OPTIONS requests, CORS headers in responses, origin validation across environments, and Chrome extension-specific scenarios.
+
+
+#### Implementation Plan
+
+- Scope: Add a new test module `tests/test_cors.py` with end-to-end style integration tests using Flask test client, exercising CORS behavior across environments and origins. These tests complement `tests/test_extensions.py` by asserting actual response headers for both preflight and simple requests.
+
+- Test Matrix:
+  1. Development env (DEBUG=True; default localhost patterns):
+     - `Origin: http://localhost:3000` preflight (OPTIONS) → expect `200|204|404` and headers: `Access-Control-Allow-Origin: http://localhost:3000`, `Vary: Origin`, allowed methods include OPTIONS, and `Access-Control-Allow-Headers` includes `Content-Type,X-API-Key` when requested.
+     - `Origin: http://127.0.0.1:8080` simple GET → expect response includes `Access-Control-Allow-Origin: http://127.0.0.1:8080`.
+     - `Origin: https://example.com` simple GET → expect NO `Access-Control-Allow-Origin` header (disallowed).
+
+  2. Testing env (TESTING=True):
+     - Minimal spot-check: ensure CORS initialization works and OPTIONS requests succeed; origin headers presence is not strictly enforced (no env-specific origins by default). Validate no crash and consistent header behavior when `CORS_ORIGINS` is set ad-hoc in app factory input.
+
+  3. Production env (DEBUG=False, TESTING=False):
+     - With `CHROME_EXTENSION_IDS` set (comma-separated):
+       - For a configured `Origin: chrome-extension://<valid-id>` preflight and GET → expect `Access-Control-Allow-Origin` to echo that origin and required headers present; `Access-Control-Allow-Credentials` absent or `false`.
+       - For `Origin: chrome-extension://<invalid-id>` or `https://example.com` → expect NO `Access-Control-Allow-Origin` header.
+     - Multiple IDs: verify both valid IDs are accepted and echoed; any other origin is rejected.
+
+- Test Structure and Helpers:
+  - Create factory helpers inside the test module to build apps with inline config overrides:
+    - `create_dev_app()` → sets `DEBUG=True`, in-memory DB, and uses default dev `CORS_ORIGINS`.
+    - `create_test_app()` → sets `TESTING=True`, in-memory DB.
+    - `create_prod_app(extension_ids: list[str])` → sets prod flags, `SECRET_KEY`, DB URI, and environment variable `CHROME_EXTENSION_IDS` via `patch.dict` before app creation.
+  - Use Flask test client to perform:
+    - Preflight: `OPTIONS /some-route` (route can be missing; Flask-CORS should still add headers). Include headers: `Origin`, `Access-Control-Request-Method`, and optionally `Access-Control-Request-Headers: Content-Type, X-API-Key`.
+    - Simple GET: `GET /` with `Origin` header.
+  - Header Assertions:
+    - Allowed case: `Access-Control-Allow-Origin` equals request origin; `Vary` includes `Origin`; `Access-Control-Allow-Methods` includes requested method; `Access-Control-Allow-Headers` includes requested headers (subset of configured list).
+    - Disallowed case: absence of `Access-Control-Allow-Origin` header.
+    - Credentials: ensure `Access-Control-Allow-Credentials` header is not present, matching `supports_credentials=False`.
+
+- Test Cases to Implement in `tests/test_cors.py`:
+  - `test_dev_preflight_allows_localhost_origin`
+  - `test_dev_simple_get_allows_127_origin`
+  - `test_dev_disallows_non_localhost_origin`
+  - `test_test_env_preflight_basic`
+  - `test_prod_allows_configured_extension_origin_preflight`
+  - `test_prod_allows_configured_extension_origin_get`
+  - `test_prod_rejects_unconfigured_extension_origin`
+  - `test_prod_rejects_https_origin`
+  - `test_prod_multiple_extension_ids_behavior`
+
+- Edge Cases:
+  - Preflight when method is POST and headers include both `Content-Type` and `X-API-Key`.
+  - Ensure behavior consistent when endpoint returns 404 (no route) vs 200 (define a dummy route in test module when needed).
+
+- Notes:
+  - Respect existing validator: production config without `CHROME_EXTENSION_IDS` is invalid; use `patch.dict(os.environ, {"CHROME_EXTENSION_IDS": ...}, clear=False)` in tests that create production app.
+  - Keep assertions tolerant to 200/204/404 for OPTIONS depending on Flask-CORS behavior; the critical part is presence/absence of CORS headers.
+
+- Definition of Done:
+  - New `tests/test_cors.py` added with the cases above.
+  - All tests pass locally (`pytest`) with no linter errors (ruff D/E/F/ANN/I rules) and formatted by Black.
+  - No changes to application code are required beyond test-only scaffolding.
 
 
 
