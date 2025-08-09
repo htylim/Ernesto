@@ -138,6 +138,53 @@ class TestProductionConfig:
         {
             "SECRET_KEY": "very-long-secret-key-for-production-use-that-meets-32-character-minimum",
             "DATABASE_URI": "postgresql://prod:secret@db:5432/ernesto_prod",
+            "CHROME_EXTENSION_IDS": "abcdefghijklmnopabcdefghijklmnop",
+        },
+    )
+    def test_production_config_cors_with_extension_ids(self) -> None:
+        """Test production CORS origins with a single Chrome extension ID."""
+        config = ProductionConfig()
+        assert config.CORS_ORIGINS == [
+            "chrome-extension://abcdefghijklmnopabcdefghijklmnop"
+        ]
+
+    @patch.dict(
+        os.environ,
+        {
+            "SECRET_KEY": "very-long-secret-key-for-production-use-that-meets-32-character-minimum",
+            "DATABASE_URI": "postgresql://prod:secret@db:5432/ernesto_prod",
+            "CHROME_EXTENSION_IDS": "idoneidoneidoneidoneidoneidon, idtwoidtwoidtwoidtwoidtwoidtw",
+        },
+    )
+    def test_production_config_cors_with_multiple_extension_ids(self) -> None:
+        """Test production CORS origins with multiple Chrome extension IDs."""
+        config = ProductionConfig()
+        assert config.CORS_ORIGINS == [
+            "chrome-extension://idoneidoneidoneidoneidoneidon",
+            "chrome-extension://idtwoidtwoidtwoidtwoidtwoidtw",
+        ]
+
+    @patch.dict(
+        os.environ,
+        {
+            "SECRET_KEY": "very-long-secret-key-for-production-use-that-meets-32-character-minimum",
+            "DATABASE_URI": "postgresql://prod:secret@db:5432/ernesto_prod",
+            "CHROME_EXTENSION_IDS": " id1 , , id2  ",
+        },
+    )
+    def test_production_config_cors_ignores_empty_items(self) -> None:
+        """Test that empty values are ignored and whitespace trimmed when parsing IDs."""
+        config = ProductionConfig()
+        assert config.CORS_ORIGINS == [
+            "chrome-extension://id1",
+            "chrome-extension://id2",
+        ]
+
+    @patch.dict(
+        os.environ,
+        {
+            "SECRET_KEY": "very-long-secret-key-for-production-use-that-meets-32-character-minimum",
+            "DATABASE_URI": "postgresql://prod:secret@db:5432/ernesto_prod",
         },
     )
     def test_production_config_validation_success(self) -> None:

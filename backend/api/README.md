@@ -381,6 +381,18 @@ def create_app(config_class=Config):
 - Development environment uses Docker, with Ruff for linting and Black for formatting
 - Flask development server for local development, Gunicorn for production deployment
 
+#### Production CORS for Chrome Extension
+
+- Set `CHROME_EXTENSION_IDS` as a comma-separated list of extension IDs to allow
+  CORS from those production clients. Example:
+  
+  ```bash
+  export CHROME_EXTENSION_IDS="abcdefghijklmnopabcdefghijklmnop,zyxwvutsrqponmlkjihgfedcbaabcd"
+  ```
+  
+  These values configure `CORS_ORIGINS` at runtime to:
+  `["chrome-extension://<id>", ...]` in production.
+
 ## Related Components
 
 - **Chrome Extension**: Frontend for user interaction (`/extension/`)

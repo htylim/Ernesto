@@ -92,6 +92,8 @@ class ProductionConfig(BaseConfig):
     # Override constants for production
     DEBUG: bool = False
     LOG_LEVEL: str = "ERROR"
+    # Class-level attribute annotation to satisfy linters when overriding in __init__
+    CORS_ORIGINS: list[str]
 
     def __init__(self) -> None:
         """Initialize production configuration."""
@@ -102,6 +104,16 @@ class ProductionConfig(BaseConfig):
 
         # Production database must be explicitly set
         self.SQLALCHEMY_DATABASE_URI: str = os.getenv("DATABASE_URI", "")
+
+        # Configure CORS origins for Chrome extension IDs if provided
+        chrome_extension_ids: str = os.getenv("CHROME_EXTENSION_IDS", "").strip()
+        if chrome_extension_ids:
+            parsed_ids = [ext_id.strip() for ext_id in chrome_extension_ids.split(",")]
+            filtered_ids = [ext_id for ext_id in parsed_ids if ext_id]
+            if filtered_ids:
+                self.CORS_ORIGINS = [
+                    f"chrome-extension://{ext_id}" for ext_id in filtered_ids
+                ]
 
 
 # Configuration mapping for environment-based selection

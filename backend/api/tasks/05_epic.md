@@ -37,8 +37,8 @@ Install Flask-CORS dependency and configure comprehensive cross-origin resource 
     - [x] 5.2.3 Integrate CORS with application factory
     - [x] 5.2.4 Create unit tests for CORS extension integration
 - [ ] 5.3 Implement Environment-Specific Origin Validation
-    - [ ] 5.3.1 Configure development CORS origins for localhost
-    - [ ] 5.3.2 Configure production CORS origins for Chrome extension
+    - [x] 5.3.1 Configure development CORS origins for localhost
+    - [x] 5.3.2 Configure production CORS origins for Chrome extension
     - [ ] 5.3.3 Add CORS configuration validation
     - [ ] 5.3.4 Create integration tests for origin validation and preflight requests
 
@@ -313,13 +313,140 @@ As a security engineer, I want CORS origins to be strictly validated based on th
 
 Set up development-specific CORS origins in DevelopmentConfig to allow localhost and development server patterns for local Chrome extension testing and development workflows.
 
+#### Implementation Plan
+
+- Assumptions:
+  - Development clients run on http, not https (e.g., `http://localhost:3000`, `http://127.0.0.1:8080`).
+  - No need to allow `chrome-extension://` origins in development; localhost is sufficient for dev workflows.
+
+- Steps:
+  1. Validate current configuration in `app/config.py`:
+     - Ensure `DevelopmentConfig.__init__` sets `self.CORS_ORIGINS = [r"http://localhost:.*", r"http://127.0.0.1:.*"]`.
+     - Keep default CORS settings from `BaseConfig` as-is: `CORS_METHODS`, `CORS_HEADERS`, `CORS_SUPPORTS_CREDENTIALS`.
+  2. Decide on https localhost support:
+     - If dev clients use https locally, extend origins to include `r"https://localhost:.*"` and `r"https://127.0.0.1:.*"` and update tests accordingly. Otherwise, leave as-is to avoid over-permissive defaults.
+  3. Confirm Flask-CORS wiring in `app/extensions.py`:
+     - `cors.init_app(app, origins=app.config.get("CORS_ORIGINS"), methods=..., allow_headers=..., supports_credentials=...)` already maps correctly; no change required.
+  4. Tests:
+     - Keep `tests/test_config.py::test_development_config_cors` aligned with the configured patterns. If https variants are added, update expected list to match.
+  5. Manual validation (local):
+     - Run app with development config and issue requests with headers:
+       - `Origin: http://localhost:3000` → expect `Access-Control-Allow-Origin: http://localhost:3000` in responses.
+       - `Origin: http://127.0.0.1:8080` → expect same echo behavior.
+       - `Origin: http://evil.com` → expect no CORS allow-origin header.
+
+- Definition of Done:
+  - `DevelopmentConfig` contains localhost and 127.0.0.1 regex origins (and https variants only if required).
+  - Existing unit tests pass (`pytest -k test_development_config_cors`). Update tests only if origins list changes.
+  - Manual spot-check confirms CORS behavior for allowed and disallowed origins.
+
 ### TASK: **5.3.2 Configure production CORS origins for Chrome extension**
 
 Configure production CORS origins in ProductionConfig to restrict access to specific Chrome extension ID patterns using chrome-extension:// protocol for secure production deployment.
 
+#### Implementation Plan
+
+- Assumptions:
+  - The Chrome extension uses one or more stable extension IDs in production.
+  - We will not hardcode IDs; they must be provided via environment variables at deploy time.
+  - Secure-by-default remains: if no IDs are provided, `CORS_ORIGINS` stays empty.
+
+- Changes:
+  1. `app/config.py` (ProductionConfig.__init__):
+     - Read env var `CHROME_EXTENSION_IDS` (comma-separated list). Example: `CHROME_EXTENSION_IDS=abcdefghijklmnopabcdefghijklmnop,zyxwvutsrqponmlkjihgfedcbaabcd`.
+     - Parse into list of IDs, strip whitespace, ignore empties.
+     - Build `self.CORS_ORIGINS = [f"chrome-extension://{ext_id}"]` for each parsed ID.
+     - Leave other `CORS_*` settings inherited.
+     - Do NOT add format validation here beyond trimming; strong validation will be covered by Task 5.3.3.
+
+  2. Config mapping behavior:
+     - No change to `get_config()`; it will automatically pick up the new origins via ProductionConfig instance.
+
+  3. Documentation:
+     - Add brief note in `/README.md` under Configuration & Deployment about `CHROME_EXTENSION_IDS` for production.
+
+- Unit Tests (config-only; integration tests are Task 5.3.4):
+  - Update `tests/test_config.py` with new cases in `TestProductionConfig`:
+    - `test_production_config_cors_default_empty`: ensure empty by default (existing test already verifies this; keep it).
+    - `test_production_config_cors_with_extension_ids`:
+      - Patch env with `CHROME_EXTENSION_IDS` containing one ID → `CORS_ORIGINS == ["chrome-extension://<id>"]`.
+    - `test_production_config_cors_with_multiple_extension_ids`:
+      - Patch env with two comma-separated IDs → `CORS_ORIGINS` contains both, order preserved.
+    - `test_production_config_cors_ignores_empty_items`:
+      - Patch env `" id1 , , id2  "` → empties ignored, whitespace trimmed.
+
+- Manual Validation (production-like):
+  - Start app with `FLASK_ENV=production`, `SECRET_KEY`, `DATABASE_URI`, and `CHROME_EXTENSION_IDS` set.
+  - Send request with header `Origin: chrome-extension://<valid-id>` → expect `Access-Control-Allow-Origin: chrome-extension://<valid-id>`.
+  - Send request with `Origin: chrome-extension://<invalid-id>` or `https://example.com` → expect no allow-origin header.
+
+- Edge Cases:
+  - If `CHROME_EXTENSION_IDS` unset or empty → `CORS_ORIGINS == []` (no origins allowed).
+  - Duplicate IDs → de-dup not required but harmless; keep order as provided.
+  - Uppercase IDs: Chrome IDs are lowercase; for now we do not coerce case. Validation/normalization will be handled in Task 5.3.3.
+
+- Definition of Done:
+  - Production config dynamically builds `CORS_ORIGINS` from `CHROME_EXTENSION_IDS` env var.
+  - Existing tests still pass; new tests for Production CORS with extension IDs added and passing.
+  - README updated to document the env var usage for deployment.
+
 ### TASK: **5.3.3 Add CORS configuration validation**
 
 Extend the existing configuration validation system to include CORS settings verification, ensuring that CORS origins, methods, and headers are properly configured for each environment.
+
+#### Implementation Plan
+
+- Objectives:
+  - Enforce secure CORS defaults, especially in production.
+  - Prevent wildcard or http(s) origins in production.
+  - Validate Chrome extension IDs format for production origins.
+
+- Changes:
+  1. `app/validators.py`:
+     - Add new method `validate_cors_config(self) -> None` to `ConfigValidator` that:
+       - Always disallows wildcard origins (`"*"`) as an error in production; warning in dev/test.
+       - Always disallows wildcard headers (`"*"`) as an error in production; warning in dev/test.
+       - Requires `"OPTIONS"` to be present in `CORS_METHODS` (error if missing in any env).
+       - Production rules (DEBUG=False and TESTING=False):
+         - `CORS_ORIGINS` must be non-empty.
+         - Every origin must start with `chrome-extension://`.
+         - Extract the ID part and validate it matches `^[a-p]{32}$` (Chrome extension ID charset and length).
+         - `CORS_SUPPORTS_CREDENTIALS` must be False.
+         - `CORS_HEADERS` must be a subset of `["Content-Type", "X-API-Key"]` (no `Authorization`, no `*`).
+       - Development rules (DEBUG=True):
+         - If `CORS_ORIGINS` present, they should match localhost patterns only:
+           - Allow strings or regex patterns like `http://localhost:*`, `http://127.0.0.1:*`, or their `r"...:.*"` regex equivalents. Non-localhost origins → warning.
+       - Testing rules (TESTING=True): keep permissive with warnings only.
+     - Call `self.validate_cors_config()` from `validate_all()` after `validate_application_config()` and before `validate_environment_specific()`.
+
+  2. Validation messages:
+     - Use clear, actionable messages, e.g.,
+       - "CORS_ORIGINS cannot be empty in production"
+       - "Invalid production CORS origin: {origin}. Only chrome-extension://<32 a-p chars> allowed"
+       - "CORS_SUPPORTS_CREDENTIALS must be False in production"
+       - "CORS_HEADERS must only include: Content-Type, X-API-Key"
+
+- Unit Tests:
+  1. Update existing production validator tests in `tests/test_validators.py`:
+     - `test_validate_environment_specific_production`: patch env to include `CHROME_EXTENSION_IDS` and assert no errors.
+  2. Add new tests in `tests/test_validators.py` under a new class `TestValidateCorsConfig`:
+     - `test_prod_cors_missing_ids_is_error`: Production config with no `CHROME_EXTENSION_IDS` → `validate_all()` raises ConfigurationError or returns error for empty `CORS_ORIGINS`.
+     - `test_prod_cors_invalid_origin_scheme_is_error`: Force `config.CORS_ORIGINS=["https://example.com"]` → error about invalid production origin.
+     - `test_prod_cors_invalid_extension_id_is_error`: Set `CHROME_EXTENSION_IDS` to `badid` (or inject bad origin on config) → ID regex failure.
+     - `test_prod_cors_wildcard_origin_is_error`: `CORS_ORIGINS=["*"]` → error.
+     - `test_prod_cors_headers_restricted`: Add `Authorization` to headers → error; only `Content-Type`, `X-API-Key` allowed.
+     - `test_prod_cors_supports_credentials_false`: If `CORS_SUPPORTS_CREDENTIALS=True` → error.
+     - `test_cors_methods_require_options`: Remove `OPTIONS` from methods → error in any env.
+     - `test_dev_cors_localhost_patterns_warning_only`: In dev, add `https://example.com` origin → warning (not error).
+
+- Test Setup Helpers:
+  - Where simpler, bypass env and set values directly on a `ProductionConfig()` instance before running validation to simulate edge cases (e.g., forcing an invalid `CORS_ORIGINS`).
+
+- Definition of Done:
+  - New CORS validation executed as part of `validate_all()`.
+  - Production misconfigurations are blocked with clear errors.
+  - Dev/test produce warnings for non-critical issues; no false positives for expected localhost patterns.
+  - Updated tests pass. No regressions to existing test suites.
 
 ### TASK: **5.3.4 Create integration tests for origin validation and preflight requests**
 

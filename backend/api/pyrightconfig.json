@@ -8,7 +8,7 @@
         "app/migrations"
     ],
     "pythonVersion": "3.9",
-    "typeCheckingMode": "recommended",
+    "typeCheckingMode": "standard",
     "venvPath": "/opt",
     "venv": "venv",
     "reportImportCycles": false,
