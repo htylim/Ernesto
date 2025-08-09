@@ -17,5 +17,6 @@
     "reportUnusedCallResult": false,
     "reportUnknownMemberType": false,
     "reportUnknownVariableType": false,
-    "reportUnknownArgumentType": false
+    "reportUnknownArgumentType": false,
+    "reportConstantRedefinition": false
 } 
