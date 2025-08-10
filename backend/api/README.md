@@ -329,6 +329,13 @@ def test_article_creation(client, app):
         assert response.status_code == 201
 ```
 
+### Flask testing guidelines (Flask 3.x / Python 3.12)
+
+- Use `app.test_client()` to exercise routes and decorators. Prefer temporary routes over `app.test_request_context()` when you need a response object.
+- Do not annotate the response type and avoid `FlaskClient[Response]` (Flask 3.x typings are non-generic). Simply use `response = client.get(...); response.get_json()`.
+- For JSON bodies, prefer `response.get_json()`; `response.json` also works but is less explicit.
+- If static analysis raises attribute access issues on responses, keep responses unannotated rather than disabling checks globally.
+
 ## Application Structure
 
 ```
