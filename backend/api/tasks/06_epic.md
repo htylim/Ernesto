@@ -24,13 +24,13 @@ Migrate from Flask-Marshmallow to Pydantic v2. Replace Marshmallow schemas and v
 
 ## Notes
 
-- Maintain response shapes exactly as before (field names, nesting) to avoid breaking the Chrome extension.
-- Use `uuid.UUID` for IDs; ensure JSON serialization emits strings.
-- Use timezone-aware `datetime` in UTC; ensure JSON emits ISO 8601 with `Z`.
-- Prefer `model_dump()` and `model_dump_json()`; avoid custom JSON encoders when possible.
-- Do not introduce Flask-Pydantic wrappers; implement lightweight decorators internally.
+- Treat this as a clean migration to Pydantic v2 best practices, not a 1:1 Marshmallow parity port.
+- Use `uuid.UUID` for IDs; JSON emits strings by default via Pydantic.
+- Use timezone-aware `datetime` in UTC; ensure JSON emits RFC3339 with `Z`.
+- Prefer native `model_dump()` and `model_dump_json()`; avoid ad-hoc helpers unless justified.
+- Do not introduce Flask-Pydantic third-party wrappers; implement lightweight decorators internally (story 6.2).
 - Enable `from_attributes=True` so Pydantic can serialize from SQLAlchemy model instances directly.
-- Remove Marshmallow only after Pydantic tests are passing and imports are migrated.
+- Remove Marshmallow after Pydantic tests are passing and imports are migrated.
 
 
 ## STORY and TASK Breakdown
@@ -81,29 +81,89 @@ Install dependencies, run tests, and resolve any 3.12-specific issues.
 
 ## STORY: **6.1 Introduce Pydantic v2 models for entities (Article, Topic, Source)**
 
-As a backend developer, I want Pydantic v2 models that mirror our domain objects so that I can serialize and validate consistently without Marshmallow.
+As a backend developer, I want Pydantic v2 models that cleanly represent our API contracts and map from ORM objects so that validation and serialization are explicit, strict, and decoupled from Marshmallow decisions.
 
 Acceptance criteria:
-- `ArticleModel`, `TopicModel`, `SourceModel` defined with `from_attributes=True`.
-- Fields use `uuid.UUID` and timezone-aware `datetime` (UTC) where applicable.
-- `model_dump()` produces dicts matching legacy response shapes.
-- Unit tests cover 1:1 shape parity for typical instances and `many=True` equivalents.
+- `ArticleModel`, `TopicModel`, `SourceModel` defined with `from_attributes=True`, `extra='forbid'`, and immutability (`frozen=True`).
+- Fields use strict types (`uuid.UUID`, `HttpUrl`, timezone-aware `datetime` in UTC) where applicable.
+- Default serialized shapes exclude `None` and avoid computed fields unless explicitly modeled.
+- Unit tests cover:
+  - Validation and coercion rules (UUIDs, URLs, datetimes -> UTC).
+  - `model_validate(..., from_attributes=True)` from SQLAlchemy ORM instances.
+  - Stable JSON shapes for list/detail contexts as documented in tests.
 
 ### TASK: **6.1.1 Create `app/schemas_pydantic/` with entity models**
 
-Add Pydantic models for Article, Topic, Source with nested relationships to match legacy nesting.
+Implementation plan:
+
+- Create directory and exports
+  - Add `app/schemas_pydantic/__init__.py` exporting `ArticleModel`, `TopicModel`, `SourceModel`, plus short nested refs (`TopicRef`, `SourceRef`) to prevent recursion.
+
+- Base configuration
+  - Use `pydantic.BaseModel` with `model_config = ConfigDict(from_attributes=True, populate_by_name=True, extra='forbid', frozen=True)`.
+
+- Models and fields
+  - `ArticleModel`
+    - Fields: `id: UUID`, `title: str`, `url: HttpUrl`, `image_url: HttpUrl | None`, `brief: str | None`, `topic_id: UUID | None`, `source_id: UUID | None`, `added_at: datetime`.
+    - Optional short refs: `topic: TopicRef | None`, `source: SourceRef | None` (disabled by default at selection layer; included only when explicitly supplied by route).
+    - Serialization: `@field_serializer("added_at")` to emit RFC3339 UTC with trailing `Z`.
+  - `TopicModel`
+    - Fields: `id: UUID`, `label: str`, `added_at: datetime`, `updated_at: datetime`, `coverage_score: conint(ge=0)`.
+    - Do not include aggregate/computed fields by default; define separate view models if needed later (story 9/10).
+  - `SourceModel`
+    - Fields: `id: UUID`, `logo_url: HttpUrl | None`, `name: str`, `homepage_url: HttpUrl | None`, `is_enabled: bool`.
+
+- Lightweight refs to break cycles
+  - `TopicRef`: minimal fields (`id`, `label`).
+  - `SourceRef`: minimal fields (`id`, `name`, `logo_url`).
+
+- Typing and tz rules
+  - Enforce timezone-aware `datetime` (normalize to UTC) in validators; accept strings/naive datetimes and coerce to UTC.
+
+- File layout
+  - `app/schemas_pydantic/article.py`, `topic.py`, `source.py` each defining the primary model and ref model.
+
+- Acceptance checks
+  - `model_validate(instance, from_attributes=True)` succeeds for SQLAlchemy models.
+  - `model_dump(exclude_none=True)` emits clean, minimal shapes without legacy Marshmallow-specific computed fields.
 
 ### TASK: **6.1.2 Implement strict types**
 
-Use precise types (`uuid.UUID`, `HttpUrl` for URLs, `datetime` with UTC) and enums if needed.
+Implementation plan:
+
+- UUIDs: use `uuid.UUID` for `id`, `topic_id`, `source_id`; ensure dumps are strings.
+- URLs: use `pydantic.HttpUrl` for `url`, `image_url`, `logo_url`, `homepage_url`.
+- Datetimes: `datetime` with tzinfo; validator coerces naive inputs to `UTC`; serialize as RFC3339 with `Z` via field serializers.
+- Integers: `coverage_score: conint(ge=0)`; no arbitrary upper bound.
+- Enums: none for current entities; revisit if domain adds enumerations.
+- Forbid unexpected fields (`extra='forbid'`).
 
 ### TASK: **6.1.3 Provide `to_dict`/`to_json` helpers**
 
-Thin wrappers around `model_dump()`/`model_dump_json()` to centralize defaults (e.g., exclude_none).
+Implementation plan:
+
+- Avoid thin wrappers; rely directly on `model_dump()`/`model_dump_json()` with `exclude_none=True` at call sites.
+- Define a shared `BaseSchema` (subclass of `BaseModel`) with common `model_config` only; no custom serialization helpers.
+- Centralize response formatting utilities in story 7 (validation/response infra) to keep entity models pure.
 
 ### TASK: **6.1.4 Unit tests for shape parity**
 
-Refactor tests to assert Pydantic serialization output matches legacy field names and nesting.
+Implementation plan:
+
+- Test layout: add `tests/schemas/test_pydantic_models.py`.
+- Fixtures: create SQLAlchemy `Source`, `Topic`, `Article` instances linked together; persist with `db.session` if needed or use in-memory objects.
+- Article tests
+  - Validate from ORM: `ArticleModel.model_validate(article, from_attributes=True)`.
+  - Assert `model_dump(exclude_none=True)` includes keys: `id`, `title`, `url`, `image_url`, `brief`, `topic_id`, `source_id`, `added_at`; and includes `topic`/`source` only when provided.
+  - Assert `id` is a stringified UUID; `added_at` ends with `Z` and is UTC.
+- Topic tests
+  - Validate from ORM and assert fields only (no computed aggregates by default).
+- Source tests
+  - Validate from ORM and assert URL validation behavior.
+- Linting/formatting
+  - Run `ruff`, `black`, and `pyright` on added modules and tests.
+- CI
+  - Run `pytest -q` to ensure green before moving to story 6.2.
 
 
 ## STORY: **6.2 Implement request validation decorators**
