@@ -7,7 +7,7 @@
     "exclude": [
         "app/migrations"
     ],
-    "pythonVersion": "3.9",
+    "pythonVersion": "3.12",
     "typeCheckingMode": "standard",
     "venvPath": "/opt",
     "venv": "venv",

@@ -1,5 +1,5 @@
 # Base stage with common setup
-FROM python:3.9-slim as base
+FROM python:3.12-slim as base
 
 COPY . ./app
 WORKDIR /app
@@ -12,7 +12,8 @@ ENV LC_ALL en_US.UTF-8
 
 # Production stage - global pip install (unchanged behavior)
 FROM base as production
-RUN pip3 install --no-cache-dir -r requirements.txt -r requirements.dev.txt
+RUN pip install --upgrade pip setuptools wheel && \
+    pip install --no-cache-dir -r requirements.txt -r requirements.dev.txt
 CMD ["flask", "run", "--host=0.0.0.0", "--port=8080"]
 
 # Development stage - virtual environment for better tooling
@@ -20,7 +21,7 @@ FROM base as development
 # Create virtual environment at stable path (not affected by volume mounts)
 RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
-RUN pip install --upgrade pip
+RUN pip install --upgrade pip setuptools wheel
 RUN pip install --no-cache-dir -r requirements.txt -r requirements.dev.txt
 
 CMD ["sleep", "infinity"] 

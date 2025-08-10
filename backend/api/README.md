@@ -216,7 +216,7 @@ def require_api_key(f):
 
 ### Prerequisites
 
-- Python 3.9+
+- Python 3.12+
 - PostgreSQL
 - Virtual environment tool (venv, conda, etc.)
 
