@@ -1,6 +1,7 @@
 """Tests for authentication utilities."""
 
 import logging
+from typing import Protocol
 from unittest.mock import MagicMock, patch
 
 from _pytest.logging import LogCaptureFixture
@@ -12,88 +13,103 @@ from app.extensions import db
 from app.models.api_client import ApiClient
 
 
+class _TestResponse(Protocol): ...
+
+
 class TestRequireApiKeyDecorator:
     """Test cases for the require_api_key decorator."""
 
     def test_require_api_key_missing_header(self, app: Flask) -> None:
         """Test authentication fails when API key header is missing."""
 
+        @app.route("/auth-missing")
         @require_api_key
         def protected_view() -> tuple[Response, int]:
             return jsonify({"message": "success"}), 200
 
-        with app.test_request_context("/", headers={}):
-            response, status = protected_view()
+        with app.test_client() as client:
+            response = client.get("/auth-missing")
 
-        assert status == 401
-        json = response.get_json()
-        assert json["error"] == "Authentication failed"
-        assert json["message"] == "API key is required"
+        assert response.status_code == 401
+        data = response.get_json()
+        assert data["error"] == "Authentication failed"
+        assert data["message"] == "API key is required"
 
     def test_require_api_key_empty_header(self, app: Flask) -> None:
         """Test authentication fails when API key header is empty."""
 
+        @app.route("/auth-empty")
         @require_api_key
         def protected_view() -> tuple[Response, int]:
             return jsonify({"message": "success"}), 200
 
-        with app.test_request_context("/", headers={"X-API-Key": ""}):
-            response, status = protected_view()
+        with app.test_client() as client:
+            response = client.get("/auth-empty", headers={"X-API-Key": ""})
 
-        assert status == 401
-        json = response.get_json()
-        assert json["error"] == "Authentication failed"
-        assert json["message"] == "API key is required"
+        assert response.status_code == 401
+        data = response.get_json()
+        assert data["error"] == "Authentication failed"
+        assert data["message"] == "API key is required"
 
     def test_require_api_key_invalid_format(self, app: Flask) -> None:
         """Test authentication fails when API key format is invalid."""
 
+        @app.route("/auth-invalid-format")
         @require_api_key
         def protected_view() -> tuple[Response, int]:
             return jsonify({"message": "success"}), 200
 
-        with app.test_request_context("/", headers={"X-API-Key": "invalid-format"}):
-            response, status = protected_view()
+        with app.test_client() as client:
+            response = client.get(
+                "/auth-invalid-format", headers={"X-API-Key": "invalid-format"}
+            )
 
-        assert status == 401
-        json = response.get_json()
-        assert json["error"] == "Authentication failed"
-        assert json["message"] == "Invalid API key format"
+        assert response.status_code == 401
+        data = response.get_json()
+        assert data["error"] == "Authentication failed"
+        assert data["message"] == "Invalid API key format"
 
     def test_require_api_key_malformed_key(self, app: Flask) -> None:
         """Test authentication fails when API key is malformed."""
 
+        @app.route("/auth-malformed")
         @require_api_key
         def protected_view() -> tuple[Response, int]:
             return jsonify({"message": "success"}), 200
 
-        # Test with missing secret part
-        with app.test_request_context("/", headers={"X-API-Key": "client_name."}):
-            response, status = protected_view()
-        assert status == 401
-        assert response.json["message"] == "Malformed API key"
+        with app.test_client() as client:
+            # Test with missing secret part
+            response = client.get(
+                "/auth-malformed", headers={"X-API-Key": "client_name."}
+            )
+            assert response.status_code == 401
+            assert response.get_json()["message"] == "Malformed API key"
 
-        # Test with missing name part
-        with app.test_request_context("/", headers={"X-API-Key": ".secret_key"}):
-            response, status = protected_view()
-        assert status == 401
-        assert response.json["message"] == "Malformed API key"
+            # Test with missing name part
+            response = client.get(
+                "/auth-malformed", headers={"X-API-Key": ".secret_key"}
+            )
+            assert response.status_code == 401
+            assert response.get_json()["message"] == "Malformed API key"
 
     def test_require_api_key_invalid_key(self, app: Flask) -> None:
         """Test authentication fails with invalid API key."""
 
+        @app.route("/auth-invalid-key")
         @require_api_key
         def protected_view() -> tuple[Response, int]:
             return jsonify({"message": "success"}), 200
 
-        with app.test_request_context(
-            "/", headers={"X-API-Key": "unknown_client.invalid-key"}
-        ):
-            response, status = protected_view()
+        with app.test_client() as client:
+            response = client.get(
+                "/auth-invalid-key",
+                headers={"X-API-Key": "unknown_client.invalid-key"},
+            )
 
-        assert status == 401
-        assert response.json["error"] == "Authentication failed"
-        assert response.json["message"] == "Invalid or inactive API key"
+        assert response.status_code == 401
+        data = response.get_json()
+        assert data["error"] == "Authentication failed"
+        assert data["message"] == "Invalid or inactive API key"
 
     def test_require_api_key_inactive_client(
         self, app: Flask, sample_api_client: tuple[ApiClient, str]
@@ -103,17 +119,19 @@ class TestRequireApiKeyDecorator:
         api_client.is_active = False
         db.session.commit()
 
+        @app.route("/auth-inactive")
         @require_api_key
         def protected_view() -> tuple[Response, int]:
             return jsonify({"message": "success"}), 200
 
         headers = {"X-API-Key": f"{api_client.name}.{api_key}"}
-        with app.test_request_context("/", headers=headers):
-            response, status = protected_view()
+        with app.test_client() as client:
+            response = client.get("/auth-inactive", headers=headers)
 
-        assert status == 401
-        assert response.json["error"] == "Authentication failed"
-        assert response.json["message"] == "Invalid or inactive API key"
+        assert response.status_code == 401
+        data = response.get_json()
+        assert data["error"] == "Authentication failed"
+        assert data["message"] == "Invalid or inactive API key"
 
     def test_require_api_key_valid_authentication(
         self, app: Flask, sample_api_client: tuple[ApiClient, str]
@@ -122,6 +140,7 @@ class TestRequireApiKeyDecorator:
         api_client, api_key = sample_api_client
         original_use_count = api_client.use_count
 
+        @app.route("/auth-valid")
         @require_api_key
         def protected_view() -> tuple[Response, int]:
             assert g.api_client is not None
@@ -129,11 +148,11 @@ class TestRequireApiKeyDecorator:
             return jsonify({"message": "success"}), 200
 
         headers = {"X-API-Key": f"{api_client.name}.{api_key}"}
-        with app.test_request_context("/", headers=headers):
-            response, status = protected_view()
+        with app.test_client() as client:
+            response = client.get("/auth-valid", headers=headers)
 
-        assert status == 200
-        assert response.json["message"] == "success"
+        assert response.status_code == 200
+        assert response.get_json()["message"] == "success"
 
         # Verify usage statistics were updated
         db.session.refresh(api_client)
@@ -159,21 +178,21 @@ class TestRequireApiKeyDecorator:
         db.session.add_all([client1, client2])
         db.session.commit()
 
+        @app.route("/auth-multi")
         @require_api_key
         def protected_view() -> tuple[Response, int]:
             return jsonify({"message": "success"}), 200
 
-        # Test with first client's key
-        headers1 = {"X-API-Key": f"{client1.name}.{api_key1}"}
-        with app.test_request_context("/", headers=headers1):
-            _response, status = protected_view()
-        assert status == 200
+        with app.test_client() as client:
+            # Test with first client's key
+            headers1 = {"X-API-Key": f"{client1.name}.{api_key1}"}
+            resp1 = client.get("/auth-multi", headers=headers1)
+            assert resp1.status_code == 200
 
-        # Test with second client's key
-        headers2 = {"X-API-Key": f"{client2.name}.{api_key2}"}
-        with app.test_request_context("/", headers=headers2):
-            _response, status = protected_view()
-        assert status == 200
+            # Test with second client's key
+            headers2 = {"X-API-Key": f"{client2.name}.{api_key2}"}
+            resp2 = client.get("/auth-multi", headers=headers2)
+            assert resp2.status_code == 200
 
     def test_require_api_key_case_sensitive_header(
         self, app: Flask, sample_api_client: tuple[ApiClient, str]
@@ -181,15 +200,16 @@ class TestRequireApiKeyDecorator:
         """Test API key header works regardless of case (Flask normalizes headers)."""
         api_client, api_key = sample_api_client
 
+        @app.route("/auth-case")
         @require_api_key
         def protected_view() -> tuple[Response, int]:
             return jsonify({"message": "success"}), 200
 
         # Test with different case - should work (Flask normalizes headers)
         headers = {"x-api-key": f"{api_client.name}.{api_key}"}
-        with app.test_request_context("/", headers=headers):
-            _response, status = protected_view()
-        assert status == 200  # Flask headers are case-insensitive
+        with app.test_client() as client:
+            response = client.get("/auth-case", headers=headers)
+            assert response.status_code == 200  # Flask headers are case-insensitive
 
     def test_require_api_key_remote_ip_logging(
         self,
@@ -200,14 +220,15 @@ class TestRequireApiKeyDecorator:
         """Test that remote IP is logged correctly."""
         api_client, api_key = sample_api_client
 
+        @app.route("/auth-logging")
         @require_api_key
         def protected_view() -> tuple[Response, int]:
             return jsonify({"message": "success"}), 200
 
         with caplog.at_level(logging.INFO):
             headers = {"X-API-Key": f"{api_client.name}.{api_key}"}
-            with app.test_request_context("/", headers=headers):
-                protected_view()
+            with app.test_client() as client:
+                _r = client.get("/auth-logging", headers=headers)
 
         # Check that successful authentication was logged with IP
         auth_logs = [
@@ -223,13 +244,14 @@ class TestRequireApiKeyDecorator:
     ) -> None:
         """Test that authentication failures are logged."""
 
+        @app.route("/auth-failure-log")
         @require_api_key
         def protected_view() -> tuple[Response, int]:
             return jsonify({"message": "success"}), 200
 
         with caplog.at_level(logging.WARNING):
-            with app.test_request_context("/", headers={}):
-                protected_view()
+            with app.test_client() as client:
+                _r = client.get("/auth-failure-log")
 
         # Check that missing API key was logged
         warning_logs = [
@@ -250,18 +272,19 @@ class TestRequireApiKeyDecorator:
         mock_commit.side_effect = SQLAlchemyError("Database connection failed")
         api_client, api_key = sample_api_client
 
+        @app.route("/auth-db-error")
         @require_api_key
         def protected_view() -> tuple[Response, int]:
             return jsonify({"message": "success"}), 200
 
         with caplog.at_level(logging.ERROR):
             headers = {"X-API-Key": f"{api_client.name}.{api_key}"}
-            with app.test_request_context("/", headers=headers):
-                response, status = protected_view()
+            with app.test_client() as client:
+                response = client.get("/auth-db-error", headers=headers)
 
         # Authentication should still succeed despite stats update failure
-        assert status == 200
-        assert response.json["message"] == "success"
+        assert response.status_code == 200
+        assert response.get_json()["message"] == "success"
 
         # Check that error was logged
         error_logs = [
@@ -277,17 +300,18 @@ class TestRequireApiKeyDecorator:
         """Test graceful handling of database query errors."""
         mock_query.filter_by.side_effect = SQLAlchemyError("DB connection failed")
 
+        @app.route("/auth-query-error")
         @require_api_key
         def protected_view() -> tuple[Response, int]:
             return jsonify({"message": "success"}), 200
 
-        with app.test_request_context(
-            "/", headers={"X-API-Key": "client_name.some_key"}
-        ):
-            response, status = protected_view()
+        with app.test_client() as client:
+            response = client.get(
+                "/auth-query-error", headers={"X-API-Key": "client_name.some_key"}
+            )
 
-        assert status == 500
-        assert "Authentication service unavailable" in response.json["error"]
+        assert response.status_code == 500
+        assert str(response.get_json()["error"]) == "Authentication service unavailable"
         assert "DB connection failed" in caplog.text
 
     @patch("app.models.api_client.ApiClient.check_api_key")
@@ -301,16 +325,17 @@ class TestRequireApiKeyDecorator:
         mock_check.side_effect = Exception("Unexpected error")
         api_client, api_key = sample_api_client
 
+        @app.route("/auth-unexpected-error")
         @require_api_key
         def protected_view() -> tuple[Response, int]:
             return jsonify({"message": "success"}), 200
 
         headers = {"X-API-Key": f"{api_client.name}.{api_key}"}
-        with app.test_request_context("/", headers=headers):
-            response, status = protected_view()
+        with app.test_client() as client:
+            response = client.get("/auth-unexpected-error", headers=headers)
 
-        assert status == 500
-        assert "Authentication service error" in response.json["error"]
+        assert response.status_code == 500
+        assert str(response.get_json()["error"]) == "Authentication service error"
 
     def test_require_api_key_x_forwarded_for_header(
         self,
@@ -322,6 +347,7 @@ class TestRequireApiKeyDecorator:
         api_client, api_key = sample_api_client
         forwarded_ip = "192.168.1.100"
 
+        @app.route("/auth-forwarded-ip")
         @require_api_key
         def protected_view() -> tuple[Response, int]:
             return jsonify({"message": "success"}), 200
@@ -331,8 +357,8 @@ class TestRequireApiKeyDecorator:
                 "X-API-Key": f"{api_client.name}.{api_key}",
                 "X-Forwarded-For": forwarded_ip,
             }
-            with app.test_request_context("/", headers=headers):
-                protected_view()
+            with app.test_client() as client:
+                _r = client.get("/auth-forwarded-ip", headers=headers)
 
         # Check that the forwarded IP was logged
         auth_logs = [
@@ -355,6 +381,7 @@ class TestRequireApiKeyDecorator:
         db.session.add(client)
         db.session.commit()
 
+        @app.route("/auth-timing-safe")
         @require_api_key
         def protected_view() -> tuple[Response, int]:
             return jsonify({"message": "success"}), 200
@@ -362,10 +389,10 @@ class TestRequireApiKeyDecorator:
         # Correct client name, but wrong key. Should still reach check_api_key.
         headers = {"X-API-Key": f"{client.name}.wrong-key"}
         with patch.object(ApiClient, "check_api_key", return_value=False) as mock_check:
-            with app.test_request_context("/", headers=headers):
-                _response, status = protected_view()
+            with app.test_client() as test_client:
+                response = test_client.get("/auth-timing-safe", headers=headers)
 
-        assert status == 401
+        assert response.status_code == 401
         mock_check.assert_called_once_with("wrong-key")
 
 
@@ -388,17 +415,17 @@ class TestAuthenticationIntegration:
             # Test without API key
             response = test_client.get("/protected")
             assert response.status_code == 401
-            assert "API key is required" in response.json["message"]
+            assert response.get_json()["message"] == "API key is required"
 
             # Test with invalid API key
             response = test_client.get(
                 "/protected", headers={"X-API-Key": "invalid.key"}
             )
             assert response.status_code == 401
-            assert "Invalid or inactive API key" in response.json["message"]
+            assert response.get_json()["message"] == "Invalid or inactive API key"
 
             # Test with valid API key
             headers = {"X-API-Key": f"{client.name}.{api_key}"}
             response = test_client.get("/protected", headers=headers)
             assert response.status_code == 200
-            assert response.json["message"] == "Access granted"
+            assert response.get_json()["message"] == "Access granted"
