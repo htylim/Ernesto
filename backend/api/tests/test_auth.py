@@ -1,7 +1,6 @@
 """Tests for authentication utilities."""
 
 import logging
-from typing import Protocol
 from unittest.mock import MagicMock, patch
 
 from _pytest.logging import LogCaptureFixture
@@ -11,9 +10,6 @@ from sqlalchemy.exc import SQLAlchemyError
 from app.auth import require_api_key
 from app.extensions import db
 from app.models.api_client import ApiClient
-
-
-class _TestResponse(Protocol): ...
 
 
 class TestRequireApiKeyDecorator:
